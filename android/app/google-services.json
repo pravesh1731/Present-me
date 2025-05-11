@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "264007970281",
+    "project_id": "present-me-e81de",
+    "storage_bucket": "present-me-e81de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:264007970281:android:e24546d04ec3872e4e6f78",
+        "android_client_info": {
+          "package_name": "com.example.present_me_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0YFpBPpYbnGcVFdpIdfg3UiqO4w4nLa8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

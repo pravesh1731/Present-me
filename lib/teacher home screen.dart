@@ -83,12 +83,15 @@ class teacherHome extends StatelessWidget {
                 SizedBox(height: 20),
                 Align(
                   alignment: Alignment.center,
-                  child: SizedBox(
-                    height: 90,
-                    width: 90,
-                    child: Image.asset("assets/image/teacher.png"),
+                  child: CircleAvatar(
+                    radius: 45,
+                    backgroundColor: Colors.blue.shade100,
+                    backgroundImage: teacherData['photoUrl'] != null && teacherData['photoUrl'].toString().isNotEmpty
+                        ? NetworkImage(teacherData['photoUrl'])
+                        : AssetImage("assets/image/teacher.png") as ImageProvider,
                   ),
                 ),
+
                 Container(
                   margin: const EdgeInsets.only(top: 32, left: 32, right: 32, bottom: 16),
                   padding: EdgeInsets.all(16),

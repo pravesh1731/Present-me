@@ -1,16 +1,26 @@
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:present_me_flutter/button.dart';
 import 'package:present_me_flutter/teacher%20login%20screen.dart';
 
-class teacher_Profile extends StatefulWidget{
+
+import 'cloudinary_service.dart';
+
+class teacher_Profile extends StatefulWidget {
   @override
   State<teacher_Profile> createState() => _teacher_ProfileState();
 }
 
 class _teacher_ProfileState extends State<teacher_Profile> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   bool isEditing = false;
+  bool isLoading = true;
+  String? photoUrl;
 
   final nameController = TextEditingController();
   final emailController = TextEditingController();
@@ -19,24 +29,142 @@ class _teacher_ProfileState extends State<teacher_Profile> {
   final designationController = TextEditingController();
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-     appBar: AppBar(
-       title: Text('Profile' ,style:TextStyle(fontSize: 24, color: Colors.white) ,),
-       flexibleSpace: Container(
-           decoration: const BoxDecoration(
-               gradient: LinearGradient(
-                 colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
-                 begin: Alignment.topLeft,
-                 end: Alignment.bottomRight,
-               )
-           )
-       ),
+  void initState() {
+    super.initState();
+    fetchTeacherData();
+  }
 
-     ),
+  Future<void> fetchTeacherData() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final doc = await _firestore.collection("teachers").doc(user.uid).get();
+
+    if (doc.exists) {
+      final data = doc.data()!;
+      nameController.text = data['name'] ?? '';
+      emailController.text = data['email'] ?? '';
+      mobileController.text = data['phone'] ?? '';
+      hotspotController.text = data['hotspot'] ?? '';
+      designationController.text = data['designation'] ?? '';
+      photoUrl = data['photoUrl'];
+    }
+
+    setState(() => isLoading = false);
+  }
+
+  Future<void> saveChanges() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final docRef = _firestore.collection("teachers").doc(user.uid);
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+    Map<String, dynamic> updates = {};
+
+    if (nameController.text != data['name']) {
+      updates['name'] = nameController.text;
+    }
+    if (emailController.text != data['email']) {
+      updates['email'] = emailController.text;
+    }
+    if (mobileController.text != data['phone']) {
+      updates['phone'] = mobileController.text;
+    }
+    if (hotspotController.text != data['hotspot']) {
+      updates['hotspot'] = hotspotController.text;
+    }
+    if (designationController.text != data['designation']) {
+      updates['designation'] = designationController.text;
+    }
+    if ((photoUrl ?? '') != (data['photoUrl'] ?? '')) {
+      updates['photoUrl'] = photoUrl ?? '';
+    }
+
+    if (updates.isNotEmpty) {
+      await docRef.update(updates);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile updated successfully")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No changes to save")),
+      );
+    }
+
+    setState(() => isEditing = false);
+  }
+
+
+  Future<void> pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final teacherDoc = await _firestore.collection("teachers").doc(user.uid).get();
+    final existingPhotoId = teacherDoc.data()?['photoId'];
+
+    // Delete old image
+    if (existingPhotoId != null) {
+      await CloudinaryHelper.deleteImage(existingPhotoId);
+    }
+
+    // Upload new image
+    final result = await CloudinaryHelper.uploadImage(File(picked.path));
+
+    Navigator.of(context).pop(); // Close loader
+
+    if (result != null) {
+      photoUrl = result['url'];
+      await _firestore.collection("teachers").doc(user.uid).update({
+        'photoUrl': result['url'],
+        'photoId': result['public_id'],
+      });
+
+      setState(() {}); // Refresh UI
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Image uploaded successfully")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Image upload failed")),
+      );
+    }
+  }
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) return Scaffold(body: Center(child: CircularProgressIndicator()));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Profile', style: TextStyle(fontSize: 24, color: Colors.white)),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
       body: Column(
         children: [
-
           const SizedBox(height: 20),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -46,20 +174,23 @@ class _teacher_ProfileState extends State<teacher_Profile> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                const CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.blueAccent,
-                  child: Icon(Icons.person, size: 40, color: Colors.white),
+                GestureDetector(
+                  onTap: isEditing ? pickAndUploadImage : null,
+                  child: CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.blueAccent,
+                    backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
+                    child: photoUrl == null
+                        ? Icon(Icons.person, size: 40, color: Colors.white)
+                        : null,
+                  ),
                 ),
-                const SizedBox(height: 10),
+
+                const SizedBox(width: 16),
                 ElevatedButton(
-                  onPressed: () {
-                    setState(() => isEditing = !isEditing);
-                  },
-                  child:
-                  Text(isEditing ? 'Cancel Edit' : 'Edit Profile'),
+                  onPressed: () => setState(() => isEditing = !isEditing),
+                  child: Text(isEditing ? 'Cancel Edit' : 'Edit Profile'),
                 ),
               ],
             ),
@@ -82,12 +213,9 @@ class _teacher_ProfileState extends State<teacher_Profile> {
                     buildTextField("Hotspot Name", hotspotController),
                     buildTextField("Designation", designationController),
                     const SizedBox(height: 20),
-
                     SizedBox(
                       width: double.infinity,
-                      child: Button(text: 'Save Changes', onPressed: (){
-
-                      }),
+                      child: Button(text: 'Save Changes', onPressed: saveChanges),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -97,22 +225,18 @@ class _teacher_ProfileState extends State<teacher_Profile> {
                           backgroundColor: Colors.red,
                           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10), // You can adjust the radius
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                          onPressed: () async {
-                            await FirebaseAuth.instance.signOut();
-
-                            if (!mounted) return;
-
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (_) => teacherLogin()),
-                                  (Route<dynamic> route) => false, // Remove all previous routes
-                            );
-                          },
-
-
+                        onPressed: () async {
+                          await FirebaseAuth.instance.signOut();
+                          if (!mounted) return;
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (_) => teacherLogin()),
+                                (route) => false,
+                          );
+                        },
                         child: const Text("LOGOUT", style: TextStyle(color: Colors.white)),
                       ),
                     ),
@@ -127,16 +251,20 @@ class _teacher_ProfileState extends State<teacher_Profile> {
   }
 
   Widget buildTextField(String label, TextEditingController controller) {
+    final isEmailField = label.toLowerCase() == "email";
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextField(
         controller: controller,
-        enabled: isEditing,
+        enabled: isEditing && !isEmailField,  // email is non-editable
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
           filled: true,
-          fillColor: isEditing ? Colors.white : Colors.grey.shade200,
+          fillColor: (isEditing && !isEmailField)
+              ? Colors.white
+              : Colors.grey.shade200,
         ),
       ),
     );

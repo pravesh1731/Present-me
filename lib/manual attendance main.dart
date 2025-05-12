@@ -55,13 +55,22 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
           'name': studentData['name'] ?? 'Unknown Name',
           'roll': studentData['roll'] ?? 'Unknown Roll No',
           'uid': uid,
-          'status': savedData[uid] ?? 'None'
+          'status': savedData[uid] ?? 'None',
+          'photoUrl': studentData['photoUrl'] ?? '',
         });
       }
+
+      // 🔽 Sort students by roll number ascending
+      students.sort((a, b) {
+        final rollA = int.tryParse(a['roll'].toString()) ?? 0;
+        final rollB = int.tryParse(b['roll'].toString()) ?? 0;
+        return rollA.compareTo(rollB);
+      });
 
       return students;
     });
   }
+
 
   String dateKey() {
     final dateFormat = DateFormat('yyyyMMdd');
@@ -234,8 +243,12 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
                             CircleAvatar(
                               radius: 24,
                               backgroundColor: Colors.blue.shade100,
-                              child: Icon(Icons.person, color: Colors.blue),
+                              backgroundImage: student['photoUrl'] != ''
+                                  ? NetworkImage(student['photoUrl'])
+                                  : AssetImage('assets/image/teacher.png') as ImageProvider,
                             ),
+
+
                             SizedBox(width: 16),
                             Expanded(
                               child: Column(

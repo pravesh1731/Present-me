@@ -50,6 +50,9 @@ dependencies:
   excel: ^2.0.6
   csv: ^5.0.2
   open_file: ^3.3.2
+  http: ^1.2.1
+  image_picker: ^1.0.4
+
 
 
 dev_dependencies:

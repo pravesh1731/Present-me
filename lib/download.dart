@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -154,6 +155,7 @@ class _DownloadAttendancePageState extends State<DownloadAttendancePage> {
           'percent': percent,
         });
       }
+      finalData.sort((a, b) => a['roll'].compareTo(b['roll']));
 
       if (isPdf) {
         await generatePdf(finalData, className);
@@ -244,13 +246,25 @@ class _DownloadAttendancePageState extends State<DownloadAttendancePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Download Attendance')),
-      body: isLoading
+      appBar: AppBar(title: Text('Download Attendance',style: TextStyle(fontSize: 22, color: Colors.white),),
+          flexibleSpace: Container(
+          decoration: const BoxDecoration(
+          gradient: LinearGradient(
+          colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    )
+    )
+    ),),
+
+      body:
+
+      isLoading
           ? Center(child: CircularProgressIndicator())
           : Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.only(top: 24,left: 12,right: 12, bottom: 24),
             child: DropdownButtonFormField<String>(
               value: selectedMonth,
               decoration: InputDecoration(
@@ -271,20 +285,70 @@ class _DownloadAttendancePageState extends State<DownloadAttendancePage> {
           Expanded(
             child: ListView.builder(
               itemCount: classList.length,
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemBuilder: (_, index) {
                 final item = classList[index];
-                return ListTile(
-                  title: Text(item['title'] ?? ''),
-                  subtitle: Text("Code: ${item['code']}"),
-                  trailing: ElevatedButton(
-                    child: Text("Download"),
-                    onPressed: () => showFormatDialog(
-                        item['code']!, item['title']!),
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: Colors.pink, width: 1),
+                  ),
+                  elevation: 4,
+                  shadowColor: Colors.pink,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item['title'] ?? '',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                "Code: ${item['code']}",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => showFormatDialog(item['code']!, item['title']!),
+                          icon: Icon(Icons.download_rounded, color: Colors.white),
+                          label: Text(
+                            "Download",
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            backgroundColor: Colors.lightBlue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            elevation: 3,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
             ),
-          ),
+          )
+
         ],
       ),
     );

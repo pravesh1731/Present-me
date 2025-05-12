@@ -75,14 +75,32 @@ class studentHome extends StatelessWidget {
         child: Column(
           children: [
             SizedBox(height: 20),
-            Align(
-              alignment: Alignment.center,
-              child: SizedBox(
-                height: 90,
-                width: 90,
-                child: Image.asset("assets/image/teacher.png"),
-              ),
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('students')
+                  .doc(FirebaseAuth.instance.currentUser?.uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || !snapshot.data!.exists) {
+                  return const CircularProgressIndicator();
+                }
+
+                final studentData = snapshot.data!.data() as Map<String, dynamic>;
+                final photoUrl = studentData['photoUrl'] ?? null;
+
+                return Align(
+                  alignment: Alignment.center,
+                  child: CircleAvatar(
+                    radius: 45,
+                    backgroundColor: Colors.blueAccent,
+                    backgroundImage: photoUrl != null && photoUrl.isNotEmpty
+                        ? NetworkImage(photoUrl)
+                        : const AssetImage("assets/image/teacher.png") as ImageProvider,
+                  ),
+                );
+              },
             ),
+
 
             // 🔁 Real-time student name and date container
             StreamBuilder<DocumentSnapshot>(

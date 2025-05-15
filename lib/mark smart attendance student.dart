@@ -68,7 +68,10 @@ class mark_Smart_Attendance extends StatelessWidget {
                       context,
                       PageRouteBuilder(
                         transitionDuration: Duration(milliseconds: 500), // Adjust speed here
-                        pageBuilder: (_, __, ___) => mark_Smart_Attendance_main(),
+                        pageBuilder: (_, __, ___) => SmartAttendanceStudentPage(
+                          className: classItem['name']!,  // pass class name here
+                          classCode: classItem['code']!,
+                        ),
                         transitionsBuilder: (_, animation, __, child) {
                           const begin = Offset(1.0, 0.0); // Slide from right
                           const end = Offset.zero;

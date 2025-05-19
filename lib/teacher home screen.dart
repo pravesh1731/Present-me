@@ -98,8 +98,8 @@ class teacherHome extends StatelessWidget {
                   ),
                   Container(
                     margin: EdgeInsets.only(
-                        top: screenHeight * 0.04,
-                        bottom: screenHeight * 0.02),
+                        top: screenHeight * 0.01,
+                        ),
                     padding: EdgeInsets.all(screenWidth * 0.04),
                     width: double.infinity,
                     decoration: BoxDecoration(

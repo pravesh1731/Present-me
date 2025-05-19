@@ -93,7 +93,14 @@ class record extends StatelessWidget{
                         child: Image.asset("assets/image/mark.png"),
                       ),
                       Text('Fill Marks', style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold),),
-                      Text('Enter student’s marks for each subjects', style: TextStyle(fontSize: 16),),
+                      Text(
+                        'Enter student’s marks for each subjects',
+                        style: TextStyle(
+                          fontSize: MediaQuery.of(context).size.width * 0.04, // 4% of screen width
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
                     ],
                   ),
                 ),

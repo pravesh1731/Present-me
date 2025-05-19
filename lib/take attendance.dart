@@ -64,7 +64,13 @@ class takeAttendnace extends StatelessWidget{
                         child: Image.asset("assets/image/manual.png"),
                       ),
                       Text('Manual Attendance', style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold),),
-                      Text('Manually mark attendance by profile', style: TextStyle(fontSize: 16),),
+                      Text(
+                        ' Manually mark attendance by profile',
+                        style: TextStyle(
+                          fontSize: MediaQuery.of(context).size.width * 0.04, // 4% of screen width
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ],
                   ),
                 ),
@@ -112,7 +118,15 @@ class takeAttendnace extends StatelessWidget{
                         child: Image.asset("assets/image/smart.png"),
                       ),
                       Text('Smart Attendance', style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold),),
-                      Text('Use smart detection to mark attendance', style: TextStyle(fontSize: 16),),
+                      Text(
+                        'Use smart detection to mark attendance',
+                        style: TextStyle(
+                          fontSize: MediaQuery.of(context).size.width * 0.04, // 4% of screen width
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+
                     ],
                   ),
                 ),

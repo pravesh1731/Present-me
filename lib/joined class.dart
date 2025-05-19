@@ -14,40 +14,71 @@ class _joined_ClassState extends State<joined_Class> {
   void _joinClass(String code) async {
     if (currentUser == null) return;
 
-    final classDoc = FirebaseFirestore.instance.collection('classes').doc(code);
+    final classDocRef = FirebaseFirestore.instance.collection('classes').doc(code);
 
     try {
-      final snapshot = await classDoc.get();
-      if (!snapshot.exists) {
+      final classSnapshot = await classDocRef.get();
+
+      if (!classSnapshot.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Class code not found")),
         );
         return;
       }
 
-      final data = snapshot.data()!;
-      final List<dynamic> students = data['students'] ?? [];
+      final classData = classSnapshot.data()!;
+      final userId = currentUser!.uid;
 
-      if (students.contains(currentUser!.uid)) {
+      // Check if already joined
+      final List<dynamic> joinedStudents = classData['students'] ?? [];
+      if (joinedStudents.contains(userId)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("You have already joined this class")),
         );
-      } else {
-        await classDoc.update({
-          'students': FieldValue.arrayUnion([currentUser!.uid]),
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Joined class successfully")),
-        );
+        return;
       }
 
-      Navigator.of(context).pop(); // Close dialog
+      // Check if already requested
+      final List<dynamic> joinRequests = classData['joinRequests'] ?? [];
+      final alreadyRequested = joinRequests.any((req) => req['uid'] == userId);
+      if (alreadyRequested) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("You have already requested to join this class")),
+        );
+        return;
+      }
+
+      // Get student info
+      final studentSnapshot = await FirebaseFirestore.instance
+          .collection('students')
+          .doc(userId)
+          .get();
+
+      final studentData = {
+        'uid': userId,
+        'name': studentSnapshot['name'] ?? '',
+        'rollNo': studentSnapshot['roll'] ?? '',
+        'photoUrl': studentSnapshot['photoUrl'] ?? '',
+      };
+
+      // Add request
+      await classDocRef.update({
+        'joinRequests': FieldValue.arrayUnion([studentData]),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Request sent. Wait for teacher approval.")),
+      );
+
+      Navigator.of(context).pop();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e")),
       );
     }
   }
+
+
 
   void _showJoinClassDialog() {
     showDialog(

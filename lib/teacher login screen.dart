@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'forgetpassword.dart';
 import 'teacher home screen.dart';
 import 'teacher sign up.dart';
 import 'button.dart';
@@ -135,20 +136,36 @@ class _teacherLoginState extends State<teacherLogin> {
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 4),
 
                           Align(
                             alignment: Alignment.centerRight,
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.push(context,
-                                    MaterialPageRoute(builder: (_) => introscreen()));
-                              },
-                              child: const Text("Forget Password?",
-                                  style: TextStyle(fontWeight: FontWeight.bold)),
+                            child: TextButton(
+                              onPressed: () {Navigator.push(
+                                context,
+                                PageRouteBuilder(
+                                  transitionDuration: Duration(milliseconds: 600),
+                                  pageBuilder: (_, __, ___) => ForgetPassword(),
+                                  transitionsBuilder: (_, animation, __, child) {
+                                    const begin = Offset(1.0, 0.0); // Slide from right
+                                    const end = Offset.zero;
+                                    const curve = Curves.easeInOutBack;
+                                    var tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+                                    var offsetAnimation = animation.drive(tween);
+                                    return SlideTransition(position: offsetAnimation, child: child);
+                                  },
+                                ),
+                              );},
+                              child: Text(
+                                "Forget Password",
+                                style: TextStyle(color: Colors.blueAccent),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 4),
 
                           SizedBox(
                             width: double.infinity,

@@ -143,6 +143,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
 
                             TextFormField(
                               controller: emailController,
+                              keyboardType: TextInputType.emailAddress,
                               decoration: InputDecoration(
                                 prefixIcon: Icon(Icons.email_outlined),
                                 hintText: "Enter your email",
@@ -164,6 +165,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
 
                             TextFormField(
                               controller: phoneController,
+                              keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 prefixIcon: Icon(Icons.call),
                                 hintText: "Enter your mobile number",

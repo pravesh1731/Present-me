@@ -1,18 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:present_me_flutter/joined%20class.dart';
-import 'package:present_me_flutter/mark%20attendance%20student.dart';
-import 'package:present_me_flutter/student%20profile.dart';
+
+import 'joined class.dart';
+import 'mark attendance student.dart';
+import 'student profile.dart';
 
 class studentHome extends StatelessWidget {
   final String formattedDate = DateFormat('EEEE, MMMM d, y').format(DateTime.now());
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Present-Me', style: TextStyle(fontSize: 24, color: Colors.white)),
@@ -39,12 +43,10 @@ class studentHome extends StatelessWidget {
                       const begin = Offset(1.0, 0.0);
                       const end = Offset.zero;
                       const curve = Curves.linearToEaseOut;
+
                       var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
                       var offsetAnimation = animation.drive(tween);
-                      return SlideTransition(
-                        position: offsetAnimation,
-                        child: child,
-                      );
+                      return SlideTransition(position: offsetAnimation, child: child);
                     },
                   ),
                 );
@@ -59,179 +61,170 @@ class studentHome extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('students')
-                  .doc(FirebaseAuth.instance.currentUser?.uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData || !snapshot.data!.exists) {
-                  return const CircularProgressIndicator();
-                }
+      body: currentUser == null
+          ? Center(child: Text("User not logged in"))
+          : StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('students')
+            .doc(currentUser.uid)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return Center(child: CircularProgressIndicator());
+          }
 
-                final studentData = snapshot.data!.data() as Map<String, dynamic>;
-                final photoUrl = studentData['photoUrl'] ?? null;
+          final studentData = snapshot.data!.data() as Map<String, dynamic>;
+          final name = studentData['name'] ?? 'Student';
+          final photoUrl = studentData['photoUrl'];
 
-                return Align(
-                  alignment: Alignment.center,
-                  child: CircleAvatar(
-                    radius: 45,
-                    backgroundColor: Colors.blueAccent,
-                    backgroundImage: photoUrl != null && photoUrl.isNotEmpty
-                        ? NetworkImage(photoUrl)
-                        : const AssetImage("assets/image/teacher.png") as ImageProvider,
-                  ),
-                );
-              },
-            ),
-
-            StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('students')
-                  .doc(FirebaseAuth.instance.currentUser?.uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData || !snapshot.data!.exists) {
-                  return const CircularProgressIndicator();
-                }
-
-                final studentData = snapshot.data!.data() as Map<String, dynamic>;
-                final name = studentData['name'] ?? 'Student';
-
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  padding: const EdgeInsets.all(16),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blue, width: 2),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      Text("Welcome $name", style: const TextStyle(fontSize: 18, color: Colors.lightBlue)),
-                      Text(formattedDate, style: const TextStyle(fontSize: 18)),
-                    ],
-                  ),
-                );
-              },
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
+          return SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+              child: Column(
                 children: [
-                  buildOptionCard(
-                    context: context,
-                    icon: Icons.check_circle_outline,
-                    label: 'Mark Attendance',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          transitionDuration: Duration(milliseconds: 500),
-                          pageBuilder: (_, __, ___) => mark_Attendance_Student(),
-                          transitionsBuilder: (_, animation, __, child) {
-                            const begin = Offset(1.0, 0.0);
-                            const end = Offset.zero;
-                            const curve = Curves.easeInOutBack;
-                            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                            var offsetAnimation = animation.drive(tween);
-                            return SlideTransition(position: offsetAnimation, child: child);
-                          },
-                        ),
-                      );
-                    },
+                  SizedBox(height: screenHeight * 0.03),
+                  Align(
+                    alignment: Alignment.center,
+                    child: CircleAvatar(
+                      radius: screenWidth * 0.12,
+                      backgroundColor: Colors.blue.shade100,
+                      backgroundImage: photoUrl != null && photoUrl.toString().isNotEmpty
+                          ? NetworkImage(photoUrl)
+                          : AssetImage("assets/image/teacher.png") as ImageProvider,
+                    ),
                   ),
-                  buildOptionCard(
-                    context: context,
-                    icon: FontAwesomeIcons.plusCircle,
-                    label: 'Classes',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          transitionDuration: Duration(milliseconds: 500),
-                          pageBuilder: (_, __, ___) => joined_Class(),
-                          transitionsBuilder: (_, animation, __, child) {
-                            const begin = Offset(1.0, 0.0);
-                            const end = Offset.zero;
-                            const curve = Curves.linearToEaseOut;
-                            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                            var offsetAnimation = animation.drive(tween);
-                            return SlideTransition(position: offsetAnimation, child: child);
-                          },
-                        ),
-                      );
-                    },
+                  Container(
+                    margin: EdgeInsets.only(top: screenHeight * 0.01),
+                    padding: EdgeInsets.all(screenWidth * 0.04),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.blue, width: 2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        Text("Welcome $name",
+                            style: TextStyle(
+                                fontSize: screenWidth * 0.045,
+                                color: Colors.lightBlue)),
+                        SizedBox(height: 8),
+                        Text(formattedDate,
+                            style: TextStyle(fontSize: screenWidth * 0.045)),
+                      ],
+                    ),
                   ),
-                  buildOptionCard(
-                    context: context,
-                    icon: FontAwesomeIcons.noteSticky,
-                    label: 'Notes',
-                    onTap: () {},
-                  ),
-                  buildOptionCard(
-                    context: context,
-                    icon: FontAwesomeIcons.bookOpen,
-                    label: 'Notice',
-                    onTap: () {},
-                  ),
-                  buildOptionCard(
-                    context: context,
-                    icon: Icons.score,
-                    label: 'Score',
-                    onTap: () {},
-                  ),
-                  buildOptionCard(
-                    context: context,
-                    icon: Icons.quiz,
-                    label: 'Doubts',
-                    onTap: () {},
-                  ),
+                  SizedBox(height: screenHeight * 0.01),
+                  LayoutBuilder(builder: (context, constraints) {
+                    return Column(
+                      children: [
+                        buildResponsiveRow(context, screenWidth, [
+                          buildTile(
+                            icon: Icons.check_circle_outline,
+                            label: 'Mark Attendance',
+                            onTap: () => navigate(context, mark_Attendance_Student()),
+                          ),
+                          buildTile(
+                            icon: FontAwesomeIcons.plusCircle,
+                            label: 'Classes',
+                            onTap: () => navigate(context, joined_Class()),
+                            isFontAwesome: true,
+                          ),
+                        ]),
+                        buildResponsiveRow(context, screenWidth, [
+                          buildTile(
+                            icon: FontAwesomeIcons.noteSticky,
+                            label: 'Notes',
+                            onTap: () {},
+                            isFontAwesome: true,
+                          ),
+                          buildTile(
+                            icon: FontAwesomeIcons.bookOpen,
+                            label: 'Notice',
+                            onTap: () {},
+                            isFontAwesome: true,
+                          ),
+                        ]),
+                        buildResponsiveRow(context, screenWidth, [
+                          buildTile(
+                            icon: Icons.score,
+                            label: 'Score',
+                            onTap: () {},
+                          ),
+                          buildTile(
+                            icon: Icons.quiz,
+                            label: 'Doubts',
+                            onTap: () {},
+                          ),
+                        ]),
+                      ],
+                    );
+                  }),
                 ],
               ),
-            )
-          ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget buildResponsiveRow(BuildContext context, double screenWidth, List<Widget> tiles) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: tiles.map((tile) {
+        return Expanded(child: tile);
+      }).toList(),
+    );
+  }
+
+  Widget buildTile({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isFontAwesome = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.blue, width: 4),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: onTap,
+                icon: isFontAwesome
+                    ? FaIcon(icon, color: Colors.blue, size: 40)
+                    : Icon(icon, color: Colors.blue, size: 45),
+              ),
+              SizedBox(height: 8),
+              Text(label, style: TextStyle(fontSize: 14)),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget buildOptionCard({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = (screenWidth / 2) - 24;
-
-    return SizedBox(
-      width: cardWidth,
-      child: Container(
-        margin: const EdgeInsets.all(8),
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.blue, width: 3),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              onPressed: onTap,
-              icon: Icon(icon, color: Colors.blue, size: 40),
-            ),
-            Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
+  void navigate(BuildContext context, Widget page) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: Duration(milliseconds: 500),
+        pageBuilder: (_, __, ___) => page,
+        transitionsBuilder: (_, animation, __, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOutBack;
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+          return SlideTransition(position: offsetAnimation, child: child);
+        },
       ),
     );
   }

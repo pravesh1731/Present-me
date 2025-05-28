@@ -163,6 +163,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
                           const SizedBox(height: 8),
                           TextField(
                             controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               prefixIcon: const Icon(Icons.email_outlined),
                               hintText: "Enter your email",
@@ -186,6 +187,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
                           const SizedBox(height: 8),
                           TextField(
                             controller: _phoneController,
+                            keyboardType: TextInputType.number,
                             decoration: InputDecoration(
                               prefixIcon: const Icon(Icons.call),
                               hintText: "Enter your mobile number",

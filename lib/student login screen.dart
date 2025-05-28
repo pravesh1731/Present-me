@@ -6,6 +6,8 @@ import 'package:present_me_flutter/student%20sign%20up.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'forgetpassword.dart';
+
 class studentlogin extends StatefulWidget {
   @override
   _studentloginState createState() => _studentloginState();
@@ -19,7 +21,6 @@ class _studentloginState extends State<studentlogin> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _isLoading = false;
-
 
   // Method to handle student login
   void _login() async {
@@ -43,7 +44,11 @@ class _studentloginState extends State<studentlogin> {
       );
 
       // Fetch the user role from Firestore
-      DocumentSnapshot userDoc = await _firestore.collection('students').doc(userCredential.user?.uid).get();
+      DocumentSnapshot userDoc =
+          await _firestore
+              .collection('students')
+              .doc(userCredential.user?.uid)
+              .get();
 
       if (userDoc.exists) {
         String role = userDoc['role'];
@@ -59,7 +64,10 @@ class _studentloginState extends State<studentlogin> {
                 const begin = Offset(1.0, 0.0); // Slide from right
                 const end = Offset.zero;
                 const curve = Curves.easeInOutBack;
-                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                var tween = Tween(
+                  begin: begin,
+                  end: end,
+                ).chain(CurveTween(curve: curve));
                 var offsetAnimation = animation.drive(tween);
                 return SlideTransition(position: offsetAnimation, child: child);
               },
@@ -93,7 +101,9 @@ class _studentloginState extends State<studentlogin> {
 
   // Method to show a SnackBar message
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -140,7 +150,10 @@ class _studentloginState extends State<studentlogin> {
                         children: [
                           const Text(
                             "Student Login",
-                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 24),
                           TextField(
@@ -166,27 +179,43 @@ class _studentloginState extends State<studentlogin> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 4),
                           // Forgot Password
                           Align(
                             alignment: Alignment.centerRight,
-                            child: InkWell(
+                            child: TextButton(
+                              onPressed: () {Navigator.push(
+                                context,
+                                PageRouteBuilder(
+                                  transitionDuration: Duration(milliseconds: 600),
+                                  pageBuilder: (_, __, ___) => ForgetPassword(),
+                                  transitionsBuilder: (_, animation, __, child) {
+                                    const begin = Offset(1.0, 0.0); // Slide from right
+                                    const end = Offset.zero;
+                                    const curve = Curves.easeInOutBack;
+                                    var tween = Tween(
+                                      begin: begin,
+                                      end: end,
+                                    ).chain(CurveTween(curve: curve));
+                                    var offsetAnimation = animation.drive(tween);
+                                    return SlideTransition(position: offsetAnimation, child: child);
+                                  },
+                                ),
+                              );},
                               child: Text(
-                                "Forgot Password?",
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                "Forget Password",
+                                style: TextStyle(color: Colors.blueAccent),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 4),
                           // Login Button
                           SizedBox(
                             width: double.infinity,
-                            child: _isLoading
-                                ? Center(child: CircularProgressIndicator())
-                                : Button(
-                              text: "Login",
-                              onPressed: _login,
-                            ),
+                            child:
+                                _isLoading
+                                    ? Center(child: CircularProgressIndicator())
+                                    : Button(text: "Login", onPressed: _login),
                           ),
                           const SizedBox(height: 24),
                           // OR Divider
@@ -204,7 +233,10 @@ class _studentloginState extends State<studentlogin> {
                           // Google Sign Up
                           Button1(
                             text: 'Sign up with Google',
-                            icon: FaIcon(FontAwesomeIcons.google, color: Colors.pink),
+                            icon: FaIcon(
+                              FontAwesomeIcons.google,
+                              color: Colors.pink,
+                            ),
                             onPressed: () {},
                           ),
                           const SizedBox(height: 24),
@@ -218,14 +250,30 @@ class _studentloginState extends State<studentlogin> {
                                   Navigator.push(
                                     context,
                                     PageRouteBuilder(
-                                      transitionDuration: Duration(milliseconds: 600),
-                                      pageBuilder: (_, __, ___) => StudentSignUp(),
-                                      transitionsBuilder: (_, animation, __, child) {
-                                        const begin = Offset(1.0, 0.0); // Slide from right
+                                      transitionDuration: Duration(
+                                        milliseconds: 600,
+                                      ),
+                                      pageBuilder:
+                                          (_, __, ___) => StudentSignUp(),
+                                      transitionsBuilder: (
+                                        _,
+                                        animation,
+                                        __,
+                                        child,
+                                      ) {
+                                        const begin = Offset(
+                                          1.0,
+                                          0.0,
+                                        ); // Slide from right
                                         const end = Offset.zero;
                                         const curve = Curves.easeInOutBack;
-                                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                                        var offsetAnimation = animation.drive(tween);
+                                        var tween = Tween(
+                                          begin: begin,
+                                          end: end,
+                                        ).chain(CurveTween(curve: curve));
+                                        var offsetAnimation = animation.drive(
+                                          tween,
+                                        );
                                         return SlideTransition(
                                           position: offsetAnimation,
                                           child: child,

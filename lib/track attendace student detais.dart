@@ -256,42 +256,55 @@ class _TrackStudentAttendanceDetailsState
 
           // Attendance Records List
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: attendanceRecords.length,
-              itemBuilder: (context, index) {
-                String date = attendanceRecords[index]['date']!;
-                String status = attendanceRecords[index]['status']!;
-                bool isPresent = status.toLowerCase() == "present";
+            child: Builder(
+              builder: (context) {
+                // Sort list by date descending
+                attendanceRecords.sort((a, b) => b['date']!.compareTo(a['date']!));
 
-                return Container(
-                  margin: EdgeInsets.symmetric(vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isPresent ? Colors.green[100] : Colors.red[100],
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isPresent ? Colors.green : Colors.red,
-                      width: 1,
-                    ),
-                  ),
-                  child: ListTile(
-                    title: Text(date),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isPresent ? Icons.check_circle : Icons.cancel,
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: attendanceRecords.length,
+                  itemBuilder: (context, index) {
+                    String rawDate = attendanceRecords[index]['date']!;
+                    DateTime parsedDate = DateTime.parse(rawDate);
+                    String formattedDate = "${parsedDate.day.toString().padLeft(2, '0')}-"
+                        "${parsedDate.month.toString().padLeft(2, '0')}-"
+                        "${parsedDate.year}";
+
+                    String status = attendanceRecords[index]['status']!;
+                    bool isPresent = status.toLowerCase() == "present";
+
+                    return Container(
+                      margin: EdgeInsets.symmetric(vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isPresent ? Colors.green[100] : Colors.red[100],
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
                           color: isPresent ? Colors.green : Colors.red,
+                          width: 1,
                         ),
-                        SizedBox(width: 8),
-                        Text(status),
-                      ],
-                    ),
-                  ),
+                      ),
+                      child: ListTile(
+                        title: Text(formattedDate),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isPresent ? Icons.check_circle : Icons.cancel,
+                              color: isPresent ? Colors.green : Colors.red,
+                            ),
+                            SizedBox(width: 8),
+                            Text(status),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
           ),
+
         ],
       ),
     );

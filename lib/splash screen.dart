@@ -102,7 +102,7 @@ class _splashScreenState extends State<splashScreen> {
                       SizedBox(
                         width: 230,
                           child: Text("Present-Me", style: TextStyle(
-                              fontSize: 42 ,
+                              fontSize: 36 ,
                               color: Colors.white,
                               fontWeight: FontWeight.bold),
                           )),

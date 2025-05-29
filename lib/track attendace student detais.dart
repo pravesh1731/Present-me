@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:pie_chart/pie_chart.dart';
+
 
 class TrackStudentAttendanceDetails extends StatefulWidget {
   final String className;
@@ -21,6 +22,7 @@ class _TrackStudentAttendanceDetailsState
     extends State<TrackStudentAttendanceDetails> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
+  bool isLoading = true;
 
   List<Map<String, String>> attendanceRecords = [];
   int presentCount = 0;
@@ -35,9 +37,18 @@ class _TrackStudentAttendanceDetailsState
   }
 
   Future<void> fetchAttendanceRecords() async {
+    setState(() {
+      isLoading = true;
+    });
+
     final studentUID = auth.currentUser?.uid;
 
-    if (studentUID == null) return;
+    if (studentUID == null) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
 
     final datesRef = firestore
         .collection('Attendance')
@@ -55,6 +66,7 @@ class _TrackStudentAttendanceDetailsState
           presentCount = 0;
           absentCount = 0;
           totalCount = 0;
+          isLoading = false;
         });
         return;
       }
@@ -71,8 +83,9 @@ class _TrackStudentAttendanceDetailsState
             .doc(studentUID)
             .get();
 
-        final status =
-        recordSnapshot.exists ? recordSnapshot.get('status') ?? 'N/A' : 'N/A';
+        final status = recordSnapshot.exists
+            ? recordSnapshot.get('status') ?? 'N/A'
+            : 'N/A';
 
         fetchedAttendance.add({'date': dateKey, 'status': status});
 
@@ -90,11 +103,16 @@ class _TrackStudentAttendanceDetailsState
         totalCount = fetchedAttendance.length;
         attendancePercentage =
         totalCount > 0 ? (presentCount / totalCount) * 100 : 0;
+        isLoading = false;
       });
     } catch (e) {
       print('Error fetching attendance records: $e');
+      setState(() {
+        isLoading = false;
+      });
     }
   }
+
 
   String getStatus(double percentage) {
     if (percentage >= 95) return "Excellent";
@@ -148,7 +166,9 @@ class _TrackStudentAttendanceDetailsState
           ),
         ),
       ),
-      body: Column(
+      body:isLoading
+          ? Center(child: CircularProgressIndicator())
+      :Column(
         children: [
           // Pie Chart Card
           Card(
@@ -156,98 +176,63 @@ class _TrackStudentAttendanceDetailsState
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12)),
             elevation: 4,
+            color: Colors.blue.shade100,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  Text(
-                    "Attendance Status: $statusLabel",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: attendancePercentage >= 75
-                          ? Colors.green
-                          : Colors.red,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                      "Total: $totalCount    Present: $presentCount    Absent: $absentCount"),
-                  SizedBox(height: 12),
-                  SizedBox(
-                    height: 220,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        PieChart(
-                          PieChartData(
-                            sectionsSpace: 2,
-                            centerSpaceRadius: 60,
-                            startDegreeOffset: -90,
-                            sections: [
-                              PieChartSectionData(
-                                color: const Color(0xFF4CAF50),
-                                value: presentCount.toDouble(),
-                                title:
-                                '${(presentCount / totalCount * 100).toStringAsFixed(1)}%',
-                                radius: 50,
-                                titleStyle: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              PieChartSectionData(
-                                color: const Color(0xFFF44336),
-                                value: absentCount.toDouble(),
-                                title:
-                                '${(absentCount / totalCount * 100).toStringAsFixed(1)}%',
-                                radius: 50,
-                                titleStyle: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                          swapAnimationDuration: Duration(milliseconds: 800),
-                          swapAnimationCurve: Curves.easeInOut,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text("Attendance Status:",style: TextStyle(fontSize: 18),),
+                      Text(
+                        " $statusLabel",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: attendancePercentage >= 75
+                              ? Colors.green
+                              : Colors.red,
                         ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              "${attendancePercentage.toStringAsFixed(1)}%",
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: attendancePercentage >= 75
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
-                            ),
-                            Text(
-                              getStatus(attendancePercentage),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4),
+                  RichText(
+                    text: TextSpan(
+                      style: TextStyle(fontSize: 14, color: Colors.black),
+                      children: [
+                        TextSpan(text: "Total: $totalCount     "),
+                        TextSpan(
+                          text: "Present: $presentCount     ",
+                          style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                        ),
+                        TextSpan(
+                          text: "Absent: $absentCount     ",
+                          style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
                   ),
-                  SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildLegend(Color(0xFF4CAF50), "Present"),
-                      SizedBox(width: 20),
-                      _buildLegend(Color(0xFFF44336), "Absent"),
-                    ],
+                  SizedBox(height: 4),
+                  SizedBox(
+                    height: 180,
+                    child: PieChart(
+                      dataMap: {
+                        "Present": presentCount.toDouble(),
+                        "Absent": absentCount.toDouble(),
+                      },
+                      chartType: ChartType.disc,
+                      colorList: [Colors.green, Colors.redAccent],
+                      chartValuesOptions: ChartValuesOptions(
+                        showChartValuesInPercentage: true,
+                        showChartValues: true,
+                        showChartValueBackground: true,
+                      ),
+                      legendOptions: LegendOptions(
+                        showLegends:true,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -275,7 +260,7 @@ class _TrackStudentAttendanceDetailsState
                     bool isPresent = status.toLowerCase() == "present";
 
                     return Container(
-                      margin: EdgeInsets.symmetric(vertical: 6),
+                      margin: EdgeInsets.symmetric(vertical: 4),
                       decoration: BoxDecoration(
                         color: isPresent ? Colors.green[100] : Colors.red[100],
                         borderRadius: BorderRadius.circular(10),

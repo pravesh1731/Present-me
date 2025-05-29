@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:present_me_flutter/student%20attendance%20Details.dart';
 
 class TrackStudentListClasses extends StatelessWidget {
-  final String classCode; // Pass this from previous screen
+  final String classCode;
 
   TrackStudentListClasses({required this.classCode});
 
@@ -26,6 +26,7 @@ class TrackStudentListClasses extends StatelessWidget {
       if (studentDoc.exists) {
         final data = studentDoc.data()!;
         studentData.add({
+          'uid': uid,
           'name': data['name'] ?? 'No Name',
           'roll': data['roll'] ?? 'Unknown',
           'profile': data['photoUrl'] ?? null,
@@ -82,7 +83,13 @@ class TrackStudentListClasses extends StatelessWidget {
                       context,
                       PageRouteBuilder(
                         transitionDuration: Duration(milliseconds: 500),
-                        pageBuilder: (_, __, ___) => student_Attendance_Details(),
+                        pageBuilder: (_, __, ___) => StudentAttendanceDetails(
+                          studentUID: student['uid'],
+                          classCode: classCode,
+                          studentName: student['name'],
+                          rollNo: student['roll'],
+                          profileImage: student['profile'] ?? '',
+                        ),
                         transitionsBuilder: (_, animation, __, child) {
                           final tween = Tween(begin: Offset(1.0, 0.0), end: Offset.zero)
                               .chain(CurveTween(curve: Curves.easeInOutBack));

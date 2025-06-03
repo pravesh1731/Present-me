@@ -3,6 +3,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:present_me_flutter/teachers%20class%20Notice.dart';
+
 
 import 'button.dart';
 import 'create class.dart';
@@ -160,8 +162,7 @@ class teacherHome extends StatelessWidget {
                           buildTile(
                             icon: FontAwesomeIcons.bookOpen,
                             label: 'Notice',
-                            onTap: () {},
-                            isFontAwesome: true,
+                            onTap: () { navigate(context, Teachers_Notice_Class());}
                           ),
                         ]),
                       ],

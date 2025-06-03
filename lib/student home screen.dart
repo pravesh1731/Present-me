@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:present_me_flutter/student%20Notice%20classes.dart';
+
 
 import 'joined class.dart';
 import 'mark attendance student.dart';
@@ -140,7 +142,7 @@ class studentHome extends StatelessWidget {
                           buildTile(
                             icon: FontAwesomeIcons.bookOpen,
                             label: 'Notice',
-                            onTap: () {},
+                            onTap: () => navigate(context, Student_Notice_classes()),
                             isFontAwesome: true,
                           ),
                         ]),

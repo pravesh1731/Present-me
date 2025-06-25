@@ -60,7 +60,6 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
         });
       }
 
-      // 🔽 Sort students by roll number ascending
       students.sort((a, b) {
         final rollA = int.tryParse(a['roll'].toString()) ?? 0;
         final rollB = int.tryParse(b['roll'].toString()) ?? 0;
@@ -70,7 +69,6 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
       return students;
     });
   }
-
 
   String dateKey() {
     final dateFormat = DateFormat('yyyyMMdd');
@@ -85,9 +83,7 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
         .doc(studentUid);
 
     await classCodeRef.set({'status': status}).then((_) async {
-      setState(() {
-        savedStatuses[studentUid] = status;
-      });
+      savedStatuses[studentUid] = status;
 
       final dateListRef = FirebaseFirestore.instance
           .collection("Attendance")
@@ -139,8 +135,7 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
       builder: (context) {
         return AlertDialog(
           title: Text('Confirm Finalization'),
-          content:
-          Text('Are you sure you want to finalize today\'s attendance?'),
+          content: Text('Are you sure you want to finalize today\'s attendance?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -190,12 +185,14 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
           ],
         ),
         flexibleSpace: Container(
-            decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ))),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -220,82 +217,11 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
                     itemCount: students.length,
                     itemBuilder: (context, index) {
                       final student = students[index];
-                      Color containerColor;
 
-                      if (student['status'] == 'Absent') {
-                        containerColor = Colors.red.shade100;
-                      } else if (student['status'] == 'Present') {
-                        containerColor = Colors.green.shade100;
-                      } else {
-                        containerColor = Colors.white;
-                      }
-
-                      return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: containerColor,
-                          border: Border.all(color: Colors.blue, width: 3),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundColor: Colors.blue.shade100,
-                              backgroundImage: student['photoUrl'] != ''
-                                  ? NetworkImage(student['photoUrl'])
-                                  : AssetImage('assets/image/teacher.png') as ImageProvider,
-                            ),
-
-
-                            SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(student['name']!,
-                                      style: TextStyle(
-                                          fontSize: 16, fontWeight: FontWeight.bold)),
-                                  Text('Roll No: ${student['roll']}'),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              children: [
-                                ElevatedButton(
-                                  onPressed: isAttendanceFinalized
-                                      ? null
-                                      : () async {
-                                    setState(() {
-                                      student['status'] = 'Present';
-                                    });
-                                    await saveAttendance(
-                                        student['uid']!, 'Present');
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green.shade400),
-                                  child: Text('Present'),
-                                ),
-                                SizedBox(height: 8),
-                                ElevatedButton(
-                                  onPressed: isAttendanceFinalized
-                                      ? null
-                                      : () async {
-                                    setState(() {
-                                      student['status'] = 'Absent';
-                                    });
-                                    await saveAttendance(
-                                        student['uid']!, 'Absent');
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red.shade400),
-                                  child: Text('Absent'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                      return StudentAttendanceTile(
+                        student: student,
+                        isAttendanceFinalized: isAttendanceFinalized,
+                        saveAttendance: saveAttendance,
                       );
                     },
                   );
@@ -319,6 +245,105 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+// 🔽 Per-student widget with isolated UI update
+class StudentAttendanceTile extends StatefulWidget {
+  final Map<String, dynamic> student;
+  final bool isAttendanceFinalized;
+  final Future<void> Function(String uid, String status) saveAttendance;
+
+  const StudentAttendanceTile({
+    required this.student,
+    required this.isAttendanceFinalized,
+    required this.saveAttendance,
+    super.key,
+  });
+
+  @override
+  State<StudentAttendanceTile> createState() => _StudentAttendanceTileState();
+}
+
+class _StudentAttendanceTileState extends State<StudentAttendanceTile> {
+  late String status;
+
+  @override
+  void initState() {
+    super.initState();
+    status = widget.student['status'] ?? 'None';
+  }
+
+  void updateStatus(String newStatus) async {
+    setState(() {
+      status = newStatus;
+    });
+    await widget.saveAttendance(widget.student['uid'], newStatus);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Color containerColor;
+    if (status == 'Absent') {
+      containerColor = Colors.red.shade100;
+    } else if (status == 'Present') {
+      containerColor = Colors.green.shade100;
+    } else {
+      containerColor = Colors.white;
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: containerColor,
+        border: Border.all(color: Colors.blue, width: 3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: Colors.blue.shade100,
+            backgroundImage: widget.student['photoUrl'] != ''
+                ? NetworkImage(widget.student['photoUrl'])
+                : AssetImage('assets/image/teacher.png') as ImageProvider,
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.student['name']!,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('Roll No: ${widget.student['roll']}'),
+              ],
+            ),
+          ),
+          Column(
+            children: [
+              ElevatedButton(
+                onPressed: widget.isAttendanceFinalized
+                    ? null
+                    : () => updateStatus('Present'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade400),
+                child: Text('Present'),
+              ),
+              SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: widget.isAttendanceFinalized
+                    ? null
+                    : () => updateStatus('Absent'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade400),
+                child: Text('Absent'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

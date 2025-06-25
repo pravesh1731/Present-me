@@ -8,13 +8,12 @@ class ManualAttendanceClasses extends StatelessWidget {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Stream to get all the classes of the logged-in teacher
   Stream<List<Map<String, dynamic>>> _getClassesStream() {
     final uid = _auth.currentUser?.uid;
 
     if (uid == null) return Stream.empty(); // If no user is logged in, return an empty stream
 
-    // Query Firestore to get the classes created by the logged-in teacher
+
     return _firestore
         .collection('classes')
         .where('createdBy', isEqualTo: uid)

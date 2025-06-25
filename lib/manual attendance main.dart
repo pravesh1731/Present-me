@@ -240,7 +240,7 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
             return Button(
               text: isAttendanceFinalized ? "SUBMITTED" : "FINAL SUBMIT",
               onPressed: isAttendanceFinalized
-                  ? null
+                  ? null //
                   : () => showConfirmationDialog(students),
             );
           },

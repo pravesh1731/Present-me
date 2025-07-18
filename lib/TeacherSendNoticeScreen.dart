@@ -76,7 +76,7 @@ class _Teacher_Send_Notice_ScreenState extends State<Teacher_Send_Notice_Screen>
         'sentBy': currentUserId,
       });
 
-      // ✅ Send push notification to all students in the class
+      
       await sendPushNotification(text);
 
       setState(() {
@@ -110,7 +110,7 @@ class _Teacher_Send_Notice_ScreenState extends State<Teacher_Send_Notice_Screen>
   }
 
   Future<void> sendFCMNotification(String token, String messageText) async {
-    const serverKey = 'AIzaSyC0YFpBPpYbnGcVFdpIdfg3UiqO4w4nLa8'; // From Firebase project settings
+    const serverKey = 'AIzaSyC0YFpBPpYbnGcVFdpIdfg3UiqO4w4nLa8'; 
 
     await http.post(
       Uri.parse('https://fcm.googleapis.com/fcm/send'),
@@ -349,7 +349,7 @@ class _Teacher_Send_Notice_ScreenState extends State<Teacher_Send_Notice_Screen>
                           final text = message.text.trim();
                           if (text.isNotEmpty) {
                             await sendOrEditNotice();
-                            await sendPushNotification(text); // 👈 call here if you want to separate
+                            await sendPushNotification(text); 
                           }
                         },
                         style: ElevatedButton.styleFrom(

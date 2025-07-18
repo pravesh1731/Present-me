@@ -15,7 +15,7 @@ class _CreateClassState extends State<CreateClass> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Create a new class dialog
+ 
   void _showCreateClassDialog() {
     String className = '';
     showDialog(
@@ -59,7 +59,7 @@ class _CreateClassState extends State<CreateClass> {
     );
   }
 
-  // Get teacher's classes
+  
   Stream<List<Map<String, dynamic>>> _getClassesStream() {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return Stream.empty();
@@ -159,7 +159,7 @@ class _CreateClassState extends State<CreateClass> {
                                   ],
                                 ),
                               ),
-                              // Action Buttons
+                              
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [

@@ -11,7 +11,7 @@ class ManualAttendanceClasses extends StatelessWidget {
   Stream<List<Map<String, dynamic>>> _getClassesStream() {
     final uid = _auth.currentUser?.uid;
 
-    if (uid == null) return Stream.empty(); // If no user is logged in, return an empty stream
+    if (uid == null) return Stream.empty(); 
 
 
     return _firestore
@@ -70,13 +70,13 @@ class ManualAttendanceClasses extends StatelessWidget {
                     Navigator.push(
                       context,
                       PageRouteBuilder(
-                        transitionDuration: Duration(milliseconds: 500), // Adjust speed here
+                        transitionDuration: Duration(milliseconds: 500), 
                         pageBuilder: (_, __, ___) => ManualAttendanceMain(
                           className: classItem['name']!,
                           classCode: classItem['code']!,
                         ),
                         transitionsBuilder: (_, animation, __, child) {
-                          const begin = Offset(1.0, 0.0); // Slide from right
+                          const begin = Offset(1.0, 0.0); 
                           const end = Offset.zero;
                           const curve = Curves.easeInOutBack;
 

@@ -68,18 +68,18 @@ class Logo extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
-              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)], // Customize colors
+              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)], 
               begin: Alignment.bottomLeft,
               end: Alignment.topCenter,
             ),
           ),
         ),
 
-        // Centered Image
+        
         SizedBox(
           width: 60,
           height: 60,
-          child: Image.asset("assets/image/logo.png"), // Replace with your avatar image
+          child: Image.asset("assets/image/logo.png"), 
         ),
       ],
     );

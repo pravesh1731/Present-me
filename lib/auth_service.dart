@@ -12,7 +12,7 @@ class AuthService {
       );
       return result.user;
     } catch (e) {
-      print("SignUp Error: $e");
+      print("Sign-Up Error: $e");
       return null;
     }
   }

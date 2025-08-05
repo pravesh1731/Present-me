@@ -68,7 +68,7 @@ class Logo extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
-              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
+              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)], // Customize colors
               begin: Alignment.bottomLeft,
               end: Alignment.topCenter,
             ),
@@ -79,7 +79,7 @@ class Logo extends StatelessWidget {
         SizedBox(
           width: 60,
           height: 60,
-          child: Image.asset("assets/image/logo.png"),
+          child: Image.asset("assets/image/logo.png"), // Replace with your avatar image
         ),
       ],
     );

@@ -29,7 +29,7 @@ class _joined_ClassState extends State<joined_Class> {
       final classData = classSnapshot.data()!;
       final userId = currentUser!.uid;
 
-      // Check if already joined
+      
       final List<dynamic> joinedStudents = classData['students'] ?? [];
       if (joinedStudents.contains(userId)) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -38,7 +38,7 @@ class _joined_ClassState extends State<joined_Class> {
         return;
       }
 
-      // Check if already requested
+      
       final List<dynamic> joinRequests = classData['joinRequests'] ?? [];
       final alreadyRequested = joinRequests.any((req) => req['uid'] == userId);
       if (alreadyRequested) {
@@ -48,7 +48,6 @@ class _joined_ClassState extends State<joined_Class> {
         return;
       }
 
-      // Get student info
       final studentSnapshot = await FirebaseFirestore.instance
           .collection('students')
           .doc(userId)
@@ -61,7 +60,7 @@ class _joined_ClassState extends State<joined_Class> {
         'photoUrl': studentSnapshot['photoUrl'] ?? '',
       };
 
-      // Add request
+      
       await classDocRef.update({
         'joinRequests': FieldValue.arrayUnion([studentData]),
       });

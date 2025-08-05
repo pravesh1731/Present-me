@@ -37,10 +37,10 @@ class introscreen extends StatelessWidget{
                         Navigator.pushReplacement(
                           context,
                           PageRouteBuilder(
-                            transitionDuration: Duration(milliseconds: 600), // Adjust speed here
+                            transitionDuration: Duration(milliseconds: 600), 
                             pageBuilder: (_, __, ___) => teacherLogin(),
                             transitionsBuilder: (_, animation, __, child) {
-                              const begin = Offset(1.0, 0.0); // Slide from right
+                              const begin = Offset(1.0, 0.0); 
                               const end = Offset.zero;
                               const curve = Curves.easeInOutBack;
 
@@ -70,10 +70,10 @@ class introscreen extends StatelessWidget{
                         Navigator.pushReplacement(
                           context,
                           PageRouteBuilder(
-                            transitionDuration: Duration(milliseconds: 600), // Adjust speed here
+                            transitionDuration: Duration(milliseconds: 600), 
                             pageBuilder: (_, __, ___) => studentlogin(),
                             transitionsBuilder: (_, animation, __, child) {
-                              const begin = Offset(1.0, 0.0); // Slide from right
+                              const begin = Offset(1.0, 0.0); 
                               const end = Offset.zero;
                               const curve = Curves.easeInOutBack;
 

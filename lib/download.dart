@@ -232,7 +232,7 @@ class _DownloadAttendancePageState extends State<DownloadAttendancePage> {
     final String path = '${dir.path}/Attendance_$className.xlsx';
     final File file = File(path);
 
-    // Important: encode and check if it's not null
+    
     final List<int>? fileBytes = excel.encode();
     if (fileBytes == null) {
       throw Exception("Excel encoding failed.");

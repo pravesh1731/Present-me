@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:present_me_flutter/student%20Notiice%20main.dart';
 
 class Student_Notice_classes extends StatefulWidget {
@@ -13,15 +12,6 @@ class Student_Notice_classes extends StatefulWidget {
 
 class _Student_Notice_classesState extends State<Student_Notice_classes> {
   final currentUser = FirebaseAuth.instance.currentUser;
-
-
-  @override
-  void initState() {
-    super.initState();
-
-  }
-
-
 
   Stream<List<Map<String, dynamic>>> _getJoinedClassesStream() {
     return FirebaseFirestore.instance.collection('classes').snapshots().asyncMap(
@@ -38,6 +28,7 @@ class _Student_Notice_classesState extends State<Student_Notice_classes> {
             final title = data['name'] ?? 'Untitled Class';
             final code = doc.id;
 
+            // Get latest notice
             final noticeSnapshot = await FirebaseFirestore.instance
                 .collection('classes')
                 .doc(code)
@@ -51,6 +42,7 @@ class _Student_Notice_classesState extends State<Student_Notice_classes> {
               latestNotice = noticeSnapshot.docs.first['timestamp'];
             }
 
+            // Get last seen
             final lastSeenDoc = await FirebaseFirestore.instance
                 .collection('users')
                 .doc(userUid)
@@ -76,15 +68,17 @@ class _Student_Notice_classesState extends State<Student_Notice_classes> {
     );
   }
 
-  void _navigateToClass(BuildContext context, String className, String classCode) async {
+  void _navigateToClass(BuildContext context, String className, String classCode) {
     final userUid = currentUser?.uid;
+
+    // Firestore write in background (no await → smoother navigation)
     if (userUid != null) {
-      await FirebaseFirestore.instance
+      FirebaseFirestore.instance
           .collection('users')
           .doc(userUid)
           .collection('lastSeenNotices')
           .doc(classCode)
-          .set({'lastSeen': Timestamp.now()});
+          .set({'lastSeen': Timestamp.now()}, SetOptions(merge: true));
     }
 
     Navigator.push(

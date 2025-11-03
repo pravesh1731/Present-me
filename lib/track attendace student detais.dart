@@ -83,18 +83,24 @@ class _TrackStudentAttendanceDetailsState
             .doc(studentUID)
             .get();
 
-        final status = recordSnapshot.exists
-            ? recordSnapshot.get('status') ?? 'N/A'
-            : 'N/A';
+        String status;
+        if (!recordSnapshot.exists) {
+          // If no record, directly mark Absent
+          status = "Absent";
+        } else {
+          status = recordSnapshot.data()?['status']?.toString() ?? "Absent";
+        }
 
         fetchedAttendance.add({'date': dateKey, 'status': status});
 
         if (status.toLowerCase() == 'present') {
           present++;
-        } else if (status.toLowerCase() == 'absent') {
+        } else {
+          // everything else is Absent
           absent++;
         }
       }
+
 
       setState(() {
         attendanceRecords = fetchedAttendance;

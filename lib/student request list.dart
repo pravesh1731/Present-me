@@ -39,21 +39,26 @@ class StudentRequestList extends StatelessWidget {
           return ListView.builder(
             itemCount: requests.length,
             itemBuilder: (context, index) {
-              final student = requests[index];
+              final student = requests[index] as Map<String, dynamic>;
+
+              final name = student['name']?.toString() ?? 'Unknown';
+              final rollNo = student['rollNo']?.toString() ?? 'N/A';
+              final photoUrl = student['photoUrl']?.toString() ?? '';
+
 
               return Card(
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 3,
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundImage: student['photoUrl'] != ''
-                        ? NetworkImage(student['photoUrl'])
+                    backgroundImage: photoUrl.isNotEmpty
+                        ? NetworkImage(photoUrl)
                         : AssetImage("assets/image/studnet.png") as ImageProvider,
                     radius: 25,
                   ),
-                  title: Text(student['name'], style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Roll No: ${student['rollNo']}'),
+                  title: Text(name, style: TextStyle(fontWeight: FontWeight.bold ,fontSize: 12)),
+                  subtitle: Text('Roll No: $rollNo', style: TextStyle(fontSize: 10),),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -64,25 +69,39 @@ class StudentRequestList extends StatelessWidget {
                             'joinRequests': FieldValue.arrayRemove([student]),
                           });
                         },
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                        child: Text('Accept', style: TextStyle(fontSize: 12, color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          minimumSize: Size(50, 30),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text('Accept', style: TextStyle(fontSize: 10, color: Colors.white)),
                       ),
-                      SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () async {
-                          await classDoc.update({
-                            'joinRequests': FieldValue.arrayRemove([student]),
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                        child: Text('Reject', style: TextStyle(fontSize: 12, color: Colors.white)),
+                      SizedBox(width: 4),
+                      Align(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await classDoc.update({
+                              'joinRequests': FieldValue.arrayRemove([student]),
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size(50, 30),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text('Reject', style: TextStyle(fontSize: 10, color: Colors.white)),
+                        ),
                       ),
                     ],
                   ),
+
                 ),
               );
             },
           );
+
         },
       ),
     );

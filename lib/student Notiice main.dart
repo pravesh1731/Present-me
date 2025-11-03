@@ -21,15 +21,18 @@ class Student_Notice_Main extends StatefulWidget {
   State<Student_Notice_Main> createState() => _Student_Notice_MainState();
 }
 
-
-
 class _Student_Notice_MainState extends State<Student_Notice_Main> {
   final currentUser = FirebaseAuth.instance.currentUser;
+  bool accessDenied = false;
 
   @override
   void initState() {
     super.initState();
     saveStudentToken(widget.classCode);
+
+    // background check for enrollment (won’t block UI)
+    _checkEnrollment();
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       RemoteNotification? notification = message.notification;
       if (notification != null) {
@@ -48,7 +51,6 @@ class _Student_Notice_MainState extends State<Student_Notice_Main> {
         );
       }
     });
-
   }
 
   void saveStudentToken(String classCode) async {
@@ -69,8 +71,7 @@ class _Student_Notice_MainState extends State<Student_Notice_Main> {
     }
   }
 
-
-  Future<bool> _isStudentEnrolled() async {
+  void _checkEnrollment() async {
     final classDoc = await FirebaseFirestore.instance
         .collection('classes')
         .doc(widget.classCode)
@@ -79,122 +80,117 @@ class _Student_Notice_MainState extends State<Student_Notice_Main> {
     if (classDoc.exists) {
       final data = classDoc.data()!;
       final List<dynamic> students = data['students'] ?? [];
-      return students.contains(currentUser?.uid);
+      if (!students.contains(currentUser?.uid)) {
+        setState(() => accessDenied = true);
+      }
     }
-    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _isStudentEnrolled(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+    if (accessDenied) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Access Denied')),
+        body: const Center(child: Text("You are not enrolled in this class.")),
+      );
+    }
 
-        if (snapshot.data == false) {
-          return Scaffold(
-            appBar: AppBar(title: Text('Access Denied')),
-            body: const Center(child: Text("You are not enrolled in this class.")),
-          );
-        }
-
-        return Scaffold(
-          appBar: AppBar(
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Notice', style: TextStyle(fontSize: 22, color: Colors.white)),
-                Text(widget.className, style: const TextStyle(fontSize: 16, color: Colors.white)),
-              ],
-            ),
-            flexibleSpace: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Notice', style: TextStyle(fontSize: 22, color: Colors.white)),
+            Text(widget.className, style: const TextStyle(fontSize: 16, color: Colors.white)),
+          ],
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
           ),
-          body: Stack(
-            children: [
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 100.0, left: 10, right: 10),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Opacity(
-                      opacity: 0.25,
-                      child: Image.asset(
-                        "assets/image/noticebg.jpg",
-                        alignment: Alignment.center,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
+        ),
+      ),
+      body: Stack(
+        children: [
+          // background
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 100.0, left: 10, right: 10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Opacity(
+                  opacity: 0.25,
+                  child: Image.asset(
+                    "assets/image/noticebg.jpg",
+                    alignment: Alignment.center,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('classes')
-                    .doc(widget.classCode)
-                    .collection('notices')
-                    .orderBy('timestamp', descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+            ),
+          ),
+          // notices
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('classes')
+                .doc(widget.classCode)
+                .collection('notices')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                  final notices = snapshot.data!.docs;
+              final notices = snapshot.data!.docs;
 
-                  if (notices.isEmpty) {
-                    return const Center(child: Text("No notices yet."));
-                  }
+              if (notices.isEmpty) {
+                return const Center(child: Text("No notices yet."));
+              }
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.only(top: 16, left: 12, right: 12, bottom: 100),
-                    itemCount: notices.length,
-                    itemBuilder: (context, index) {
-                      final data = notices[index].data() as Map<String, dynamic>;
-                      final message = data['message'] ?? '';
-                      final timestamp = data['timestamp'] as Timestamp?;
+              return ListView.builder(
+                padding: const EdgeInsets.only(top: 16, left: 12, right: 12, bottom: 100),
+                itemCount: notices.length,
+                itemBuilder: (context, index) {
+                  final data = notices[index].data() as Map<String, dynamic>;
+                  final message = data['message'] ?? '';
+                  final timestamp = data['timestamp'] as Timestamp?;
 
-                      return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Color(0xff99ECFA),
-                          borderRadius: BorderRadius.circular(12),
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xff99ECFA),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          message,
+                          style: const TextStyle(fontSize: 16),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              message,
-                              style: const TextStyle(fontSize: 16),
+                        if (timestamp != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              '${DateFormat('dd-MM-yyyy').format(timestamp.toDate())} at ${DateFormat('HH:mm').format(timestamp.toDate())}',
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
                             ),
-                            if (timestamp != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4.0),
-                                child: Text(
-                                  '${DateFormat('dd-MM-yyyy').format(timestamp.toDate())} at ${DateFormat('HH:mm').format(timestamp.toDate())}',
-                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                ),
-                              ),
-
-                          ],
-                        ),
-                      );
-                    },
+                          ),
+                      ],
+                    ),
                   );
                 },
-              ),
-            ],
+              );
+            },
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

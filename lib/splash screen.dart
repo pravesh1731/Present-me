@@ -120,7 +120,7 @@ class _splashScreenState extends State<splashScreen> {
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Text('Developed by Pravesh' ,
+                  child: Text('Developed by Loading...' ,
                     style: TextStyle(color: Colors.white),),
                 ))
       ],

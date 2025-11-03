@@ -57,7 +57,6 @@ class _joined_ClassState extends State<joined_Class> {
         'uid': userId,
         'name': studentSnapshot['name'] ?? '',
         'rollNo': studentSnapshot['roll'] ?? '',
-        'photoUrl': studentSnapshot['photoUrl'] ?? '',
       };
 
       

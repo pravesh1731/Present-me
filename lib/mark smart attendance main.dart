@@ -1,11 +1,10 @@
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
-import 'package:local_auth/local_auth.dart';  // Added for biometric auth
+import 'package:local_auth/local_auth.dart';
 
 class SmartAttendanceStudentPage extends StatefulWidget {
   final String className;
@@ -30,29 +29,62 @@ class _SmartAttendanceStudentPageState extends State<SmartAttendanceStudentPage>
   bool attendanceEnabled = false;
   bool attendanceMarked = false;
   String statusMessage = "Loading...";
+  String authButtonText = "Mark Attendance";
 
   static const platform = MethodChannel('com.example.present_me/wifi');
+  final LocalAuthentication _localAuth = LocalAuthentication();
 
-  final LocalAuthentication _localAuth = LocalAuthentication();  // Biometric auth instance
+  Timer? _wifiCheckTimer;
 
   @override
   void initState() {
     super.initState();
     _initPermissionsAndSSID();
+
+    // Auto-refresh Wi-Fi check every 5 seconds
+    _wifiCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) _checkCurrentSSID();
+    });
+  }
+
+  @override
+  void dispose() {
+    _wifiCheckTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _initPermissionsAndSSID() async {
-    // Request location permission (required for SSID on Android)
-    final status = await Permission.location.request();
-
-    if (status.isGranted) {
-      await _getTeacherSSID();
-      await _checkCurrentSSID();
-    } else {
-      setState(() {
-        statusMessage = "Location permission not granted.";
-      });
+    if (!await Permission.location.isGranted) {
+      final status = await Permission.location.request();
+      if (!status.isGranted) {
+        setState(() => statusMessage = "Location permission not granted.");
+        return;
+      }
     }
+
+    bool isLocationEnabled = false;
+    try {
+      final enabled = await platform.invokeMethod<bool>('isLocationEnabled');
+      isLocationEnabled = enabled ?? false;
+    } on PlatformException {
+      isLocationEnabled = false;
+    }
+
+    if (!isLocationEnabled) {
+      setState(() => statusMessage = "Please enable location services.");
+      return;
+    }
+
+    try {
+      final hotspotEnabled = await platform.invokeMethod<bool>('isHotspotEnabled');
+      if (hotspotEnabled == true) {
+        _showToast("Hotspot is enabled. Please disable it to mark attendance.");
+      }
+    } on PlatformException {}
+
+    await _getTeacherSSID();
+    await _checkCurrentSSID();
+    await _updateAuthButtonText();
   }
 
   Future<void> _getTeacherSSID() async {
@@ -72,7 +104,7 @@ class _SmartAttendanceStudentPageState extends State<SmartAttendanceStudentPage>
 
       if (teacherId == null || teacherId.isEmpty) {
         setState(() {
-          statusMessage = "Error: Teacher ID not found for this class.";
+          statusMessage = "Error: Teacher ID not found.";
           attendanceEnabled = false;
         });
         return;
@@ -135,6 +167,63 @@ class _SmartAttendanceStudentPageState extends State<SmartAttendanceStudentPage>
     });
   }
 
+  Future<void> _updateAuthButtonText() async {
+    try {
+      bool canCheckBiometrics = await _localAuth.canCheckBiometrics;
+      bool isDeviceSupported = await _localAuth.isDeviceSupported();
+
+      setState(() {
+        if (canCheckBiometrics) {
+          authButtonText = "Authenticate with Biometrics";
+        } else if (isDeviceSupported) {
+          authButtonText = "Authenticate with Passcode";
+        } else {
+          authButtonText = "Authentication not supported";
+        }
+      });
+    } catch (e) {
+      setState(() => authButtonText = "Authentication error");
+    }
+  }
+
+  Future<void> _authenticateAndMarkAttendance() async {
+    try {
+      bool isAuthenticated = false;
+
+      bool canCheckBiometrics = await _localAuth.canCheckBiometrics;
+      bool isDeviceSupported = await _localAuth.isDeviceSupported();
+
+      if (canCheckBiometrics) {
+        isAuthenticated = await _localAuth.authenticate(
+          localizedReason: 'Please authenticate to mark attendance',
+          options: const AuthenticationOptions(
+            biometricOnly: true,
+            stickyAuth: true,
+          ),
+        );
+      } else if (isDeviceSupported) {
+        isAuthenticated = await _localAuth.authenticate(
+          localizedReason: 'Please authenticate to mark attendance',
+          options: const AuthenticationOptions(
+            stickyAuth: true,
+            useErrorDialogs: true,
+          ),
+        );
+      } else {
+        _showToast("Authentication not available on this device.");
+        return;
+      }
+
+      if (isAuthenticated) {
+        await _markAttendance();
+      } else {
+        _showToast("Authentication failed.");
+      }
+    } catch (e) {
+      _showToast("Authentication error: ${e.toString()}");
+    }
+  }
+
   Future<void> _markAttendance() async {
     if (!attendanceEnabled) {
       _showToast("Attendance is not enabled!");
@@ -152,56 +241,43 @@ class _SmartAttendanceStudentPageState extends State<SmartAttendanceStudentPage>
         return;
       }
 
-      final todayDate =
-      DateTime.now().toIso8601String().substring(0, 10).replaceAll("-", "");
+      // 👇 format date as yyyyMMdd (like Kotlin)
+      final todayDate = DateTime.now();
+      final dateKey = "${todayDate.year.toString().padLeft(4, '0')}"
+          "${todayDate.month.toString().padLeft(2, '0')}"
+          "${todayDate.day.toString().padLeft(2, '0')}";
 
+      // 1️⃣ Save attendance record
       final attendanceRef = _firestore
           .collection("Attendance")
           .doc(widget.classCode)
-          .collection(todayDate)
+          .collection(dateKey)
           .doc(user.uid);
 
       await attendanceRef.set({"status": "Present"});
 
+      // 2️⃣ Update DateList/AllDates/dates array
+      final dateListRef = _firestore
+          .collection("Attendance")
+          .doc(widget.classCode)
+          .collection("DateList")
+          .doc("AllDates");
+
+      await dateListRef.set({
+        "dates": FieldValue.arrayUnion([dateKey])
+      }, SetOptions(merge: true));
+
       setState(() {
         attendanceMarked = true;
-        statusMessage = "Attendance Marked";
+        statusMessage = "Attendance marked successfully!";
       });
 
-      _showToast("Attendance Marked Successfully");
+      _showToast("Attendance marked successfully!");
     } catch (e) {
       _showToast("Failed to mark attendance: ${e.toString()}");
     }
   }
 
-  // New method for biometric auth before marking attendance
-  Future<void> _authenticateAndMarkAttendance() async {
-    try {
-      bool canCheckBiometrics = await _localAuth.canCheckBiometrics;
-      bool isAuthenticated = false;
-
-      if (canCheckBiometrics) {
-        isAuthenticated = await _localAuth.authenticate(
-          localizedReason: 'Please authenticate to mark attendance',
-          options: const AuthenticationOptions(
-            biometricOnly: true,
-            stickyAuth: true,
-          ),
-        );
-      } else {
-        _showToast("Biometric authentication not available.");
-        return;
-      }
-
-      if (isAuthenticated) {
-        await _markAttendance();
-      } else {
-        _showToast("Authentication failed. Please try again.");
-      }
-    } catch (e) {
-      _showToast("Authentication error: ${e.toString()}");
-    }
-  }
 
   void _showToast(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
@@ -211,19 +287,21 @@ class _SmartAttendanceStudentPageState extends State<SmartAttendanceStudentPage>
   Widget build(BuildContext context) {
     final isButtonEnabled = attendanceEnabled &&
         !attendanceMarked &&
-        statusMessage == "Connected to correct Wi-Fi.";
+        statusMessage == "Connected to correct Wi-Fi." &&
+        (authButtonText != "Authentication not supported" &&
+            authButtonText != "Authentication error");
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Smart Attendance', style: TextStyle(fontSize: 24, color: Colors.white)),
         flexibleSpace: Container(
-            decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-            )
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
         ),
       ),
       body: Padding(
@@ -249,13 +327,12 @@ class _SmartAttendanceStudentPageState extends State<SmartAttendanceStudentPage>
                     ElevatedButton(
                       onPressed: isButtonEnabled ? _authenticateAndMarkAttendance : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: (isButtonEnabled || attendanceMarked)
-                            ? Colors.green.shade500
-                            : null, // null means default disabled color
+                        backgroundColor: isButtonEnabled ? Colors.blue : Colors.grey,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        textStyle: const TextStyle(fontSize: 18),
                       ),
-                      child: Text(attendanceMarked ? "Attendance Marked" : "Mark Attendance"),
+                      child: Text(attendanceMarked ? "Attendance Marked" : authButtonText),
                     ),
-
                   ],
                 ),
               ),

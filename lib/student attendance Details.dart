@@ -19,7 +19,8 @@ class StudentAttendanceDetails extends StatefulWidget {
   });
 
   @override
-  _StudentAttendanceDetailsState createState() => _StudentAttendanceDetailsState();
+  _StudentAttendanceDetailsState createState() =>
+      _StudentAttendanceDetailsState();
 }
 
 class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
@@ -58,7 +59,16 @@ class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
             .doc(widget.studentUID)
             .get();
 
-        String status = record.get("status") ?? "N/A";
+        String status;
+
+        if (!record.exists) {
+          // 🔴 No record at all → Absent
+          status = "Absent";
+        } else {
+          // ✅ If record exists but status missing → also Absent
+          status = record.data()?["status"]?.toString() ?? "Absent";
+        }
+
         tempList.add({"date": date, "status": status});
       }
 
@@ -66,7 +76,8 @@ class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
 
       setState(() {
         attendanceList = tempList;
-        presentCount = attendanceList.where((e) => e['status'] == 'Present').length;
+        presentCount =
+            attendanceList.where((e) => e['status'] == 'Present').length;
         absentCount = attendanceList.length - presentCount;
         isLoading = false;
       });
@@ -87,37 +98,62 @@ class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
         title: Text("Change Status"),
         content: Text("Change status from $currentStatus to $newStatus?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text("Cancel")),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: Text("Yes")),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text("Cancel")),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true), child: Text("Yes")),
         ],
       ),
     );
 
     if (confirmed) {
       try {
-        await FirebaseFirestore.instance
+        final docRef = FirebaseFirestore.instance
             .collection("Attendance")
             .doc(widget.classCode)
             .collection(record['date']!)
-            .doc(widget.studentUID)
-            .update({"status": newStatus});
+            .doc(widget.studentUID);
 
+        final docSnapshot = await docRef.get();
+
+        if (docSnapshot.exists) {
+          // 🔹 Case 1: Record exists → just update status
+          await docRef.update({"status": newStatus});
+        } else {
+          // 🔹 Case 2: Record does not exist → create it
+          await docRef.set({"status": newStatus});
+        }
+
+        // Update local state
         setState(() {
           attendanceList[index]['status'] = newStatus;
-          presentCount = attendanceList.where((e) => e['status'] == 'Present').length;
+          presentCount =
+              attendanceList.where((e) => e['status'] == 'Present').length;
           absentCount = attendanceList.length - presentCount;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Status updated")));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Status updated")));
       } catch (e) {
         print("Update failed: $e");
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Update failed")));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Update failed")));
       }
     }
   }
+
   String formatDate(String rawDate) {
     try {
-      DateTime parsedDate = DateTime.parse(rawDate); // assumes "yyyy-MM-dd"
+      // 🔹 If date comes as yyyyMMdd (like 20250818)
+      if (RegExp(r'^\d{8}$').hasMatch(rawDate)) {
+        DateTime parsed =
+        DateFormat("yyyyMMdd").parse(rawDate); // parse Firestore key format
+        return DateFormat('dd-MM-yyyy').format(parsed);
+      }
+
+      // 🔹 Fallback for ISO format (yyyy-MM-dd)
+      DateTime parsedDate = DateTime.parse(rawDate);
       return DateFormat('dd-MM-yyyy').format(parsedDate);
     } catch (e) {
       return rawDate; // fallback if parsing fails
@@ -129,16 +165,21 @@ class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
     int total = attendanceList.length;
 
     return Scaffold(
-      appBar: AppBar(title: Text("Student Attendance",style: TextStyle(color: Colors.white),),
-          flexibleSpace: Container(
+      appBar: AppBar(
+        title: Text(
+          "Student Attendance",
+          style: TextStyle(color: Colors.white),
+        ),
+        flexibleSpace: Container(
           decoration: const BoxDecoration(
-          gradient: LinearGradient(
-          colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    ),
-    ),
-    ),),
+            gradient: LinearGradient(
+              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : Column(
@@ -153,7 +194,9 @@ class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
                   backgroundImage: NetworkImage(widget.profileImage),
                 ),
                 SizedBox(height: 8),
-                Text(widget.studentName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(widget.studentName,
+                    style: TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
                 Text(widget.rollNo),
               ],
             ),
@@ -161,24 +204,30 @@ class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
 
           // Chart
           Card(
-            margin: EdgeInsets.symmetric(horizontal: 16,),
+            margin: EdgeInsets.symmetric(horizontal: 16),
             color: Colors.lightBlue.shade100,
             child: Padding(
-              padding: const EdgeInsets.only(top: 8,right: 16, left: 16,bottom:4),
+              padding: const EdgeInsets.only(
+                  top: 8, right: 16, left: 16, bottom: 4),
               child: Column(
                 children: [
                   RichText(
                     text: TextSpan(
-                      style: TextStyle(fontSize: 14, color: Colors.black),
+                      style:
+                      TextStyle(fontSize: 14, color: Colors.black),
                       children: [
                         TextSpan(text: "Total: $total     "),
                         TextSpan(
                           text: "Present: $presentCount     ",
-                          style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold),
                         ),
                         TextSpan(
                           text: "Absent: $absentCount     ",
-                          style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -193,7 +242,8 @@ class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
                       },
                       chartType: ChartType.disc,
                       colorList: [Colors.green, Colors.redAccent],
-                      chartValuesOptions: ChartValuesOptions(showChartValuesInPercentage: true),
+                      chartValuesOptions: ChartValuesOptions(
+                          showChartValuesInPercentage: true),
                     ),
                   ),
                 ],
@@ -212,11 +262,16 @@ class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
                 return GestureDetector(
                   onLongPress: () => toggleStatus(index),
                   child: Container(
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    margin: EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 4),
                     padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isPresent ? Colors.green.shade100 : Colors.red.shade100,
-                      border: Border.all(color: isPresent ? Colors.green : Colors.red),
+                      color: isPresent
+                          ? Colors.green.shade100
+                          : Colors.red.shade100,
+                      border: Border.all(
+                          color:
+                          isPresent ? Colors.green : Colors.red),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -226,11 +281,15 @@ class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
                           formatDate(item['date']!),
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-
                         Row(
                           children: [
-                            Icon(isPresent ? Icons.check_circle : Icons.cancel,
-                                color: isPresent ? Colors.green : Colors.red),
+                            Icon(
+                                isPresent
+                                    ? Icons.check_circle
+                                    : Icons.cancel,
+                                color: isPresent
+                                    ? Colors.green
+                                    : Colors.red),
                             SizedBox(width: 6),
                             Text(item['status']!),
                           ],

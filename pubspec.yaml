@@ -59,6 +59,9 @@ dependencies:
   flutter_local_notifications: ^19.2.1
   get: ^4.6.6
   device_info_plus: ^10.1.0
+  riverpod: ^3.0.3
+  flutter_riverpod: ^3.0.3
+  dots_indicator: ^3.0.0
 
 
 

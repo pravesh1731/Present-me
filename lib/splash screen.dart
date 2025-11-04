@@ -5,8 +5,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:present_me_flutter/introScreen.dart';
+import 'package:present_me_flutter/onBoarding/onBoardingScreen.dart';
 import 'package:present_me_flutter/student%20home%20screen.dart';
 import 'package:present_me_flutter/teacher%20home%20screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class splashScreen extends StatefulWidget{
   @override
@@ -23,6 +25,11 @@ class _splashScreenState extends State<splashScreen> {
 
   void _checkLoginStatus() async {
     await Future.delayed(const Duration(seconds: 1));
+    
+    // Check if user has seen onboarding
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+    
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
@@ -39,17 +46,32 @@ class _splashScreenState extends State<splashScreen> {
           MaterialPageRoute(builder: (_) => studentHome()),
         );
       } else {
-        // Role not found
+        // Role not found - show onboarding or intro based on preference
+        if (hasSeenOnboarding) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const onBoardingScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => introscreen()),
+          );
+        }
+      }
+    } else {
+      // Not logged in - show onboarding or intro based on preference
+      if (hasSeenOnboarding) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const onBoardingScreen()),
+        );
+      } else {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => introscreen()),
         );
       }
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => introscreen()),
-      );
     }
   }
 

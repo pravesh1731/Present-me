@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:present_me_flutter/teachers%20class%20Notice.dart';
 
 
-import 'button.dart';
+import 'components/common/Button/button.dart';
 import 'create class.dart';
 import 'download.dart';
 import 'records.dart';

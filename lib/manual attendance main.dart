@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'button.dart';
+import 'components/common/Button/button.dart';
 
 class ManualAttendanceMain extends StatefulWidget {
   final String className;

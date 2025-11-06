@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/introScreen.dart';
+import 'package:present_me_flutter/IntroScreen/introScreen.dart';
 import 'package:present_me_flutter/onBoarding/onBoardingScreen.dart';
 import 'package:present_me_flutter/student%20home%20screen.dart';
 import 'package:present_me_flutter/teacher%20home%20screen.dart';
@@ -47,7 +47,7 @@ class _splashScreenState extends State<splashScreen> {
         );
       } else {
         // Role not found - show onboarding or intro based on preference
-        if (hasSeenOnboarding) {
+        if (!hasSeenOnboarding) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const onBoardingScreen()),
@@ -61,7 +61,7 @@ class _splashScreenState extends State<splashScreen> {
       }
     } else {
       // Not logged in - show onboarding or intro based on preference
-      if (hasSeenOnboarding) {
+      if (!hasSeenOnboarding) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const onBoardingScreen()),

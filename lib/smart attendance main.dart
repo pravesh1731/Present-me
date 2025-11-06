@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:present_me_flutter/button.dart';
+import 'package:present_me_flutter/components/common/Button/button.dart';
 
 class SmartAttendanceTeacherPage extends StatefulWidget {
   final String className;

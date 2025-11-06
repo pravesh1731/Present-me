@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:present_me_flutter/student%20login%20screen.dart';
-import 'button.dart';
+import 'package:present_me_flutter/Student%20Authentication/student%20login%20screen.dart';
+import 'components/common/Button/button.dart';
 import 'cloudinary_service.dart'; // Make sure this exists
 
 class student_Profile extends StatefulWidget {

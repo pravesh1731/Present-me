@@ -63,22 +63,23 @@ class Logo extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         Container(
-          width: 80,
-          height: 80,
+          width: 75,
+          height: 75,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(20),
+            // shape: BoxShape.circle,
             gradient: LinearGradient(
-              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)], // Customize colors
-              begin: Alignment.bottomLeft,
-              end: Alignment.topCenter,
+              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
           ),
         ),
 
         // Centered Image
         SizedBox(
-          width: 60,
-          height: 60,
+          width: 55,
+          height: 55,
           child: Image.asset("assets/image/logo.png"), // Replace with your avatar image
         ),
       ],

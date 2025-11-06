@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:present_me_flutter/button.dart';
-import 'package:present_me_flutter/teacher%20login%20screen.dart';
+import 'package:present_me_flutter/components/common/Button/button.dart';
+import 'package:present_me_flutter/Teacher%20Authentication/teacher%20login%20screen.dart';
 
 
 import 'cloudinary_service.dart';

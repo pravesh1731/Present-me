@@ -1,7 +1,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/button.dart';
+import 'package:present_me_flutter/components/common/Button/button.dart';
 
 import 'otpVerified screen.dart';
 

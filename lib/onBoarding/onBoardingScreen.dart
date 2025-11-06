@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:present_me_flutter/introScreen.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:present_me_flutter/IntroScreen/introScreen.dart';
 import 'package:present_me_flutter/onBoarding/widget/widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dots_indicator/dots_indicator.dart';
@@ -19,7 +20,7 @@ class _onBoardingScreenState extends ConsumerState<onBoardingScreen> {
 
   final List<Map<String, dynamic>> _pages = const [
     {
-      'icon': Icons.check_circle_outline,
+      'icon':FontAwesomeIcons.graduationCap,
       'title': 'Welcome to Present-Me',
       'description': 'Your smart attendance companion for seamless classroom management',
       'gradientColors': [Color(0xFF06B6D4), Color(0xFF2563EB)],
@@ -28,19 +29,19 @@ class _onBoardingScreenState extends ConsumerState<onBoardingScreen> {
       'icon': Icons.check_circle_outline,
       'title': 'Smart Attendance',
       'description': 'Mark attendance with manual, smart, and video recognition methods',
-      'gradientColors': [Color(0xFF8B5CF6), Color(0xFFEC4899)],
+      'gradientColors': [Color(0xFF10B981),Color(0xFF0D9488),],
     },
     {
       'icon': Icons.analytics_outlined,
       'title': 'Track Progress',
       'description': 'Monitor your academic journey with detailed insights and analytics',
-      'gradientColors': [Color(0xFF10B981), Color(0xFF3B82F6)],
+      'gradientColors': [Color(0xFF8B5CF6), Color(0xFF9333EA) ],
     },
     {
-      'icon': Icons.analytics_outlined,
+      'icon': Icons.people,
       'title': 'Build for everyone',
       'description': 'Perfect for both teachers and students with dedicated features',
-      'gradientColors': [Color(0xFF10B981), Color(0xFF3B82F6)],
+      'gradientColors': [Color(0xFFEC4899), Color(0xFFE11D48),],
     },
   ];
 
@@ -61,9 +62,16 @@ class _onBoardingScreenState extends ConsumerState<onBoardingScreen> {
     );
   }
 
+  void _onSkip() {
+    _pageController.animateToPage(
+      _pages.length - 1,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
   void _onNext() {
     final currentPage = ref.read(currentPageProvider);
-
     if (currentPage < _pages.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -77,7 +85,7 @@ class _onBoardingScreenState extends ConsumerState<onBoardingScreen> {
   @override
   Widget build(BuildContext context) {
     final currentPage = ref.watch(currentPageProvider);
-    final currentGradient = _pages[currentPage]['gradientColors'] as List<Color>;
+    final currentGradient = _pages[currentPage]['gradientColors'];
 
     return Scaffold(
       body: AnimatedContainer(
@@ -98,7 +106,7 @@ class _onBoardingScreenState extends ConsumerState<onBoardingScreen> {
                 child: Align(
                   alignment: Alignment.topRight,
                   child: TextButton(
-                    onPressed: _completeOnboarding,
+                    onPressed: _onSkip,
                     child: const Text(
                       'Skip',
                       style: TextStyle(
@@ -120,7 +128,7 @@ class _onBoardingScreenState extends ConsumerState<onBoardingScreen> {
                   itemCount: _pages.length,
                   itemBuilder: (context, index) {
                     final page = _pages[index];
-                    final gradient = page['gradientColors'] as List<Color>;
+                    final gradient = page['gradientColors'];
                     return buildPage(
                       icon: page['icon'],
                       title: page['title'],
@@ -133,7 +141,7 @@ class _onBoardingScreenState extends ConsumerState<onBoardingScreen> {
 
               // Dots Indicator
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 50),
+                padding: const EdgeInsets.only( bottom: 70),
                 child: DotsIndicator(
                   dotsCount: _pages.length,
                   position: currentPage,

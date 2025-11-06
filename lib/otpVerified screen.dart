@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import 'button.dart';
+import 'components/common/Button/button.dart';
 
 class otpVerified extends StatelessWidget{
   @override

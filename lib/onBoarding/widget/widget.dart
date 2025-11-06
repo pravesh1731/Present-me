@@ -38,18 +38,18 @@ Widget buildPage({
               ),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 48),
           Text(
             title,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
             description,
             style: TextStyle(

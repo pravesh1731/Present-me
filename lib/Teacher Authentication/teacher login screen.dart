@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../Teacher Forget Password Screen/teacherForgetPassword.dart';
-import '../teacher home screen.dart';
+import '../Teacher Screens/teacher home screen.dart';
 import 'teacher sign up.dart';
 import '../components/common/Button/button.dart';
 
@@ -150,7 +150,7 @@ class _teacherLoginState extends State<teacherLogin> {
                           const Text(
                             "Welcome back! Sign in to continue",
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 14,
                               color: Colors.black54,
                               fontWeight: FontWeight.w400,
                             ),

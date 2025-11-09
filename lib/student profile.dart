@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:present_me_flutter/Student%20Authentication/student%20login%20screen.dart';
 import 'components/common/Button/button.dart';
-import 'cloudinary_service.dart'; // Make sure this exists
+import 'services/cloudinary_service.dart'; // Make sure this exists
 
 class student_Profile extends StatefulWidget {
   @override

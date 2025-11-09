@@ -1,0 +1,440 @@
+import 'package:flutter/material.dart';
+import 'package:present_me_flutter/Teacher%20Screens/create%20class.dart';
+
+import 'package:present_me_flutter/records.dart';
+import 'package:present_me_flutter/download.dart';
+import 'package:present_me_flutter/Teacher%20Screens/teacher%20profile.dart';
+import 'package:present_me_flutter/teachers%20class%20Notice.dart';
+import 'package:present_me_flutter/teacher%20track%20attendance%20classes.dart';
+
+// Teacher Sidebar / Drawer panel matching provided screenshot design.
+// Usage: call showTeacherSidebar(context); to display.
+
+void showTeacherSidebar(
+  BuildContext context, {
+  required String teacherName,
+  required String role,
+  String? photoUrl,
+}) {
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Menu',
+    barrierColor: Colors.black54,
+    transitionDuration: const Duration(milliseconds: 400),
+    pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+    transitionBuilder: (ctx, animation, secondaryAnimation, child) {
+      // Use a more natural spring-like curve
+      final slideCurve = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutQuart,
+        reverseCurve: Curves.easeInQuart,
+      );
+      
+      // Smooth slide from left
+      final slide = Tween<Offset>(
+        begin: const Offset(-1.0, 0),
+        end: Offset.zero,
+      ).animate(slideCurve);
+      
+      // Gentle fade that matches the slide timing
+      final fadeInCurve = CurvedAnimation(
+        parent: animation,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+        reverseCurve: const Interval(0.4, 1.0, curve: Curves.easeIn),
+      );
+      
+      return SafeArea(
+        top: false,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: SlideTransition(
+            position: slide,
+            child: FadeTransition(
+              opacity: fadeInCurve,
+              child: _TeacherSidebar(
+                teacherName: teacherName,
+                role: role,
+                photoUrl: photoUrl,
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _TeacherSidebar extends StatelessWidget {
+  final double panelWidth = 280; // reduced width from 320 to 270
+  final String teacherName;
+  final String role;
+  final String? photoUrl;
+  const _TeacherSidebar({
+    required this.teacherName,
+    required this.role,
+    this.photoUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: panelWidth,
+
+        // Removed top margin to eliminate space above the sidebar
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.12),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: Column(
+            children: [
+              _buildHeader(context),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      _MenuItem(
+                        icon: Icons.edit_note_outlined,
+                        label: 'Fill Marks',
+                        onTap:
+                            () =>
+                                _placeholder(context, 'Fill Marks coming soon'),
+                      ),
+                      _MenuItem(
+                        icon: Icons.fact_check_outlined,
+                        label: 'Records',
+                        onTap: () => _pushSlide(context, record()),
+                      ),
+                      _MenuItem(
+                        icon: Icons.download_outlined,
+                        label: 'Download Reports',
+                        onTap:
+                            () => _pushSlide(context, DownloadAttendancePage()),
+                      ),
+                      _MenuItem(
+                        icon: Icons.group_add_outlined,
+                        label: 'Create Class',
+                        onTap: () => _pushSlide(context, CreateClass()),
+                      ),
+                      _MenuItem(
+                        icon: Icons.list_alt_outlined,
+                        label: 'Class List',
+                        onTap:
+                            () =>
+                                _placeholder(context, 'Class List coming soon'),
+                      ),
+                      _MenuItem(
+                        icon: Icons.schedule_outlined,
+                        label: 'Schedule',
+                        onTap:
+                            () => _pushSlide(
+                              context,
+                              TeacherTrackAttendanceClass(),
+                            ),
+                      ),
+                      _MenuItem(
+                        icon: Icons.notifications_none_outlined,
+                        label: 'Notices',
+                        onTap:
+                            () => _pushSlide(
+                              context,
+                              const Teachers_Notice_Class(),
+                            ),
+                      ),
+                      _MenuItem(
+                        icon: Icons.note_alt_outlined,
+                        label: 'Notes',
+                        onTap: () => _placeholder(context, 'Notes coming soon'),
+                      ),
+
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Divider(height: 1),
+                      ),
+                      _MenuItem(
+                        icon: Icons.person_outline,
+                        label: 'Profile',
+                        onTap: () => _pushSlide(context, teacher_Profile()),
+                      ),
+                      _MenuItem(
+                        icon: Icons.settings_outlined,
+                        label: 'Settings',
+                        onTap:
+                            () => _placeholder(context, 'Settings coming soon'),
+                      ),
+                      _MenuItem(
+                        icon: Icons.help_outline,
+                        label: 'Help',
+                        onTap: () => _placeholder(context, 'Help coming soon'),
+                      ),
+                      _MenuItem(
+                        icon: Icons.add_circle_outline,
+                        label: 'About',
+                        onTap: () => _placeholder(context, 'Help coming soon'),
+                      ),
+                      const SizedBox(height: 30), // space for sticky logout
+                    ],
+                  ),
+                ),
+              ),
+              _buildLogoutBar(context),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 40, 16, 24),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.25),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white24, width: 2),
+                ),
+                child:
+                    photoUrl != null && photoUrl!.isNotEmpty
+                        ? ClipOval(
+                          child: Image.network(
+                            photoUrl!,
+                            width: 54,
+                            height: 54,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 30,
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                  strokeWidth: 2,
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                        : const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      teacherName.isNotEmpty ? '$teacherName' : 'Professor',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      role.isNotEmpty ? role : 'Teacher',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutBar(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.of(context).pop();
+          // TODO: Replace with real logout logic.
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Logout coming soon')));
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF1F2),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: const [
+              Icon(Icons.logout, color: Color(0xFFDC2626)),
+              SizedBox(width: 12),
+              Text(
+                'Logout',
+                style: TextStyle(
+                  color: Color(0xFFDC2626),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Helpers
+void _pushSlide(BuildContext context, Widget page) {
+  Navigator.of(context).pop();
+  Navigator.of(context).push(
+    PageRouteBuilder(
+      transitionDuration: const Duration(milliseconds: 420),
+      pageBuilder: (_, __, ___) => page,
+      transitionsBuilder: (ctx, animation, secondaryAnimation, child) {
+        final offset = Tween<Offset>(
+          begin: const Offset(0.15, 0),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+        );
+        final fade = CurvedAnimation(parent: animation, curve: Curves.easeOut);
+        return FadeTransition(
+          opacity: fade,
+          child: SlideTransition(position: offset, child: child),
+        );
+      },
+    ),
+  );
+}
+
+void _placeholder(BuildContext context, String message) {
+  Navigator.of(context).pop();
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+}
+
+class _MenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _MenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => onTap(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: const Color(0xFF2563EB), size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            // const Icon(Icons.chevron_right, color: Colors.black26),
+          ],
+        ),
+      ),
+    );
+  }
+}

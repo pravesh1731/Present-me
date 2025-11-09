@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:present_me_flutter/IntroScreen/introScreen.dart';
 import 'package:present_me_flutter/onBoarding/onBoardingScreen.dart';
 import 'package:present_me_flutter/student%20home%20screen.dart';
-import 'package:present_me_flutter/teacher%20home%20screen.dart';
+import 'package:present_me_flutter/Teacher%20Screens/teacher%20home%20screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class splashScreen extends StatefulWidget{

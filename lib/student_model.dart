@@ -16,7 +16,8 @@ class Student {
     required this.phone,
     required this.roll,
     required this.createdAt,
-    this.role = 'student',  // Default value set to 'student'
+    this.role = 'student',
+    required String institute,  // Default value set to 'student'
   });
 
   // Convert a Student object into a map for Firestore storage
@@ -29,6 +30,7 @@ class Student {
       'roll': roll,
       'createdAt': createdAt.toIso8601String(),
       'role': role,  // role will always be 'student'
+      'institute': 'student', // Default value set to 'student'
     };
   }
 
@@ -42,6 +44,7 @@ class Student {
       roll: map['roll'],
       createdAt: DateTime.parse(map['createdAt']),
       role: map['role'],
+      institute: 'student', // Default value set to 'student'
     );
   }
 
@@ -56,6 +59,7 @@ class Student {
       roll: data['roll'],
       createdAt: DateTime.parse(data['createdAt']),
       role: data['role'],
+      institute: 'student', // Default value set to 'student'
     );
   }
 }

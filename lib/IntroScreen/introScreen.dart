@@ -102,9 +102,7 @@ class introscreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 70),
-        
-                    // Footer note
-                   
+
         
                     // Footer links
                     Padding(

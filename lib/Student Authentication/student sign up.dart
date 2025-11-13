@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:present_me_flutter/Student%20Authentication/student%20login%20screen.dart';
-import 'package:present_me_flutter/components/common/Button/button.dart';
-import 'package:present_me_flutter/otp%20login%20page.dart';
 import '../student_model.dart';  // Make sure this import is correct for your Student model
 
 class StudentSignUp extends StatefulWidget {

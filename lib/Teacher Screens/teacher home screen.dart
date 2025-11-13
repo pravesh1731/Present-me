@@ -4,10 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:present_me_flutter/Teacher%20Screens/create%20class.dart';
 import 'package:present_me_flutter/teachers%20class%20Notice.dart';
+import '../common Page/notifications_page.dart';
 import 'TeacherAttendance.dart';
 import 'teacher profile.dart';
 import 'teacher Sidebar.dart';
-import 'teacher_notifications.dart';
 
 class teacherHome extends StatefulWidget {
   @override
@@ -195,12 +195,14 @@ class _teacherHomeState extends State<teacherHome> {
                               ),
                               child: IconButton(
                                 icon: const Icon(Icons.notifications_active_outlined, color: Colors.white, size: 20),
-                                onPressed: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const TeacherNotificationsPage(),
-                                  ),
-                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const NotificationsPage(),
+                                    ),
+                                  );
+                                },
                                 padding: EdgeInsets.zero,
                               ),
                             ),

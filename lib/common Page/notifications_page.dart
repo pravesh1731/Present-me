@@ -2,42 +2,78 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class TeacherNotificationsPage extends StatefulWidget {
-  const TeacherNotificationsPage({super.key});
+class NotificationsPage extends StatefulWidget {
+  const NotificationsPage({super.key});
 
   @override
-  State<TeacherNotificationsPage> createState() => _TeacherNotificationsPageState();
+  State<NotificationsPage> createState() => _NotificationsPageState();
 }
 
-class _TeacherNotificationsPageState extends State<TeacherNotificationsPage> {
-  String _filter = 'All'; // All | Unread | Mentions (reserved)
+class _NotificationsPageState extends State<NotificationsPage> {
+  String _filter = 'All'; // All | Unread
 
   User? get _user => FirebaseAuth.instance.currentUser;
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> _notificationsStream() {
-    if (_user == null) {
-      return Stream<QuerySnapshot<Map<String, dynamic>>>.empty();
-    }
-    final base = FirebaseFirestore.instance
+  Future<String?> _getUserRole() async {
+    if (_user == null) return null;
+
+    // Check if user is a teacher
+    final teacherDoc = await FirebaseFirestore.instance
         .collection('teachers')
+        .doc(_user!.uid)
+        .get();
+    
+    if (teacherDoc.exists) return 'teachers';
+
+    // Check if user is a student
+    final studentDoc = await FirebaseFirestore.instance
+        .collection('students')
+        .doc(_user!.uid)
+        .get();
+    
+    if (studentDoc.exists) return 'students';
+
+    return null;
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> _notificationsStream() async* {
+    if (_user == null) {
+      yield* Stream<QuerySnapshot<Map<String, dynamic>>>.empty();
+      return;
+    }
+
+    final role = await _getUserRole();
+    if (role == null) {
+      yield* Stream<QuerySnapshot<Map<String, dynamic>>>.empty();
+      return;
+    }
+
+    final base = FirebaseFirestore.instance
+        .collection(role)
         .doc(_user!.uid)
         .collection('notifications')
         .orderBy('timestamp', descending: true);
 
     if (_filter == 'Unread') {
-      return base.where('isRead', isEqualTo: false).snapshots();
+      yield* base.where('isRead', isEqualTo: false).snapshots();
+    } else {
+      yield* base.snapshots();
     }
-    return base.snapshots();
   }
 
   Future<void> _markAllAsRead() async {
     if (_user == null) return;
+    
+    final role = await _getUserRole();
+    if (role == null) return;
+    
     final qs = await FirebaseFirestore.instance
-        .collection('teachers')
+        .collection(role)
         .doc(_user!.uid)
         .collection('notifications')
         .where('isRead', isEqualTo: false)
         .get();
+    
     final batch = FirebaseFirestore.instance.batch();
     for (final d in qs.docs) {
       batch.update(d.reference, {'isRead': true});
@@ -116,13 +152,21 @@ class _TeacherNotificationsPageState extends State<TeacherNotificationsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Notifications',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        const Text(
+                          'Notifications',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(

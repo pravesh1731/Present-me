@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:present_me_flutter/Student%20Forget%20Password%20Screen/studentForgetPassword.dart';
 import 'package:present_me_flutter/components/common/Button/button.dart';
-import 'package:present_me_flutter/student%20home%20screen.dart';
+import 'package:present_me_flutter/Student%20Screens/student%20home%20screen.dart';
 import 'package:present_me_flutter/Student%20Authentication/student%20sign%20up.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

@@ -6,7 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:present_me_flutter/IntroScreen/introScreen.dart';
 import 'package:present_me_flutter/onBoarding/onBoardingScreen.dart';
-import 'package:present_me_flutter/student%20home%20screen.dart';
+import 'package:present_me_flutter/Student%20Screens/student%20home%20screen.dart';
 import 'package:present_me_flutter/Teacher%20Screens/teacher%20home%20screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,29 +24,34 @@ class _splashScreenState extends State<splashScreen> {
   }
 
   void _checkLoginStatus() async {
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(seconds: 2));
     
     // Check if user has seen onboarding
     final prefs = await SharedPreferences.getInstance();
     final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
     
+    // Check if user is logged in with Firebase Auth
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
+      // User is logged in, check their role
       final role = await _getUserRole(user.uid);
 
       if (role == 'teacher') {
+        // Navigate to teacher home screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => teacherHome()),
         );
       } else if (role == 'student') {
+        // Navigate to student home screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => studentHome()),
         );
       } else {
-        // Role not found - show onboarding or intro based on preference
+        // Role not found, sign out and show login
+        await FirebaseAuth.instance.signOut();
         if (!hasSeenOnboarding) {
           Navigator.pushReplacement(
             context,
@@ -60,7 +65,7 @@ class _splashScreenState extends State<splashScreen> {
         }
       }
     } else {
-      // Not logged in - show onboarding or intro based on preference
+      // User is not logged in - show onboarding or intro based on preference
       if (!hasSeenOnboarding) {
         Navigator.pushReplacement(
           context,

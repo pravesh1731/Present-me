@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:present_me_flutter/IntroScreen/introScreen.dart';
+import 'package:present_me_flutter/privacy_policy.dart';
 import 'student profile.dart';
 
 
@@ -134,18 +135,7 @@ class StudentSidebar extends StatelessWidget {
                   },
                 ),
                 const Divider(height: 32, thickness: 1, indent: 20, endIndent: 20),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.person_outline,
-                  label: 'Profile',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => student_Profile()),
-                    );
-                  },
-                ),
+
                 _buildMenuItem(
                   context,
                   icon: Icons.settings_outlined,
@@ -167,10 +157,13 @@ class StudentSidebar extends StatelessWidget {
                 _buildMenuItem(
                   context,
                   icon: Icons.info_outline,
-                  label: 'About Us',
+                  label: 'Privacy Policy',
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Navigate to about us
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => PrivacyPolicyPage()),
+                    );
                   },
                 ),
                   ],

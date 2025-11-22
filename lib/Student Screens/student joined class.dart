@@ -420,6 +420,12 @@ class _joined_ClassState extends State<joined_Class> {
     );
   }
 
+  // Tab controller for Active/Inactive
+  int _selectedTab = 0; // 0: Active, 1: Inactive
+
+  // Store inactive class codes locally (simulate moving to inactive)
+  List<String> _inactiveClassCodes = [];
+
   Stream<List<Map<String, dynamic>>> _getJoinedClassesStream() {
     return FirebaseFirestore.instance.collection('classes').snapshots().map((snapshot) {
       final userUid = currentUser?.uid;
@@ -443,6 +449,26 @@ class _joined_ClassState extends State<joined_Class> {
       }
 
       return userClasses;
+    });
+  }
+
+  List<Map<String, dynamic>> _filterActiveClasses(List<Map<String, dynamic>> classes) {
+    return classes.where((c) => !_inactiveClassCodes.contains(c['code'])).toList();
+  }
+  List<Map<String, dynamic>> _filterInactiveClasses(List<Map<String, dynamic>> classes) {
+    return classes.where((c) => _inactiveClassCodes.contains(c['code'])).toList();
+  }
+
+  void _moveToInactive(String code) {
+    setState(() {
+      if (!_inactiveClassCodes.contains(code)) {
+        _inactiveClassCodes.add(code);
+      }
+    });
+  }
+  void _moveToActive(String code) {
+    setState(() {
+      _inactiveClassCodes.remove(code);
     });
   }
 
@@ -477,31 +503,203 @@ class _joined_ClassState extends State<joined_Class> {
                 return const Center(child: Text('Error loading classes'));
               }
 
+              // Tab bar
               return Column(
                 children: [
                   _buildHeader(classes.length),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: classes.isEmpty
-                        ? _buildEmptyState()
-                        : ListView.builder(
-                            padding: const EdgeInsets.only(bottom: 24),
-                            itemCount: classes.length,
-                            itemBuilder: (context, index) {
-                              final c = classes[index];
-                              final theme = _classThemes[index % _classThemes.length];
-                              return _buildClassCard(
-                                context,
-                                name: c['name'] ?? 'Class',
-                                code: c['code'] ?? '--',
-                                dayBadges: List<String>.from(c['days'] ?? []),
-                                timeLabel: _formatTime(c['startTime'], c['endTime']),
-                                roomLabel: c['room']?.isNotEmpty == true ? 'Room ${c['room']}' : 'No room',
-                                primary: theme[0],
-                                secondary: theme[1],
-                              );
-                            },
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                    decoration: BoxDecoration(
+                      color:  Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() => _selectedTab = 0),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _selectedTab == 0 ? Colors.white : Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: _selectedTab == 0
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFF2563EB).withOpacity(0.10),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : [],
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Active',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2563EB),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    '${_filterActiveClasses(classes).length}',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => setState(() => _selectedTab = 1),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _selectedTab == 1 ? Colors.white : Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: _selectedTab == 1
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFF2563EB).withOpacity(0.10),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : [],
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Inactive',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2563EB),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    '${_filterInactiveClasses(classes).length}',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: Builder(
+                      builder: (context) {
+                        if (classes.isEmpty) {
+                          return _buildEmptyState();
+                        }
+                        final showClasses = _selectedTab == 0
+                            ? _filterActiveClasses(classes)
+                            : _filterInactiveClasses(classes);
+                        if (showClasses.isEmpty) {
+                          return Center(
+                            child: Text(
+                              _selectedTab == 0
+                                  ? 'No Active Classes'
+                                  : 'No Inactive Classes',
+                              style: const TextStyle(fontSize: 16, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
+                            ),
+                          );
+                        }
+                        return ListView.builder(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          itemCount: showClasses.length,
+                          itemBuilder: (context, index) {
+                            final c = showClasses[index];
+                            final theme = _classThemes[index % _classThemes.length];
+                            return Stack(
+                              children: [
+                                _buildClassCard(
+                                  context,
+                                  name: c['name'] ?? 'Class',
+                                  code: c['code'] ?? '--',
+                                  dayBadges: List<String>.from(c['days'] ?? []),
+                                  timeLabel: _formatTime(c['startTime'], c['endTime']),
+                                  roomLabel: c['room']?.isNotEmpty == true ? 'Room ${c['room']}' : 'No room',
+                                  primary: theme[0],
+                                  secondary: theme[1],
+                                ),
+                                Positioned(
+                                  top: 10,
+                                  right: 18,
+                                  child: PopupMenuButton<String>(
+                                    icon: const Icon(Icons.more_vert, color: Color(0xFF6B7280)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    onSelected: (value) {
+                                      if (value == 'move') {
+                                        if (_selectedTab == 0) {
+                                          _moveToInactive(c['code']);
+                                        } else {
+                                          _moveToActive(c['code']);
+                                        }
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      PopupMenuItem<String>(
+                                        value: 'move',
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              _selectedTab == 0 ? Icons.remove_circle_outline : Icons.check_circle_rounded,
+                                              color: _selectedTab == 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(_selectedTab == 0 ? 'Move to Inactive' : 'Move to Active',
+                                              style: TextStyle(
+                                                color: _selectedTab == 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ],
               );

@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:present_me_flutter/IntroScreen/introScreen.dart';
-import 'package:present_me_flutter/privacy_policy.dart';
+import 'package:present_me_flutter/Policy/privacy_policy.dart';
 import 'student profile.dart';
 
 

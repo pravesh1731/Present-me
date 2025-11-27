@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:present_me_flutter/Policy/privacy_policy.dart';
 import 'package:present_me_flutter/Teacher%20Screens/create%20class.dart';
+
 
 import 'package:present_me_flutter/records.dart';
 import 'package:present_me_flutter/download.dart';
 import 'package:present_me_flutter/Teacher%20Screens/teacher%20profile.dart';
 import 'package:present_me_flutter/teachers%20class%20Notice.dart';
 import 'package:present_me_flutter/teacher%20track%20attendance%20classes.dart';
+
+
+import '../T Help & Support Page/help_support_page.dart';
+import '../T Setting Page/settings_page.dart';
 
 // Teacher Sidebar / Drawer panel matching provided screenshot design.
 // Usage: call showTeacherSidebar(context); to display.
@@ -165,26 +171,23 @@ class _TeacherSidebar extends StatelessWidget {
                         padding: EdgeInsets.symmetric(vertical: 16),
                         child: Divider(height: 1),
                       ),
-                      _MenuItem(
-                        icon: Icons.person_outline,
-                        label: 'Profile',
-                        onTap: () => _pushSlide(context, teacher_Profile()),
-                      ),
+
                       _MenuItem(
                         icon: Icons.settings_outlined,
                         label: 'Settings',
                         onTap:
-                            () => _placeholder(context, 'Settings coming soon'),
+                            () => _pushSlide(context, SettingsPage()),
                       ),
                       _MenuItem(
                         icon: Icons.help_outline,
-                        label: 'Help',
-                        onTap: () => _placeholder(context, 'Help coming soon'),
+                        label: 'Help & Support',
+                        onTap: () => _pushSlide(context, HelpSupportPage()),
                       ),
                       _MenuItem(
                         icon: Icons.add_circle_outline,
-                        label: 'About',
-                        onTap: () => _placeholder(context, 'Help coming soon'),
+                        label: 'Privacy Policy',
+                        onTap:
+                            () => _pushSlide(context, PrivacyPolicyPage()),
                       ),
                       const SizedBox(height: 30), // space for sticky logout
                     ],

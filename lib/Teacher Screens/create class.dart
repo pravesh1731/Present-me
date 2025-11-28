@@ -12,6 +12,17 @@ class CreateClass extends StatefulWidget {
 }
 
 class _CreateClassState extends State<CreateClass> {
+  int _selectedTab = 0; // 0: Active, 1: Inactive
+
+  // Filter using Firestore field `isActive`
+  List<Map<String, dynamic>> _filterActiveClasses(List<Map<String, dynamic>> classes) {
+    return classes.where((c) => (c['isActive'] as bool?) ?? true).toList();
+  }
+
+  List<Map<String, dynamic>> _filterInactiveClasses(List<Map<String, dynamic>> classes) {
+    return classes.where((c) => !((c['isActive'] as bool?) ?? true)).toList();
+  }
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -29,7 +40,6 @@ class _CreateClassState extends State<CreateClass> {
     [Color(0xFFF97316), Color(0xFFEA580C)], // orange
   ];
 
- 
   void _showCreateClassDialog() {
     final classNameController = TextEditingController();
     final roomController = TextEditingController();
@@ -147,366 +157,370 @@ class _CreateClassState extends State<CreateClass> {
                     ),
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Class Name
-                        Row(
-                          children: [
-                            Icon(Icons.menu_book, color: Colors.teal.shade600, size: 20),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Class Name',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: classNameController,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-                          decoration: InputDecoration(
-                            hintText: 'e.g., Grade 10 - Mathematics',
-                            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        // Room Number
-                        Row(
-                          children: [
-                            Icon(Icons.location_on_outlined, color: Colors.teal.shade600, size: 20),
-                            const SizedBox(width: 8),
-                            const Text('Room Number', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: roomController,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-                          decoration: InputDecoration(
-                            hintText: 'e.g., 301',
-                            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        // Start and End Time Row
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.access_time, color: Colors.teal.shade600, size: 20),
-                                      const SizedBox(width: 8),
-                                      const Text('Start Time', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  InkWell(
-                                    onTap: () async {
-                                      final picked = await showTimePicker(
-                                        context: context,
-                                        initialTime: TimeOfDay.now(),
-                                      );
-                                      if (picked != null) {
-                                        setState(() => startTime = picked);
-                                      }
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(color: Colors.grey.shade200, width: 1.5),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            startTime?.format(context) ?? '--:-- --',
-                                            style: TextStyle(
-                                              color: startTime == null ? Colors.grey.shade400 : Colors.black87,
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Icon(Icons.schedule, color: Colors.grey.shade400, size: 20),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.access_time, color: Colors.teal.shade600, size: 20),
-                                      const SizedBox(width: 8),
-                                      const Text('End Time', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  InkWell(
-                                    onTap: () async {
-                                      final picked = await showTimePicker(
-                                        context: context,
-                                        initialTime: TimeOfDay.now(),
-                                      );
-                                      if (picked != null) {
-                                        setState(() => endTime = picked);
-                                      }
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(color: Colors.grey.shade200, width: 1.5),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            endTime?.format(context) ?? '--:-- --',
-                                            style: TextStyle(
-                                              color: endTime == null ? Colors.grey.shade400 : Colors.black87,
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Icon(Icons.schedule, color: Colors.grey.shade400, size: 20),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        // Class Days
-                        Row(
-                          children: [
-                            Icon(Icons.calendar_today, color: Colors.teal.shade600, size: 20),
-                            const SizedBox(width: 8),
-                            const Text('Class Days', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) {
-                            final isSelected = selectedDays.contains(day);
-                            return Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    if (isSelected) {
-                                      selectedDays.remove(day);
-                                    } else {
-                                      selectedDays.add(day);
-                                    }
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(14),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  curve: Curves.easeOut,
-                                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    gradient: isSelected
-                                        ? const LinearGradient(
-                                            colors: [Color(0xFF06B6D4), // cyan-500
-                                              Color(0xFF2563EB),
-                                            ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          )
-                                        : null,
-                                    color: isSelected ? null : Colors.white,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: isSelected ? Colors.transparent : Colors.grey.shade200,
-                                      width: 1.5,
-                                    ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: const Color(0xFF2563EB).withOpacity(0.3),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Text(
-                                    day,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.black87,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 24),
-                        // Create Button
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF06B6D4), // cyan-500
-                                Color(0xFF2563EB),
-                              ],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF2563EB).withOpacity(0.4),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Class Name
+                          Row(
+                            children: [
+                              Icon(Icons.menu_book, color: Colors.teal.shade600, size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Class Name',
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: () async {
-                                if (classNameController.text.trim().isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Row(
-                                        children: [
-                                          Icon(Icons.warning_rounded, color: Colors.white),
-                                          SizedBox(width: 12),
-                                          Text('Please enter class name'),
-                                        ],
-                                      ),
-                                      backgroundColor: const Color(0xFFEF4444),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: classNameController,
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                            decoration: InputDecoration(
+                              hintText: 'e.g., Grade 10 - Mathematics',
+                              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
+                              ),
+                              focusedBorder: const OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(14)),
+                                borderSide: BorderSide(color: Color(0xFF2563EB), width: 2),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          // Room Number
+                          Row(
+                            children: [
+                              Icon(Icons.location_on_outlined, color: Colors.teal.shade600, size: 20),
+                              const SizedBox(width: 8),
+                              const Text('Room Number', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: roomController,
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                            decoration: InputDecoration(
+                              hintText: 'e.g., 301',
+                              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
+                              ),
+                              focusedBorder: const OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(14)),
+                                borderSide: BorderSide(color: Color(0xFF2563EB), width: 2),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          // Start and End Time Row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.access_time, color: Colors.teal.shade600, size: 20),
+                                        const SizedBox(width: 8),
+                                        const Text('Start Time', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                                      ],
                                     ),
-                                  );
-                                  return;
-                                }
-                                
-                                final code = (Random().nextInt(900000) + 100000).toString();
-                                final uid = _auth.currentUser?.uid;
-
-                                if (uid != null) {
-                                  final classData = {
-                                    'name': classNameController.text.trim(),
-                                    'code': code,
-                                    'room': roomController.text.trim(),
-                                    'maxStudents': maxStudentsController.text.trim(),
-                                    'startTime': startTime?.format(context) ?? '',
-                                    'endTime': endTime?.format(context) ?? '',
-                                    'days': selectedDays.toList(),
-                                    'createdBy': uid,
-                                    'students': [],
-                                    'createdAt': FieldValue.serverTimestamp(),
-                                  };
-
-                                  await _firestore.collection('classes').doc(code).set(classData);
-                                  if (context.mounted) {
-                                    Navigator.of(context).pop();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Row(
+                                    const SizedBox(height: 10),
+                                    InkWell(
+                                      onTap: () async {
+                                        final picked = await showTimePicker(
+                                          context: context,
+                                          initialTime: TimeOfDay.now(),
+                                        );
+                                        if (picked != null) {
+                                          setState(() => startTime = picked);
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(14),
+                                          border: Border.all(color: Colors.grey.shade200, width: 1.5),
+                                        ),
+                                        child: Row(
                                           children: [
-                                            const Icon(Icons.check_circle_rounded, color: Colors.white),
-                                            const SizedBox(width: 12),
-                                            Expanded(child: Text('Class "${classNameController.text.trim()}" created!')),
+                                            Text(
+                                              startTime?.format(context) ?? '--:-- --',
+                                              style: TextStyle(
+                                                color: startTime == null ? Colors.grey.shade400 : Colors.black87,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            Icon(Icons.schedule, color: Colors.grey.shade400, size: 20),
                                           ],
                                         ),
-                                        backgroundColor: const Color(0xFF10B981),
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    Icon(Icons.add_circle_rounded, color: Colors.white, size: 22),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      'Create Class',
-                                      style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                        letterSpacing: 0.3,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.access_time, color: Colors.teal.shade600, size: 20),
+                                        const SizedBox(width: 8),
+                                        const Text('End Time', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    InkWell(
+                                      onTap: () async {
+                                        final picked = await showTimePicker(
+                                          context: context,
+                                          initialTime: TimeOfDay.now(),
+                                        );
+                                        if (picked != null) {
+                                          setState(() => endTime = picked);
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(14),
+                                          border: Border.all(color: Colors.grey.shade200, width: 1.5),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              endTime?.format(context) ?? '--:-- --',
+                                              style: TextStyle(
+                                                color: endTime == null ? Colors.grey.shade400 : Colors.black87,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            Icon(Icons.schedule, color: Colors.grey.shade400, size: 20),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          // Class Days
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today, color: Colors.teal.shade600, size: 20),
+                              const SizedBox(width: 8),
+                              const Text('Class Days', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) {
+                              final isSelected = selectedDays.contains(day);
+                              return Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      if (isSelected) {
+                                        selectedDays.remove(day);
+                                      } else {
+                                        selectedDays.add(day);
+                                      }
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.easeOut,
+                                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      gradient: isSelected
+                                          ? const LinearGradient(
+                                        colors: [
+                                          Color(0xFF06B6D4), // cyan-500
+                                          Color(0xFF2563EB),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                          : null,
+                                      color: isSelected ? null : Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: isSelected ? Colors.transparent : Colors.grey.shade200,
+                                        width: 1.5,
+                                      ),
+                                      boxShadow: isSelected
+                                          ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF2563EB).withOpacity(0.3),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ]
+                                          : null,
+                                    ),
+                                    child: Text(
+                                      day,
+                                      style: TextStyle(
+                                        color: isSelected ? Colors.white : Colors.black87,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 24),
+                          // Create Button
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFF06B6D4), // cyan-500
+                                  Color(0xFF2563EB),
+                                ],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF2563EB).withOpacity(0.4),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () async {
+                                  if (classNameController.text.trim().isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Row(
+                                          children: [
+                                            Icon(Icons.warning_rounded, color: Colors.white),
+                                            SizedBox(width: 12),
+                                            Text('Please enter class name'),
+                                          ],
+                                        ),
+                                        backgroundColor: const Color(0xFFEF4444),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  final code = (Random().nextInt(900000) + 100000).toString();
+                                  final uid = _auth.currentUser?.uid;
+
+                                  if (uid != null) {
+                                    final classData = {
+                                      'name': classNameController.text.trim(),
+                                      'code': code,
+                                      'room': roomController.text.trim(),
+                                      'maxStudents': maxStudentsController.text.trim(),
+                                      'startTime': startTime?.format(context) ?? '',
+                                      'endTime': endTime?.format(context) ?? '',
+                                      'days': selectedDays.toList(),
+                                      'createdBy': uid,
+                                      'students': [],
+                                      'createdAt': FieldValue.serverTimestamp(),
+                                      'isActive': true, // default active
+                                    };
+
+                                    await _firestore.collection('classes').doc(code).set(classData);
+                                    if (context.mounted) {
+                                      Navigator.of(context).pop();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              const Icon(Icons.check_circle_rounded, color: Colors.white),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Text('Class "${classNameController.text.trim()}" created!'),
+                                              ),
+                                            ],
+                                          ),
+                                          backgroundColor: const Color(0xFF10B981),
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.add_circle_rounded, color: Colors.white, size: 22),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        'Create Class',
+                                        style: TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-      )
     );
-
   }
 
   void _showEditClassDialog(String code) async {
@@ -517,10 +531,10 @@ class _CreateClassState extends State<CreateClass> {
     final classData = classDoc.data()!;
     final classNameController = TextEditingController(text: classData['name'] ?? '');
     final roomController = TextEditingController(text: classData['room'] ?? '');
-    
+
     TimeOfDay? startTime;
     TimeOfDay? endTime;
-    
+
     // Parse existing times
     if (classData['startTime'] != null && (classData['startTime'] as String).isNotEmpty) {
       final parts = (classData['startTime'] as String).split(':');
@@ -536,7 +550,7 @@ class _CreateClassState extends State<CreateClass> {
         }
       }
     }
-    
+
     if (classData['endTime'] != null && (classData['endTime'] as String).isNotEmpty) {
       final parts = (classData['endTime'] as String).split(':');
       if (parts.length == 2) {
@@ -551,7 +565,7 @@ class _CreateClassState extends State<CreateClass> {
         }
       }
     }
-    
+
     Set<String> selectedDays = Set<String>.from(classData['days'] ?? []);
 
     if (!mounted) return;
@@ -665,388 +679,389 @@ class _CreateClassState extends State<CreateClass> {
                     ),
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Class Name
-                        Row(
-                          children: [
-                            Icon(Icons.menu_book, color: Colors.teal.shade600, size: 20),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Class Name',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: classNameController,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-                          decoration: InputDecoration(
-                            hintText: 'e.g., Grade 10 - Mathematics',
-                            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        // Room Number
-                        Row(
-                          children: [
-                            Icon(Icons.location_on_outlined, color: Colors.teal.shade600, size: 20),
-                            const SizedBox(width: 8),
-                            const Text('Room Number', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: roomController,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-                          decoration: InputDecoration(
-                            hintText: 'e.g., 301',
-                            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        // Start and End Time Row
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.access_time, color: Colors.teal.shade600, size: 20),
-                                      const SizedBox(width: 8),
-                                      const Text('Start Time', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Material(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(14),
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(14),
-                                      onTap: () async {
-                                        final picked = await showTimePicker(
-                                          context: context,
-                                          initialTime: startTime ?? TimeOfDay.now(),
-                                          builder: (context, child) {
-                                            return Theme(
-                                              data: ThemeData.light().copyWith(
-                                                colorScheme: const ColorScheme.light(
-                                                  primary: Color(0xFF2563EB),
-                                                ),
-                                              ),
-                                              child: child!,
-                                            );
-                                          },
-                                        );
-                                        if (picked != null) {
-                                          setState(() => startTime = picked);
-                                        }
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: Colors.grey.shade200, width: 1.5),
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              startTime?.format(context) ?? 'Select time',
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w500,
-                                                color: startTime != null ? Colors.black87 : Colors.grey.shade400,
-                                              ),
-                                            ),
-                                            Icon(Icons.schedule, color: Colors.grey.shade400, size: 20),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.access_time_filled, color: Colors.teal.shade600, size: 20),
-                                      const SizedBox(width: 8),
-                                      const Text('End Time', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Material(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(14),
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(14),
-                                      onTap: () async {
-                                        final picked = await showTimePicker(
-                                          context: context,
-                                          initialTime: endTime ?? TimeOfDay.now(),
-                                          builder: (context, child) {
-                                            return Theme(
-                                              data: ThemeData.light().copyWith(
-                                                colorScheme: const ColorScheme.light(
-                                                  primary: Color(0xFF2563EB),
-                                                ),
-                                              ),
-                                              child: child!,
-                                            );
-                                          },
-                                        );
-                                        if (picked != null) {
-                                          setState(() => endTime = picked);
-                                        }
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: Colors.grey.shade200, width: 1.5),
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              endTime?.format(context) ?? 'Select time',
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w500,
-                                                color: endTime != null ? Colors.black87 : Colors.grey.shade400,
-                                              ),
-                                            ),
-                                            Icon(Icons.schedule, color: Colors.grey.shade400, size: 20),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        // Days of the Week
-                        Row(
-                          children: [
-                            Icon(Icons.calendar_today, color: Colors.teal.shade600, size: 20),
-                            const SizedBox(width: 8),
-                            const Text('Select Days', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) {
-                            final isSelected = selectedDays.contains(day);
-                            return Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    if (isSelected) {
-                                      selectedDays.remove(day);
-                                    } else {
-                                      selectedDays.add(day);
-                                    }
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(14),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  curve: Curves.easeOut,
-                                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    gradient: isSelected
-                                        ? const LinearGradient(
-                                            colors: [Color(0xFF06B6D4), // cyan-500
-                                              Color(0xFF2563EB),
-                                            ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          )
-                                        : null,
-                                    color: isSelected ? null : Colors.white,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: isSelected ? Colors.transparent : Colors.grey.shade200,
-                                      width: 1.5,
-                                    ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: const Color(0xFF2563EB).withOpacity(0.3),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Text(
-                                    day,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.black87,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 24),
-                        // Update Button
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF06B6D4), // cyan-500
-                                Color(0xFF2563EB),
-                              ],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF2563EB).withOpacity(0.4),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Class Name
+                          Row(
+                            children: [
+                              Icon(Icons.menu_book, color: Colors.teal.shade600, size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Class Name',
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: () async {
-                                if (classNameController.text.trim().isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Row(
-                                        children: [
-                                          Icon(Icons.warning_rounded, color: Colors.white),
-                                          SizedBox(width: 12),
-                                          Text('Please enter class name'),
-                                        ],
-                                      ),
-                                      backgroundColor: const Color(0xFFEF4444),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                final updatedData = {
-                                  'name': classNameController.text.trim(),
-                                  'room': roomController.text.trim(),
-                                  'startTime': startTime?.format(context) ?? '',
-                                  'endTime': endTime?.format(context) ?? '',
-                                  'days': selectedDays.toList(),
-                                };
-
-                                await _firestore.collection('classes').doc(code).update(updatedData);
-                                
-                                if (context.mounted) {
-                                  Navigator.of(context).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Row(
-                                        children: [
-                                          Icon(Icons.check_circle_rounded, color: Colors.white),
-                                          SizedBox(width: 12),
-                                          Text('Class updated successfully!'),
-                                        ],
-                                      ),
-                                      backgroundColor: const Color(0xFF10B981),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      margin: const EdgeInsets.all(16),
-                                    ),
-                                  );
-                                }
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: classNameController,
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                            decoration: InputDecoration(
+                              hintText: 'e.g., Grade 10 - Mathematics',
+                              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
+                              ),
+                              focusedBorder: const OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(14)),
+                                borderSide: BorderSide(color: Color(0xFF2563EB), width: 2),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          // Room Number
+                          Row(
+                            children: [
+                              Icon(Icons.location_on_outlined, color: Colors.teal.shade600, size: 20),
+                              const SizedBox(width: 8),
+                              const Text('Room Number', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: roomController,
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                            decoration: InputDecoration(
+                              hintText: 'e.g., 301',
+                              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
+                              ),
+                              focusedBorder: const OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(14)),
+                                borderSide: BorderSide(color: Color(0xFF2563EB), width: 2),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          // Start and End Time Row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(Icons.check_circle_outline, color: Colors.white, size: 24),
-                                    const SizedBox(width: 12),
-                                    const Text(
-                                      'Update Class',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.5,
+                                    Row(
+                                      children: [
+                                        Icon(Icons.access_time, color: Colors.teal.shade600, size: 20),
+                                        const SizedBox(width: 8),
+                                        const Text('Start Time', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Material(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(14),
+                                        onTap: () async {
+                                          final picked = await showTimePicker(
+                                            context: context,
+                                            initialTime: startTime ?? TimeOfDay.now(),
+                                            builder: (context, child) {
+                                              return Theme(
+                                                data: ThemeData.light().copyWith(
+                                                  colorScheme: const ColorScheme.light(
+                                                    primary: Color(0xFF2563EB),
+                                                  ),
+                                                ),
+                                                child: child!,
+                                              );
+                                            },
+                                          );
+                                          if (picked != null) {
+                                            setState(() => startTime = picked);
+                                          }
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(color: Colors.grey.shade200, width: 1.5),
+                                            borderRadius: BorderRadius.circular(14),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                startTime?.format(context) ?? 'Select time',
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: startTime != null ? Colors.black87 : Colors.grey.shade400,
+                                                ),
+                                              ),
+                                              Icon(Icons.schedule, color: Colors.grey.shade400, size: 20),
+                                            ],
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.access_time_filled, color: Colors.teal.shade600, size: 20),
+                                        const SizedBox(width: 8),
+                                        const Text('End Time', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Material(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(14),
+                                        onTap: () async {
+                                          final picked = await showTimePicker(
+                                            context: context,
+                                            initialTime: endTime ?? TimeOfDay.now(),
+                                            builder: (context, child) {
+                                              return Theme(
+                                                data: ThemeData.light().copyWith(
+                                                  colorScheme: const ColorScheme.light(
+                                                    primary: Color(0xFF2563EB),
+                                                  ),
+                                                ),
+                                                child: child!,
+                                              );
+                                            },
+                                          );
+                                          if (picked != null) {
+                                            setState(() => endTime = picked);
+                                          }
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(color: Colors.grey.shade200, width: 1.5),
+                                            borderRadius: BorderRadius.circular(14),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                endTime?.format(context) ?? 'Select time',
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: endTime != null ? Colors.black87 : Colors.grey.shade400,
+                                                ),
+                                              ),
+                                              Icon(Icons.schedule, color: Colors.grey.shade400, size: 20),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          // Days of the Week
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today, color: Colors.teal.shade600, size: 20),
+                              const SizedBox(width: 8),
+                              const Text('Select Days', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) {
+                              final isSelected = selectedDays.contains(day);
+                              return Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      if (isSelected) {
+                                        selectedDays.remove(day);
+                                      } else {
+                                        selectedDays.add(day);
+                                      }
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.easeOut,
+                                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      gradient: isSelected
+                                          ? const LinearGradient(
+                                        colors: [
+                                          Color(0xFF06B6D4), // cyan-500
+                                          Color(0xFF2563EB),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                          : null,
+                                      color: isSelected ? null : Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: isSelected ? Colors.transparent : Colors.grey.shade200,
+                                        width: 1.5,
+                                      ),
+                                      boxShadow: isSelected
+                                          ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF2563EB).withOpacity(0.3),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ]
+                                          : null,
+                                    ),
+                                    child: Text(
+                                      day,
+                                      style: TextStyle(
+                                        color: isSelected ? Colors.white : Colors.black87,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 24),
+                          // Update Button
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFF06B6D4), // cyan-500
+                                  Color(0xFF2563EB),
+                                ],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF2563EB).withOpacity(0.4),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () async {
+                                  if (classNameController.text.trim().isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Row(
+                                          children: [
+                                            Icon(Icons.warning_rounded, color: Colors.white),
+                                            SizedBox(width: 12),
+                                            Text('Please enter class name'),
+                                          ],
+                                        ),
+                                        backgroundColor: const Color(0xFFEF4444),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  final updatedData = {
+                                    'name': classNameController.text.trim(),
+                                    'room': roomController.text.trim(),
+                                    'startTime': startTime?.format(context) ?? '',
+                                    'endTime': endTime?.format(context) ?? '',
+                                    'days': selectedDays.toList(),
+                                  };
+
+                                  await _firestore.collection('classes').doc(code).update(updatedData);
+
+                                  if (context.mounted) {
+                                    Navigator.of(context).pop();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Row(
+                                          children: [
+                                            Icon(Icons.check_circle_rounded, color: Colors.white),
+                                            SizedBox(width: 12),
+                                            Text('Class updated successfully!'),
+                                          ],
+                                        ),
+                                        backgroundColor: const Color(0xFF10B981),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        margin: const EdgeInsets.all(16),
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.check_circle_outline, color: Colors.white, size: 24),
+                                      SizedBox(width: 12),
+                                      Text(
+                                        'Update Class',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-      )
     );
   }
 
-  
   Stream<List<Map<String, dynamic>>> _getClassesStream() {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return Stream.empty();
@@ -1057,10 +1072,12 @@ class _CreateClassState extends State<CreateClass> {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
+        final data = doc.data();
         return {
-          'name': doc['name'],
-          'code': doc['code'],
-          'createdAt': doc['createdAt'],
+          'name': data['name'],
+          'code': data['code'],
+          'createdAt': data['createdAt'],
+          'isActive': data['isActive'] ?? true,
         };
       }).toList();
     });
@@ -1080,8 +1097,9 @@ class _CreateClassState extends State<CreateClass> {
         child: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFFECFEFF), // cyan-50
-              Color(0xFFEFF6FF), // blue-50
+              colors: [
+                Color(0xFFECFEFF), // cyan-50
+                Color(0xFFEFF6FF), // blue-50
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -1099,28 +1117,163 @@ class _CreateClassState extends State<CreateClass> {
                 return const Center(child: Text('Error loading classes'));
               }
 
+              // compute once
+              final activeClasses = _filterActiveClasses(classes);
+              final inactiveClasses = _filterInactiveClasses(classes);
+              final showClasses = _selectedTab == 0 ? activeClasses : inactiveClasses;
+
               return Column(
                 children: [
-                  _buildHeader(classes.length),
+                  _buildHeader(activeClasses.length), // header always uses active count
                   const SizedBox(height: 12),
+                  // Active/Inactive Tabs (interactive)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() => _selectedTab = 0),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _selectedTab == 0 ? Colors.white : Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: _selectedTab == 0
+                                  ? [
+                                BoxShadow(
+                                  color: const Color(0xFF10B981).withOpacity(0.10),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                                  : [],
+                            ),
+                            child: Row(
+                              children: [
+                                const Text(
+                                  'Active',
+                                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    '${activeClasses.length}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => setState(() => _selectedTab = 1),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _selectedTab == 1 ? Colors.white : Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: _selectedTab == 1
+                                  ? [
+                                BoxShadow(
+                                  color: const Color(0xFF6366F1).withOpacity(0.10),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                                  : [],
+                            ),
+                            child: Row(
+                              children: [
+                                const Text(
+                                  'Inactive',
+                                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF6366F1),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    '${inactiveClasses.length}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      itemCount: classes.length,
-                      itemBuilder: (context, index) {
-                        final c = classes[index];
-                        final theme = _classThemes[index % _classThemes.length];
-                        return _buildClassCard(
-                          context,
-                          name: c['name'] ?? 'Class',
-                          code: c['code'] ?? '--',
-                          dayBadges: _demoDayBadges(index),
-                          timeLabel: _demoTimeLabel(index),
-                          roomLabel: 'Room ${301 + index % 5}',
-                          studentsCount: 20 + (index * 3) % 15,
-                          attendance: index.isEven ? 94 : 89,
-                          primary: theme[0],
-                          secondary: theme[1],
+                    child: Builder(
+                      builder: (context) {
+                        if (showClasses.isEmpty) {
+                          return Center(
+                            child: Text(
+                              _selectedTab == 0 ? 'No Active Classes' : 'No Inactive Classes',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Color(0xFF6B7280),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          );
+                        }
+                        return ListView.builder(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          itemCount: showClasses.length,
+                          itemBuilder: (context, index) {
+                            final c = showClasses[index];
+                            final theme = _classThemes[index % _classThemes.length];
+                            return _buildClassCard(
+                              context,
+                              name: c['name'] ?? 'Class',
+                              code: c['code'] ?? '--',
+                              dayBadges: _demoDayBadges(index),
+                              timeLabel: _demoTimeLabel(index),
+                              roomLabel: 'Room ${301 + index % 5}',
+                              studentsCount: 20 + (index * 3) % 15,
+                              attendance: index.isEven ? 94 : 89,
+                              primary: theme[0],
+                              secondary: theme[1],
+                              isActive: c['isActive'] ?? true,
+                            );
+                          },
                         );
                       },
                     ),
@@ -1141,14 +1294,14 @@ class _CreateClassState extends State<CreateClass> {
       padding: const EdgeInsets.fromLTRB(20, 44, 16, 24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF06B6D4), // cyan-500
+          colors: [
+            Color(0xFF06B6D4), // cyan-500
             Color(0xFF2563EB), // blue-600
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-       
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1173,39 +1326,38 @@ class _CreateClassState extends State<CreateClass> {
               ],
             ),
           ),
-          
         ],
       ),
     );
   }
 
   Widget _buildClassCard(
-    BuildContext context, {
-    required String name,
-    required String code,
-    required List<String> dayBadges,
-    required String timeLabel,
-    required String roomLabel,
-    required int studentsCount,
-    required int attendance,
-    required Color primary,
-    required Color secondary,
-  }) {
+      BuildContext context, {
+        required String name,
+        required String code,
+        required List<String> dayBadges,
+        required String timeLabel,
+        required String roomLabel,
+        required int studentsCount,
+        required int attendance,
+        required Color primary,
+        required Color secondary,
+        required bool isActive,
+      }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Stack(
-
         children: [
           // Top accent bar
           Positioned(
@@ -1215,12 +1367,12 @@ class _CreateClassState extends State<CreateClass> {
             child: Container(
               height: 5,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-                  gradient: LinearGradient(
-                    colors: [_soften(primary, 0.30), _soften(secondary, 0.30)],
+                gradient: LinearGradient(
+                  colors: [_soften(primary, 0.30), _soften(secondary, 0.30)],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),
@@ -1232,357 +1384,411 @@ class _CreateClassState extends State<CreateClass> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_tint(primary, 0.95), _tint(primary, 0.90)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: primary.withOpacity(0.18)),
-                ),
-                child: Icon(Icons.menu_book_outlined, color: secondary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [_tint(primary, 0.95), _tint(primary, 0.90)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: primary.withOpacity(0.18)),
+                      ),
+                      child: Icon(Icons.menu_book_outlined, color: secondary),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: -6,
+                            children: dayBadges.map((d) => _buildBadge(d)).toList(),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: -6,
-                      children: dayBadges.map((d) => _buildBadge(d)).toList(),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 4),
-              PopupMenuButton<String>(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                color: Colors.white,
-                elevation: 8,
-                offset: const Offset(0, 8),
-                onSelected: (value) async {
-                  if (value == 'edit') {
-                    _showEditClassDialog(code);
-                  } else if (value == 'delete') {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      barrierColor: Colors.black.withOpacity(0.6),
-                      builder: (_) => Dialog(
-                        insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                        child: Container(
-                          // Increased maxWidth for a wider dialog
-                          constraints: const BoxConstraints(maxWidth: 440),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Red & Pink gradient header (match edit dialog spacing)
-                              Container(
-                                padding: const EdgeInsets.fromLTRB(28, 28, 20, 24),
+                    const SizedBox(width: 4),
+                    PopupMenuButton<String>(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      color: Colors.white,
+                      elevation: 8,
+                      offset: const Offset(0, 8),
+                      onSelected: (value) async {
+                        if (value == 'edit') {
+                          _showEditClassDialog(code);
+                        } else if (value == 'toggle_active') {
+                          await _firestore.collection('classes').doc(code).update({
+                            'isActive': !isActive,
+                          });
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(
+                                    !isActive ? Icons.check_circle_rounded : Icons.archive_outlined,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      !isActive
+                                          ? 'Moved to Active classes'
+                                          : 'Moved to Inactive classes',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor:
+                              !isActive ? const Color(0xFF10B981) : const Color(0xFF6366F1),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        } else if (value == 'delete') {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            barrierColor: Colors.black.withOpacity(0.6),
+                            builder: (_) => Dialog(
+                              insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              child: Container(
+                                constraints: const BoxConstraints(maxWidth: 440),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFFEF4444), Color(0xFFEC4899)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(28),
-                                    topRight: Radius.circular(28),
-                                  ),
+                                  borderRadius: BorderRadius.circular(24),
                                 ),
                                 child: Column(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    // Close button
-                                    Align(
-                                      alignment: Alignment.topRight,
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        child: InkWell(
-                                          borderRadius: BorderRadius.circular(20),
-                                          onTap: () => Navigator.pop(context, false),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            child: const Icon(Icons.close, color: Colors.white, size: 24),
-                                          ),
+                                    // Red & Pink gradient header
+                                    Container(
+                                      padding: const EdgeInsets.fromLTRB(28, 28, 20, 24),
+                                      decoration: const BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [Color(0xFFEF4444), Color(0xFFEC4899)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(28),
+                                          topRight: Radius.circular(28),
                                         ),
                                       ),
+                                      child: Column(
+                                        children: [
+                                          Align(
+                                            alignment: Alignment.topRight,
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                borderRadius: BorderRadius.circular(20),
+                                                onTap: () => Navigator.pop(context, false),
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(4),
+                                                  child: const Icon(Icons.close,
+                                                      color: Colors.white, size: 24),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Container(
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(0.2),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.warning_rounded,
+                                              color: Colors.white,
+                                              size: 48,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 20),
+                                          const Text(
+                                            'Delete Class?',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          const Text(
+                                            'This action cannot be undone',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    const SizedBox(height: 8),
-                                    // Warning icon
+                                    // White content section
                                     Container(
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.2),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.warning_rounded,
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: const BoxDecoration(
                                         color: Colors.white,
-                                        size: 48,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    const Text(
-                                      'Delete Class?',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      'This action cannot be undone',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // White content section
-                              Container(
-                                // Match rounded corners with edit dialog
-                                padding: const EdgeInsets.all(20),
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.only(
-                                    bottomLeft: Radius.circular(28),
-                                    bottomRight: Radius.circular(28),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Warning box
-                                    Container(
-                                      // Slightly reduced warning box padding
-                                      padding: const EdgeInsets.all(14),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFEE2E2),
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.only(
+                                          bottomLeft: Radius.circular(28),
+                                          bottomRight: Radius.circular(28),
+                                        ),
                                       ),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(14),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFEE2E2),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: const [
+                                                    Icon(
+                                                      Icons.error_outline,
+                                                      color: Color(0xFFEF4444),
+                                                      size: 20,
+                                                    ),
+                                                    SizedBox(width: 8),
+                                                    Text(
+                                                      'Warning',
+                                                      style: TextStyle(
+                                                        color: Color(0xFFEF4444),
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 12),
+                                                Text(
+                                                  'Deleting "$name" will permanently remove:',
+                                                  style: const TextStyle(
+                                                    color: Color(0xFF991B1B),
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                                _buildWarningItem('All class attendance records'),
+                                                const SizedBox(height: 6),
+                                                _buildWarningItem('Student enrollment data'),
+                                                const SizedBox(height: 6),
+                                                _buildWarningItem('Class notes and materials'),
+                                                const SizedBox(height: 6),
+                                                _buildWarningItem('Grade and score history'),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(height: 24),
                                           Row(
                                             children: [
-                                              const Icon(
-                                                Icons.error_outline,
-                                                color: Color(0xFFEF4444),
-                                                size: 20,
+                                              Expanded(
+                                                child: OutlinedButton(
+                                                  onPressed: () => Navigator.pop(context, false),
+                                                  style: OutlinedButton.styleFrom(
+                                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                                    side: const BorderSide(
+                                                        color: Color(0xFFD1D5DB), width: 1.5),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                  ),
+                                                  child: const Text(
+                                                    'Cancel',
+                                                    style: TextStyle(
+                                                      color: Color(0xFF6B7280),
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
-                                              const SizedBox(width: 8),
-                                              const Text(
-                                                'Warning',
-                                                style: TextStyle(
-                                                  color: Color(0xFFEF4444),
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    gradient: const LinearGradient(
+                                                      colors: [Color(0xFFEF4444), Color(0xFFEC4899)],
+                                                      begin: Alignment.centerLeft,
+                                                      end: Alignment.centerRight,
+                                                    ),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: const Color(0xFFEF4444)
+                                                            .withOpacity(0.35),
+                                                        blurRadius: 12,
+                                                        offset: const Offset(0, 5),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: Material(
+                                                    color: Colors.transparent,
+                                                    child: InkWell(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                      onTap: () => Navigator.pop(context, true),
+                                                      child: const Padding(
+                                                        padding: EdgeInsets.symmetric(vertical: 12),
+                                                        child: Row(
+                                                          mainAxisAlignment:
+                                                          MainAxisAlignment.center,
+                                                          children: [
+                                                            Icon(Icons.delete_outline,
+                                                                size: 20, color: Colors.white),
+                                                            SizedBox(width: 8),
+                                                            Text(
+                                                              'Delete Class',
+                                                              style: TextStyle(
+                                                                fontSize: 16,
+                                                                fontWeight: FontWeight.w600,
+                                                                color: Colors.white,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 12),
-                                          Text(
-                                            'Deleting "$name" will permanently remove:',
-                                            style: const TextStyle(
-                                              color: Color(0xFF991B1B),
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          _buildWarningItem('All class attendance records'),
-                                          const SizedBox(height: 6),
-                                          _buildWarningItem('Student enrollment data'),
-                                          const SizedBox(height: 6),
-                                          _buildWarningItem('Class notes and materials'),
-                                          const SizedBox(height: 6),
-                                          _buildWarningItem('Grade and score history'),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    // Action buttons
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: OutlinedButton(
-                                            onPressed: () => Navigator.pop(context, false),
-                                            style: OutlinedButton.styleFrom(
-                                              padding: const EdgeInsets.symmetric(vertical: 12),
-                                              side: const BorderSide(color: Color(0xFFD1D5DB), width: 1.5),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                            child: const Text(
-                                              'Cancel',
+                                          const SizedBox(height: 8),
+                                          const Center(
+                                            child: Text(
+                                              'Consider archiving instead of deleting to preserve records',
                                               style: TextStyle(
-                                                color: Color(0xFF6B7280),
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF9CA3AF),
+                                                fontSize: 12,
                                               ),
+                                              textAlign: TextAlign.center,
                                             ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              gradient: const LinearGradient(
-                                                colors: [Color(0xFFEF4444), Color(0xFFEC4899)],
-                                                begin: Alignment.centerLeft,
-                                                end: Alignment.centerRight,
-                                              ),
-                                              borderRadius: BorderRadius.circular(12),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: const Color(0xFFEF4444).withOpacity(0.35),
-                                                  blurRadius: 12,
-                                                  offset: const Offset(0, 5),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Material(
-                                              color: Colors.transparent,
-                                              child: InkWell(
-                                                borderRadius: BorderRadius.circular(12),
-                                                onTap: () => Navigator.pop(context, true),
-                                                child: Padding(
-                                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                                  child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
-                                                    children: const [
-                                                      Icon(Icons.delete_outline, size: 20, color: Colors.white),
-                                                      SizedBox(width: 8),
-                                                      Text(
-                                                        'Delete Class',
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: Colors.white,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    const Center(
-                                      child: Text(
-                                        'Consider archiving instead of deleting to preserve records',
-                                        style: TextStyle(
-                                          color: Color(0xFF9CA3AF),
-                                          fontSize: 12,
-                                        ),
-                                        textAlign: TextAlign.center,
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
+                            ),
+                          );
+                          if (confirm == true) {
+                            await _firestore.collection('classes').doc(code).delete();
+                          }
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined, size: 20, color: primary),
+                              const SizedBox(width: 12),
+                              const Text('Edit Class', style: TextStyle(fontSize: 15)),
                             ],
                           ),
                         ),
-                      ),
-                    );
-                    if (confirm == true) {
-                      await _firestore.collection('classes').doc(code).delete();
-                    }
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined, size: 20, color: primary),
-                        const SizedBox(width: 12),
-                        const Text('Edit Class', style: TextStyle(fontSize: 15)),
+                        PopupMenuItem(
+                          value: 'toggle_active',
+                          child: Row(
+                            children: [
+                              Icon(
+                                isActive ? Icons.archive_outlined : Icons.unarchive_outlined,
+                                size: 20,
+                                color: isActive
+                                    ? const Color(0xFF6366F1)
+                                    : const Color(0xFF10B981),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                isActive ? 'Move to Inactive' : 'Move to Active',
+                                style: const TextStyle(fontSize: 15),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline,
+                                  size: 20, color: Color(0xFFEF4444)),
+                              SizedBox(width: 12),
+                              Text('Delete Class', style: TextStyle(fontSize: 15)),
+                            ],
+                          ),
+                        ),
                       ],
+                      icon: const Icon(Icons.more_vert, color: Colors.black54),
                     ),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.delete_outline, size: 20, color: Color(0xFFEF4444)),
-                        const SizedBox(width: 12),
-                        const Text('Delete Class', style: TextStyle(fontSize: 15)),
-                      ],
-                    ),
-                  ),
-                ],
-                icon: const Icon(Icons.more_vert, color: Colors.black54),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(Icons.schedule, size: 16, color: Colors.black45),
-              const SizedBox(width: 6),
-              Text(timeLabel, style: const TextStyle(color: Colors.black54)),
-              const SizedBox(width: 16),
-              const Icon(Icons.room_outlined, size: 16, color: Colors.black45),
-              const SizedBox(width: 6),
-              Text(roomLabel, style: const TextStyle(color: Colors.black54)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.people_alt_outlined, size: 16, color: Colors.black45),
-                        const SizedBox(width: 6),
-                        Text('$studentsCount students', style: const TextStyle(color: Colors.black54)),
-                      ],
-                    ),
-                    _buildCodeBadge(code, primary),
                   ],
                 ),
-              ),
-              _buildAttendancePill(attendance),
-            ],
-          ),
-          const SizedBox(height: 4),
-          // Action row removed as per request (Start Class & Copy Code)
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.schedule, size: 16, color: Colors.black45),
+                    const SizedBox(width: 6),
+                    Text(timeLabel, style: const TextStyle(color: Colors.black54)),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.room_outlined, size: 16, color: Colors.black45),
+                    const SizedBox(width: 6),
+                    Text(roomLabel, style: const TextStyle(color: Colors.black54)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.people_alt_outlined,
+                                  size: 16, color: Colors.black45),
+                              const SizedBox(width: 6),
+                              Text(
+                                '$studentsCount students',
+                                style: const TextStyle(color: Colors.black54),
+                              ),
+                            ],
+                          ),
+                          _buildCodeBadge(code, primary),
+                        ],
+                      ),
+                    ),
+                    _buildAttendancePill(attendance),
+                  ],
+                ),
+                const SizedBox(height: 4),
               ],
             ),
           )
@@ -1671,7 +1877,6 @@ class _CreateClassState extends State<CreateClass> {
     return times[index % times.length];
   }
 
-  // Single combined day badge like screenshot
   Widget _buildDayRangeBadge(List<String> days) {
     final label = days.join(', ');
     return Container(
@@ -1691,12 +1896,10 @@ class _CreateClassState extends State<CreateClass> {
     );
   }
 
-  // Create a soft tint of a color by lerping towards white
   Color _tint(Color color, double amount) {
     return Color.lerp(color, Colors.white, amount) ?? color;
   }
 
-  // Class code pill using theme color
   Widget _buildCodeBadge(String code, Color primary) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1719,7 +1922,6 @@ class _CreateClassState extends State<CreateClass> {
     );
   }
 
-  // Lighten color without changing its hue too much
   Color _soften(Color color, double amount) {
     return Color.lerp(color, Colors.white, amount) ?? color;
   }

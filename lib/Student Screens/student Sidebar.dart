@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:present_me_flutter/Help%20&%20Support%20Page/help_support_page.dart';
 import 'package:present_me_flutter/IntroScreen/introScreen.dart';
 import 'package:present_me_flutter/Policy/privacy_policy.dart';
+import 'package:present_me_flutter/Setting%20Page/settings_page.dart';
 import 'student profile.dart';
 
 
@@ -142,16 +144,22 @@ class StudentSidebar extends StatelessWidget {
                   label: 'Settings',
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Navigate to settings
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => SettingsPage()),
+                    );
                   },
                 ),
                 _buildMenuItem(
                   context,
                   icon: Icons.help_outline_rounded,
-                  label: 'Help',
+                  label: 'Help & Support',
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Navigate to help
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => HelpSupportPage()),
+                    );
                   },
                 ),
                 _buildMenuItem(

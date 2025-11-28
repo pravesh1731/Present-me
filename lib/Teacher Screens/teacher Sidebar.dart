@@ -10,8 +10,9 @@ import 'package:present_me_flutter/teachers%20class%20Notice.dart';
 import 'package:present_me_flutter/teacher%20track%20attendance%20classes.dart';
 
 
-import '../T Help & Support Page/help_support_page.dart';
-import '../T Setting Page/settings_page.dart';
+import '../Help & Support Page/help_support_page.dart';
+import '../Setting Page/settings_page.dart';
+
 
 // Teacher Sidebar / Drawer panel matching provided screenshot design.
 // Usage: call showTeacherSidebar(context); to display.

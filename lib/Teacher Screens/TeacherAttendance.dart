@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/manual%20attendance%20classes%20screen.dart';
-import 'package:present_me_flutter/smart%20attendance%20classes.dart';
+
+
+import 'smart attendance classes list.dart';
+import 'manual attendance classes list.dart';
 
 class takeAttendnace extends StatefulWidget {
   @override

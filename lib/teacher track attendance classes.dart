@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/track%20attendance%20student%20list.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import 'Teacher Screens/classDetailsStudentList.dart';
 
 class TeacherTrackAttendanceClass extends StatelessWidget {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -72,7 +74,7 @@ class TeacherTrackAttendanceClass extends StatelessWidget {
                       context,
                       PageRouteBuilder(
                         transitionDuration: Duration(milliseconds: 500), // Adjust speed here
-                        pageBuilder: (_, __, ___) => TrackStudentListClasses(classCode: classItem['code']),
+                        pageBuilder: (_, __, ___) =>classDetailsStudentList(classCode: classItem['code']),
                         transitionsBuilder: (_, animation, __, child) {
                           const begin = Offset(1.0, 0.0); // Slide from right
                           const end = Offset.zero;

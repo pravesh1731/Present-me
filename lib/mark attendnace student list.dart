@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/track%20attendace%20student%20detais.dart';
+
+
+import 'Teacher Screens/track attendance of specificStudent for Teacher.dart';
 
 class track_Student_Attendance_List extends StatelessWidget {
   final currentUser = FirebaseAuth.instance.currentUser;
@@ -63,13 +65,17 @@ class track_Student_Attendance_List extends StatelessWidget {
                 final classItem = classes[index];
                 return InkWell(
                   onTap: () {
-                    // Pass class name and class code to the next screen
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => TrackStudentAttendanceDetails(
                           className: classItem['name']!,
                           classCode: classItem['code']!,
+                          studentName: currentUser?.displayName ?? '',
+                          studentEmail: currentUser?.email ?? '',
+                          rollNo: '', // Add roll number if available
+                          studentUID: currentUser?.uid ?? '',
+                          profileImage: currentUser?.photoURL ?? '',
                         ),
                       ),
                     );

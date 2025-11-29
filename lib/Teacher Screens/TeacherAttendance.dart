@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:present_me_flutter/Teacher%20Screens/video%20attendance%20classes%20list.dart';
 
 
 import 'smart attendance classes list.dart';
@@ -186,8 +187,20 @@ class _takeAttendnaceState extends State<takeAttendnace> with SingleTickerProvid
                         backgroundColor: const Color(0xFF10B981),
                         accentColor: const Color(0xFF059669),
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Video Attendance coming soon!')),
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              transitionDuration: const Duration(milliseconds: 500),
+                              pageBuilder: (_, __, ___) => VideoAttendanceClasses(),
+                              transitionsBuilder: (_, animation, __, child) {
+                                const begin = Offset(1.0, 0.0);
+                                const end = Offset.zero;
+                                const curve = Curves.easeInOutBack;
+                                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                                var offsetAnimation = animation.drive(tween);
+                                return SlideTransition(position: offsetAnimation, child: child);
+                              },
+                            ),
                           );
                         },
                       ),

@@ -64,6 +64,7 @@ dependencies:
   dots_indicator: ^3.0.0
   dropdown_search: ^5.0.6
   flutter_launcher_icons: ^0.13.1
+  shimmer: ^2.0.0
 
 
 

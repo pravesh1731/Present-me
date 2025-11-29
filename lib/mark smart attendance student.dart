@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/track%20attendace%20student%20detais.dart';
 import 'mark smart attendance main.dart';
 
 class mark_Smart_Attendance extends StatelessWidget {

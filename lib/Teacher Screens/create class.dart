@@ -4,7 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:present_me_flutter/student%20list%20method.dart';
+
+import 'classDetailsStudentList.dart';
+
 
 class CreateClass extends StatefulWidget {
   @override
@@ -1344,359 +1346,369 @@ class _CreateClassState extends State<CreateClass> {
         required Color secondary,
         required bool isActive,
       }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => classDetailsStudentList(classCode: code), // Pass class code
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Top accent bar
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 5,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-                gradient: LinearGradient(
-                  colors: [_soften(primary, 0.30), _soften(secondary, 0.30)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Top accent bar
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 5,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  gradient: LinearGradient(
+                    colors: [_soften(primary, 0.30), _soften(secondary, 0.30)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [_tint(primary, 0.95), _tint(primary, 0.90)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [_tint(primary, 0.95), _tint(primary, 0.90)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: primary.withOpacity(0.18)),
                         ),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: primary.withOpacity(0.18)),
+                        child: Icon(Icons.menu_book_outlined, color: secondary),
                       ),
-                      child: Icon(Icons.menu_book_outlined, color: secondary),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black87,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black87,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: -6,
-                            children: dayBadges.map((d) => _buildBadge(d)).toList(),
-                          ),
-                        ],
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: -6,
+                              children: dayBadges.map((d) => _buildBadge(d)).toList(),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    PopupMenuButton<String>(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      color: Colors.white,
-                      elevation: 8,
-                      offset: const Offset(0, 8),
-                      onSelected: (value) async {
-                        if (value == 'edit') {
-                          _showEditClassDialog(code);
-                        } else if (value == 'toggle_active') {
-                          await _firestore.collection('classes').doc(code).update({
-                            'isActive': !isActive,
-                          });
+                      const SizedBox(width: 4),
+                      PopupMenuButton<String>(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        color: Colors.white,
+                        elevation: 8,
+                        offset: const Offset(0, 8),
+                        onSelected: (value) async {
+                          if (value == 'edit') {
+                            _showEditClassDialog(code);
+                          } else if (value == 'toggle_active') {
+                            await _firestore.collection('classes').doc(code).update({
+                              'isActive': !isActive,
+                            });
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Row(
-                                children: [
-                                  Icon(
-                                    !isActive ? Icons.check_circle_rounded : Icons.archive_outlined,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      !isActive
-                                          ? 'Moved to Active classes'
-                                          : 'Moved to Inactive classes',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              backgroundColor:
-                              !isActive ? const Color(0xFF10B981) : const Color(0xFF6366F1),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          );
-                        } else if (value == 'delete') {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            barrierColor: Colors.black.withOpacity(0.6),
-                            builder: (_) => Dialog(
-                              insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28),
-                              ),
-                              child: Container(
-                                constraints: const BoxConstraints(maxWidth: 440),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
                                   children: [
-                                    // Red & Pink gradient header
-                                    Container(
-                                      padding: const EdgeInsets.fromLTRB(28, 28, 20, 24),
-                                      decoration: const BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [Color(0xFFEF4444), Color(0xFFEC4899)],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(28),
-                                          topRight: Radius.circular(28),
-                                        ),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          Align(
-                                            alignment: Alignment.topRight,
-                                            child: Material(
-                                              color: Colors.transparent,
-                                              child: InkWell(
-                                                borderRadius: BorderRadius.circular(20),
-                                                onTap: () => Navigator.pop(context, false),
-                                                child: Container(
-                                                  padding: const EdgeInsets.all(4),
-                                                  child: const Icon(Icons.close,
-                                                      color: Colors.white, size: 24),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Container(
-                                            padding: const EdgeInsets.all(16),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.2),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(
-                                              Icons.warning_rounded,
-                                              color: Colors.white,
-                                              size: 48,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 20),
-                                          const Text(
-                                            'Delete Class?',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          const Text(
-                                            'This action cannot be undone',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
+                                    Icon(
+                                      !isActive ? Icons.check_circle_rounded : Icons.archive_outlined,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        !isActive
+                                            ? 'Moved to Active classes'
+                                            : 'Moved to Inactive classes',
                                       ),
                                     ),
-                                    // White content section
-                                    Container(
-                                      padding: const EdgeInsets.all(20),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.only(
-                                          bottomLeft: Radius.circular(28),
-                                          bottomRight: Radius.circular(28),
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(14),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFFEE2E2),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Row(
-                                                  children: const [
-                                                    Icon(
-                                                      Icons.error_outline,
-                                                      color: Color(0xFFEF4444),
-                                                      size: 20,
-                                                    ),
-                                                    SizedBox(width: 8),
-                                                    Text(
-                                                      'Warning',
-                                                      style: TextStyle(
-                                                        color: Color(0xFFEF4444),
-                                                        fontSize: 16,
-                                                        fontWeight: FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 12),
-                                                Text(
-                                                  'Deleting "$name" will permanently remove:',
-                                                  style: const TextStyle(
-                                                    color: Color(0xFF991B1B),
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 12),
-                                                _buildWarningItem('All class attendance records'),
-                                                const SizedBox(height: 6),
-                                                _buildWarningItem('Student enrollment data'),
-                                                const SizedBox(height: 6),
-                                                _buildWarningItem('Class notes and materials'),
-                                                const SizedBox(height: 6),
-                                                _buildWarningItem('Grade and score history'),
-                                              ],
-                                            ),
+                                  ],
+                                ),
+                                backgroundColor:
+                                !isActive ? const Color(0xFF10B981) : const Color(0xFF6366F1),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          } else if (value == 'delete') {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              barrierColor: Colors.black.withOpacity(0.6),
+                              builder: (_) => Dialog(
+                                insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                child: Container(
+                                  constraints: const BoxConstraints(maxWidth: 440),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Red & Pink gradient header
+                                      Container(
+                                        padding: const EdgeInsets.fromLTRB(28, 28, 20, 24),
+                                        decoration: const BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [Color(0xFFEF4444), Color(0xFFEC4899)],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
                                           ),
-                                          const SizedBox(height: 24),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: OutlinedButton(
-                                                  onPressed: () => Navigator.pop(context, false),
-                                                  style: OutlinedButton.styleFrom(
-                                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                                    side: const BorderSide(
-                                                        color: Color(0xFFD1D5DB), width: 1.5),
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius: BorderRadius.circular(12),
-                                                    ),
-                                                  ),
-                                                  child: const Text(
-                                                    'Cancel',
-                                                    style: TextStyle(
-                                                      color: Color(0xFF6B7280),
-                                                      fontSize: 16,
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(28),
+                                            topRight: Radius.circular(28),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Align(
+                                              alignment: Alignment.topRight,
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: InkWell(
+                                                  borderRadius: BorderRadius.circular(20),
+                                                  onTap: () => Navigator.pop(context, false),
+                                                  child: Container(
+                                                    padding: const EdgeInsets.all(4),
+                                                    child: const Icon(Icons.close,
+                                                        color: Colors.white, size: 24),
                                                   ),
                                                 ),
                                               ),
-                                              const SizedBox(width: 12),
-                                              Expanded(
-                                                child: Container(
-                                                  decoration: BoxDecoration(
-                                                    gradient: const LinearGradient(
-                                                      colors: [Color(0xFFEF4444), Color(0xFFEC4899)],
-                                                      begin: Alignment.centerLeft,
-                                                      end: Alignment.centerRight,
-                                                    ),
-                                                    borderRadius: BorderRadius.circular(12),
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: const Color(0xFFEF4444)
-                                                            .withOpacity(0.35),
-                                                        blurRadius: 12,
-                                                        offset: const Offset(0, 5),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Container(
+                                              padding: const EdgeInsets.all(16),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.2),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.warning_rounded,
+                                                color: Colors.white,
+                                                size: 48,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 20),
+                                            const Text(
+                                              'Delete Class?',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            const Text(
+                                              'This action cannot be undone',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      // White content section
+                                      Container(
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(28),
+                                            bottomRight: Radius.circular(28),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(14),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFFEE2E2),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: const [
+                                                      Icon(
+                                                        Icons.error_outline,
+                                                        color: Color(0xFFEF4444),
+                                                        size: 20,
+                                                      ),
+                                                      SizedBox(width: 8),
+                                                      Text(
+                                                        'Warning',
+                                                        style: TextStyle(
+                                                          color: Color(0xFFEF4444),
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
-                                                  child: Material(
-                                                    color: Colors.transparent,
-                                                    child: InkWell(
+                                                  const SizedBox(height: 12),
+                                                  Text(
+                                                    'Deleting "$name" will permanently remove:',
+                                                    style: const TextStyle(
+                                                      color: Color(0xFF991B1B),
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 12),
+                                                  _buildWarningItem('All class attendance records'),
+                                                  const SizedBox(height: 6),
+                                                  _buildWarningItem('Student enrollment data'),
+                                                  const SizedBox(height: 6),
+                                                  _buildWarningItem('Class notes and materials'),
+                                                  const SizedBox(height: 6),
+                                                  _buildWarningItem('Grade and score history'),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 24),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: OutlinedButton(
+                                                    onPressed: () => Navigator.pop(context, false),
+                                                    style: OutlinedButton.styleFrom(
+                                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                                      side: const BorderSide(
+                                                          color: Color(0xFFD1D5DB), width: 1.5),
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(12),
+                                                      ),
+                                                    ),
+                                                    child: const Text(
+                                                      'Cancel',
+                                                      style: TextStyle(
+                                                        color: Color(0xFF6B7280),
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      gradient: const LinearGradient(
+                                                        colors: [Color(0xFFEF4444), Color(0xFFEC4899)],
+                                                        begin: Alignment.centerLeft,
+                                                        end: Alignment.centerRight,
+                                                      ),
                                                       borderRadius: BorderRadius.circular(12),
-                                                      onTap: () => Navigator.pop(context, true),
-                                                      child: const Padding(
-                                                        padding: EdgeInsets.symmetric(vertical: 12),
-                                                        child: Row(
-                                                          mainAxisAlignment:
-                                                          MainAxisAlignment.center,
-                                                          children: [
-                                                            Icon(Icons.delete_outline,
-                                                                size: 20, color: Colors.white),
-                                                            SizedBox(width: 8),
-                                                            Text(
-                                                              'Delete Class',
-                                                              style: TextStyle(
-                                                                fontSize: 16,
-                                                                fontWeight: FontWeight.w600,
-                                                                color: Colors.white,
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: const Color(0xFFEF4444)
+                                                              .withOpacity(0.35),
+                                                          blurRadius: 12,
+                                                          offset: const Offset(0, 5),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    child: Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        borderRadius: BorderRadius.circular(12),
+                                                        onTap: () => Navigator.pop(context, true),
+                                                        child: const Padding(
+                                                          padding: EdgeInsets.symmetric(vertical: 12),
+                                                          child: Row(
+                                                            mainAxisAlignment:
+                                                            MainAxisAlignment.center,
+                                                            children: [
+                                                              Icon(Icons.delete_outline,
+                                                                  size: 20, color: Colors.white),
+                                                              SizedBox(width: 8),
+                                                              Text(
+                                                                'Delete Class',
+                                                                style: TextStyle(
+                                                                  fontSize: 16,
+                                                                  fontWeight: FontWeight.w600,
+                                                                  color: Colors.white,
+                                                                ),
                                                               ),
-                                                            ),
-                                                          ],
+                                                            ],
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                          const Center(
-                                            child: Text(
-                                              'Consider archiving instead of deleting to preserve records',
-                                              style: TextStyle(
-                                                color: Color(0xFF9CA3AF),
-                                                fontSize: 12,
-                                              ),
-                                              textAlign: TextAlign.center,
+                                              ],
                                             ),
-                                          ),
-                                        ],
+                                            const SizedBox(height: 8),
+                                            const Center(
+                                              child: Text(
+                                                'Consider archiving instead of deleting to preserve records',
+                                                style: TextStyle(
+                                                  color: Color(0xFF9CA3AF),
+                                                  fontSize: 12,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ),
-                          );
+                              )
+                              );
+
                           if (confirm == true) {
                             await _firestore.collection('classes').doc(code).delete();
                           }
@@ -1794,6 +1806,7 @@ class _CreateClassState extends State<CreateClass> {
           )
         ],
       ),
+      )
     );
   }
 

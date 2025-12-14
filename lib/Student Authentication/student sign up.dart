@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:present_me_flutter/Student%20Authentication/student%20login%20screen.dart';
 import '../src/repositories/studentAuth_repository.dart';
 
-import '../src/models/college.dart';
-
 class StudentSignUp extends StatefulWidget {
   @override
   _StudentSignUpState createState() => _StudentSignUpState();
@@ -15,6 +13,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
   final AuthRepository repository = AuthRepository();
   List<Map<String, dynamic>> colleges = [];
   Map<String, dynamic>? selectedCollege;
+  bool _loadingColleges = false;
 
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -143,7 +142,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
 
     // 9) Call API via repository
     try {
-      final res = await repository.signupStudent(
+      await repository.signupStudent(
         firstName: firstName,
         lastName: lastName,
         emailId: emailId,
@@ -163,6 +162,9 @@ class _StudentSignUpState extends State<StudentSignUp> {
   }
 
   Future<void> _loadColleges() async {
+    setState(() {
+      _loadingColleges = true;
+    });
     try {
       final list = await repository.getColleges();
       setState(() {
@@ -170,6 +172,12 @@ class _StudentSignUpState extends State<StudentSignUp> {
       });
     } catch (e) {
       _showSnackBar('Failed to load colleges: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingColleges = false;
+        });
+      }
     }
   }
 
@@ -449,108 +457,153 @@ class _StudentSignUpState extends State<StudentSignUp> {
                           ),
                           const SizedBox(height: 8),
                           DropdownSearch<Map<String, dynamic>>(
-                            items: colleges,
-                            selectedItem: selectedCollege,
-                            itemAsString: (college) => college?['name']?.toString() ?? '',
-                            onChanged: (value) {
-                              setState(() {
-                                selectedCollege = value;
-                              });
-                            },
-                            dropdownDecoratorProps: DropDownDecoratorProps(
-                              dropdownSearchDecoration: InputDecoration(
-                                hintText: "Select Institute",
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontSize: 15,
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.school_outlined,
-                                  color: Colors.grey.shade400,
-                                ),
-                                filled: true,
-                                fillColor: Colors.white,
-                                contentPadding:
-                                const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 16,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade200,
-                                    width: 1,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade200,
-                                    width: 1,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFF6366F1),
-                                    width: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            popupProps: PopupProps.dialog(
-                              showSearchBox: true,
-                              searchFieldProps: TextFieldProps(
-                                decoration: InputDecoration(
-                                  hintText: "Search Institute",
-                                  prefixIcon: const Icon(Icons.search),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                        color: Colors.grey.shade200),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                        color: Colors.grey.shade200),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFF6366F1),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              dialogProps: DialogProps(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                backgroundColor: Colors.transparent,
-                              ),
-                              containerBuilder: (context, popupWidget) {
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFFEFF6FF),
-                                        Color(0xFFF5F3FF),
-                                        Color(0xFFFDF2F8),
-                                      ],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  padding: const EdgeInsets.all(20),
-                                  child: popupWidget,
-                                );
-                              },
-                            ),
-                          ),
+                            asyncItems: (String? filter) async {
+                               // If we already have loaded colleges, return immediately
+                               if (colleges.isNotEmpty) return colleges;
+                               if (!mounted) return <Map<String, dynamic>>[];
+                               setState(() {
+                                 _loadingColleges = true;
+                               });
+                               try {
+                                 final list = await repository.getColleges();
+                                 if (!mounted) return list;
+                                 setState(() {
+                                   colleges = list;
+                                 });
+                                 return list;
+                               } catch (e) {
+                                 // returning empty will trigger emptyBuilder
+                                 return <Map<String, dynamic>>[];
+                               } finally {
+                                 if (mounted) {
+                                   setState(() {
+                                     _loadingColleges = false;
+                                   });
+                                 }
+                               }
+                             },
+                             selectedItem: selectedCollege,
+                             itemAsString: (college) => (college['name'] ?? '').toString(),
+                             onChanged: (value) {
+                               setState(() {
+                                 selectedCollege = value;
+                               });
+                             },
+                             dropdownDecoratorProps: DropDownDecoratorProps(
+                               dropdownSearchDecoration: InputDecoration(
+                                 hintText: "Select Institute",
+                                 hintStyle: TextStyle(
+                                   color: Colors.grey.shade400,
+                                   fontSize: 15,
+                                 ),
+                                 prefixIcon: Icon(
+                                   Icons.school_outlined,
+                                   color: Colors.grey.shade400,
+                                 ),
+                                 filled: true,
+                                 fillColor: Colors.white,
+                                 contentPadding:
+                                 const EdgeInsets.symmetric(
+                                   vertical: 8,
+                                   horizontal: 16,
+                                 ),
+                                 border: OutlineInputBorder(
+                                   borderRadius: BorderRadius.circular(12),
+                                   borderSide: BorderSide(
+                                     color: Colors.grey.shade200,
+                                     width: 1,
+                                   ),
+                                 ),
+                                 enabledBorder: OutlineInputBorder(
+                                   borderRadius: BorderRadius.circular(12),
+                                   borderSide: BorderSide(
+                                     color: Colors.grey.shade200,
+                                     width: 1,
+                                   ),
+                                 ),
+                                 focusedBorder: OutlineInputBorder(
+                                   borderRadius: BorderRadius.circular(12),
+                                   borderSide: const BorderSide(
+                                     color: Color(0xFF6366F1),
+                                     width: 1.5,
+                                   ),
+                                 ),
+                               ),
+                             ),
+                             popupProps: PopupProps.dialog(
+                               showSearchBox: true,
+                               searchFieldProps: TextFieldProps(
+                                 decoration: InputDecoration(
+                                   hintText: "Search Institute",
+                                   prefixIcon: const Icon(Icons.search),
+                                   filled: true,
+                                   fillColor: Colors.white,
+                                   border: OutlineInputBorder(
+                                     borderRadius: BorderRadius.circular(12),
+                                     borderSide: BorderSide(
+                                         color: Colors.grey.shade200),
+                                   ),
+                                   enabledBorder: OutlineInputBorder(
+                                     borderRadius: BorderRadius.circular(12),
+                                     borderSide: BorderSide(
+                                         color: Colors.grey.shade200),
+                                   ),
+                                   focusedBorder: OutlineInputBorder(
+                                     borderRadius: BorderRadius.circular(12),
+                                     borderSide: const BorderSide(
+                                       color: Color(0xFF6366F1),
+                                       width: 1.5,
+                                     ),
+                                   ),
+                                 ),
+                               ),
+                               dialogProps: DialogProps(
+                                 shape: RoundedRectangleBorder(
+                                   borderRadius: BorderRadius.circular(20),
+                                 ),
+                                 backgroundColor: Colors.transparent,
+                               ),
+                               // When popup opens and the colleges list is still loading,
+                               // show a centered CircularProgressIndicator. If loading finished
+                               // and the list is empty, show a friendly message.
+                               loadingBuilder: (_, __) {
+                                 return const SizedBox(
+                                   height: 120,
+                                   child: Center(child: CircularProgressIndicator()),
+                                 );
+                               },
+                               emptyBuilder: (_, __) {
+                                 if (_loadingColleges) {
+                                   return const SizedBox(
+                                     height: 120,
+                                     child: Center(child: CircularProgressIndicator()),
+                                   );
+                                 }
+                                 return const SizedBox(
+                                   height: 120,
+                                   child: Center(child: Text('No institutes found.')),
+                                 );
+                               },
+                               containerBuilder: (context, popupWidget) {
+                                 return Container(
+                                   decoration: BoxDecoration(
+                                     gradient: const LinearGradient(
+                                       colors: [
+                                         Color(0xFFEFF6FF),
+                                         Color(0xFFF5F3FF),
+                                         Color(0xFFFDF2F8),
+                                       ],
+                                       begin: Alignment.topCenter,
+                                       end: Alignment.bottomCenter,
+                                     ),
+                                     borderRadius: BorderRadius.circular(20),
+                                   ),
+                                   padding: const EdgeInsets.all(20),
+                                   child: popupWidget,
+                                 );
+                               },
+                             ),
+                           ),
                           const SizedBox(height: 16),
                           const Text(
                             'Roll Number',

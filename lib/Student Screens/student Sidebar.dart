@@ -1,20 +1,24 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/Help%20&%20Support%20Page/help_support_page.dart';
 import 'package:present_me_flutter/IntroScreen/introScreen.dart';
 import 'package:present_me_flutter/Policy/privacy_policy.dart';
 import 'package:present_me_flutter/Setting%20Page/settings_page.dart';
-import 'student profile.dart';
 
+import '../src/bloc/auth/auth_bloc.dart';
+import '../src/bloc/auth/auth_state.dart';
 
 class StudentSidebar extends StatelessWidget {
-  const StudentSidebar({Key? key}) : super(key: key);
+  final String? name;
+  final String? photoUrl;
+
+  const StudentSidebar({Key? key, this.name, this.photoUrl}) : super(key: key);
+
+
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-
     return Material(
       color: Colors.transparent,
       child: Container(
@@ -29,198 +33,222 @@ class StudentSidebar extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // Header with gradient
+            // Header with gradient - make it reactive to AuthBloc
             Container(
               padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 24),
               decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(24),
-                  ),
+                gradient: LinearGradient(
+                  colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
                 ),
-                child: Column(
-                  children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Menu',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // User Profile Section
-                currentUser != null
-                    ? StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('students')
-                            .doc(currentUser.uid)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData || !snapshot.data!.exists) {
-                            return _buildUserProfile(
-                              name: 'Student',
-                              photoUrl: null,
-                            );
-                          }
-
-                          final studentData = snapshot.data!.data() as Map<String, dynamic>;
-                          final name = studentData['name'] ?? 'Student';
-                          final photoUrl = studentData['photoUrl'];
-
-                          return _buildUserProfile(
-                            name: name,
-                            photoUrl: photoUrl,
-                          );
-                        },
-                      )
-                    : _buildUserProfile(
-                        name: 'Student',
-                        photoUrl: null,
-                      ),
-                  ],
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(24),
                 ),
               ),
+              child: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
 
-              // Menu Items
-              Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              children: [
-                _buildMenuItem(
-                  context,
-                  icon: Icons.notifications_outlined,
-                  label: 'Notices',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // TODO: Navigate to notices
-                  },
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.emoji_events_outlined,
-                  label: 'Scores',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // TODO: Navigate to scores
-                  },
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.help_outline,
-                  label: 'Doubts',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // TODO: Navigate to doubts
-                  },
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.note_outlined,
-                  label: 'Notes',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // TODO: Navigate to notes
-                  },
-                ),
-                const Divider(height: 32, thickness: 1, indent: 20, endIndent: 20),
+                  // 1️⃣ Default values (shown if nothing else is found)
+                  String displayName = name?.isNotEmpty == true ? name! : 'Student';
+                  String? avatarUrl =
+                  (photoUrl != null && photoUrl!.isNotEmpty) ? photoUrl : null;
 
-                _buildMenuItem(
-                  context,
-                  icon: Icons.settings_outlined,
-                  label: 'Settings',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SettingsPage()),
-                    );
-                  },
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.help_outline_rounded,
-                  label: 'Help & Support',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => HelpSupportPage()),
-                    );
-                  },
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.info_outline,
-                  label: 'Privacy Policy',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => PrivacyPolicyPage()),
-                    );
-                  },
-                ),
-                  ],
-                ),
+                  // 2️⃣ If user is logged in
+                  if (state is AuthAuthenticated) {
+                    final user = state.user;
+
+                    // Get name from API user data
+                    if ((displayName == 'Student' || displayName.isEmpty) && user is Map) {
+                      final firstName =
+                      (user['firstName'] ?? '').toString();
+                      final lastName =
+                      (user['lastName']  ?? '').toString();
+
+                      final fullName = ('$firstName $lastName').trim();
+
+                      if (fullName.isNotEmpty) {
+                        displayName = fullName;
+                      } else {
+                        displayName =
+                            (user['emailId'] ?? user['email'] ?? 'Student').toString();
+                      }
+                    }
+
+                    // Get profile picture from API
+                    avatarUrl ??= user['profilePicUrl']?.toString();
+                  }
+
+                  // 3️⃣ Fallback: Get data from local storage
+                  if ((displayName == 'Student' || displayName.isEmpty) &&
+                      GetStorage().hasData('student')) {
+
+                    final stored = GetStorage().read('student');
+
+                    if (stored is Map) {
+                      final firstName =
+                      (stored['firstName']  ?? '').toString();
+                      final lastName =
+                      (stored['lastName']  ?? '').toString();
+
+                      final fullName = ('$firstName $lastName').trim();
+
+                      if (fullName.isNotEmpty) {
+                        displayName = fullName;
+                      }
+
+                      avatarUrl ??= (stored['profilePicUrl'])?.toString();
+                    }
+                  }
+
+                  return Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Menu',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      _buildUserProfile(name: displayName, photoUrl: avatarUrl),
+                    ],
+                  );
+                },
               ),
+            ),
 
-              // Logout Button
-              Container(
-                padding: const EdgeInsets.all(20),
-                child: InkWell(
-              onTap: () async {
-                try {
-                  await FirebaseAuth.instance.signOut();
+            // Menu Items
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                children: [
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.notifications_outlined,
+                    label: 'Notices',
+                    onTap: () {
+                      Navigator.pop(context);
+                      // TODO: Navigate to notices
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.emoji_events_outlined,
+                    label: 'Scores',
+                    onTap: () {
+                      Navigator.pop(context);
+                      // TODO: Navigate to scores
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.help_outline,
+                    label: 'Doubts',
+                    onTap: () {
+                      Navigator.pop(context);
+                      // TODO: Navigate to doubts
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.note_outlined,
+                    label: 'Notes',
+                    onTap: () {
+                      Navigator.pop(context);
+                      // TODO: Navigate to notes
+                    },
+                  ),
+                  const Divider(height: 32, thickness: 1, indent: 20, endIndent: 20),
+
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.settings_outlined,
+                    label: 'Settings',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => SettingsPage()),
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.help_outline_rounded,
+                    label: 'Help & Support',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => HelpSupportPage()),
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.info_outline,
+                    label: 'Privacy Policy',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => PrivacyPolicyPage()),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // Logout Button
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: InkWell(
+                onTap: () async {
+                  // Firebase removed: just navigate to intro screen. If you later
+                  // wire auth via Bloc, call signOut in your bloc listener instead.
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (context) => introscreen()),
                     (route) => false,
                   );
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error signing out: $e')),
-                  );
-                }
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: Colors.red.shade700, size: 22),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Logout',
-                      style: TextStyle(
-                        color: Colors.red.shade700,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.red.shade700, size: 22),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Logout',
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
                   ),
                 ),
               ),
-            
+            ),
+
           ],
         ),
       ),
@@ -232,9 +260,9 @@ class StudentSidebar extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 28,
-          backgroundColor: Colors.white.withOpacity(0.3),
-          backgroundImage: photoUrl != null && photoUrl.isNotEmpty
-              ? (photoUrl != null && photoUrl.trim().isNotEmpty && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://')) ? NetworkImage(photoUrl) : null)
+          backgroundColor: const Color.fromRGBO(255, 255, 255, 0.3),
+          backgroundImage: (photoUrl != null && photoUrl.isNotEmpty && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://')))
+              ? NetworkImage(photoUrl)
               : const AssetImage("assets/image/teacher.png") as ImageProvider,
         ),
         const SizedBox(width: 12),
@@ -298,7 +326,7 @@ class StudentSidebar extends StatelessWidget {
 }
 
 // Function to show the sidebar
-void showStudentSidebar(BuildContext context) {
+void showStudentSidebar(BuildContext context, {String? name, String? photoUrl}) {
   showGeneralDialog(
     context: context,
     barrierDismissible: true,
@@ -308,7 +336,7 @@ void showStudentSidebar(BuildContext context) {
     pageBuilder: (context, animation, secondaryAnimation) {
       return Align(
         alignment: Alignment.centerLeft,
-        child: const StudentSidebar(),
+        child: StudentSidebar(name: name, photoUrl: photoUrl),
       );
     },
     transitionBuilder: (context, animation, secondaryAnimation, child) {

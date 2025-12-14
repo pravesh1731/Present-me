@@ -135,8 +135,8 @@ class _studentHomeState extends State<studentHome> {
 
     final String rollNo = student.rollNo.isEmpty ? '00' : student.rollNo;
     // You don't have grade in DynamoDB yet; using a placeholder
-    final String grade = 'Your Class';
-    // You also don't have photoUrl yet; can add later
+
+
 
     return Container(
       decoration: const BoxDecoration(
@@ -219,7 +219,7 @@ class _studentHomeState extends State<studentHome> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$grade - Roll No: $rollNo',
+                    'Roll No: $rollNo',
                     style: TextStyle(
                       color: Colors.white.withAlpha((0.9 * 255).round()),
                       fontSize: 14,

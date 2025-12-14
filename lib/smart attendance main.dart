@@ -332,7 +332,7 @@ class _SmartAttendanceTeacherPageState
                   CircleAvatar(
                     radius: 24,
                     backgroundImage: student.photoUrl.isNotEmpty
-                        ? NetworkImage(student.photoUrl)
+                        ? ((student.photoUrl != null && student.photoUrl.trim().isNotEmpty && (student.photoUrl.startsWith('http://') || student.photoUrl.startsWith('https://'))) ? NetworkImage(student.photoUrl) : null)
                         : const AssetImage('assets/placeholder_profile.png') as ImageProvider,
                   ),
                   const SizedBox(height: 8),

@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:present_me_flutter/Student%20Authentication/student%20login%20screen.dart';
-import '../student_model.dart';  // Make sure this import is correct for your Student model
+import '../src/repositories/studentAuth_repository.dart';
+
+import '../src/models/college.dart';
 
 class StudentSignUp extends StatefulWidget {
   @override
@@ -12,116 +12,165 @@ class StudentSignUp extends StatefulWidget {
 }
 
 class _StudentSignUpState extends State<StudentSignUp> {
-  final List<String> _institutes = [
-    'Institute of Technology',
-    'College of Engineering',
-    'School of Management',
-    'University of Science',
-    'Other',
-  ];
-  String? _selectedInstitute;
+  final AuthRepository repository = AuthRepository();
+  List<Map<String, dynamic>> colleges = [];
+  Map<String, dynamic>? selectedCollege;
+
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _rollNumberController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _rollNumberController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  // Method to handle student registration
-  void _registerStudent() async {
-  final institute = _selectedInstitute ?? '';
+  @override
+  void initState() {
+    super.initState();
+    _loadColleges();
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _rollNumberController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  // ---- Validation helpers matching your Joi schema ----
+
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  bool _isValidPhone(String phone) {
+    // /^[0-9]{10}$/ from Joi
+    final phoneRegex = RegExp(r'^[0-9]{10}$');
+    return phoneRegex.hasMatch(phone);
+  }
+
+  bool _isValidPassword(String password) {
+    // Joi: min 6, max 20, must include uppercase, lowercase, number, special char
+    if (password.length < 6 || password.length > 20) return false;
+    final passwordRegex =
+    RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[@$!%*?&]).+$');
+    return passwordRegex.hasMatch(password);
+  }
+
+  Future<void> _registerStudent() async {
     final firstName = _firstNameController.text.trim();
     final lastName = _lastNameController.text.trim();
-    final name = (firstName.isNotEmpty && lastName.isNotEmpty)
-        ? '$firstName $lastName'
-        : '';
-    final email = _emailController.text.trim();
-    final roll = _rollNumberController.text.trim();
+    final emailId = _emailController.text.trim();
+    final rollNo = _rollNumberController.text.trim();
     final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (firstName.isEmpty || lastName.isEmpty || email.isEmpty || roll.isEmpty || phone.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-    if (institute.isEmpty) {
-      _showSnackBar("Please select your institute.");
-      return;
-    }
+    // 1) Basic empty check
+    if (firstName.isEmpty ||
+        lastName.isEmpty ||
+        emailId.isEmpty ||
+        rollNo.isEmpty ||
+        phone.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       _showSnackBar("Please fill in all the fields.");
       return;
     }
 
+    // 2) First/Last name length
+    if (firstName.length < 2) {
+      _showSnackBar("First name must be at least 2 characters long");
+      return;
+    }
+    if (lastName.length < 2) {
+      _showSnackBar("Last name must be at least 2 characters long");
+      return;
+    }
+
+    // 3) College selected -> institutionId
+    if (selectedCollege == null) {
+      _showSnackBar("Institution selection is required");
+      return;
+    }
+    final institutionId = selectedCollege!['id']?.toString() ?? '';
+
+    // 4) Email
+    if (!_isValidEmail(emailId)) {
+      _showSnackBar("Email must be valid");
+      return;
+    }
+
+    // 5) Phone
+    if (!_isValidPhone(phone)) {
+      _showSnackBar("Phone number must be 10 digits");
+      return;
+    }
+
+    // 6) Password
+    if (!_isValidPassword(password)) {
+      _showSnackBar(
+        "Password must be 6–20 chars and include uppercase, lowercase, number, and special character",
+      );
+      return;
+    }
+
+    // 7) Confirm password
     if (password != confirmPassword) {
       _showSnackBar("Passwords do not match.");
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Register user with Firebase Authentication
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      Student student = Student(
-        uid: userCredential.user?.uid ?? '',
-        name: name,
-        email: email,
-        phone: phone,
-        roll: roll,
-        institute: institute,
-        createdAt: DateTime.now(),
-      );
-
-      await _firestore.collection('students').doc(userCredential.user?.uid).set(student.toMap());
-
-      // Show success message and navigate to OTP verification page
-      _showSnackBar("Registration Successful!");
-
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          transitionDuration: Duration(milliseconds: 600),
-          pageBuilder: (_, __, ___) => studentlogin(),
-          transitionsBuilder: (_, animation, __, child) {
-            const begin = Offset(1.0, 0.0);
-            const end = Offset.zero;
-            const curve = Curves.easeInOutBack;
-            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-            var offsetAnimation = animation.drive(tween);
-            return SlideTransition(position: offsetAnimation, child: child);
-          },
-        ),
-      );
-    } on FirebaseAuthException catch (e) {
-      String message = 'Registration failed';
-      if (e.code == 'email-already-in-use') {
-        message = 'The email is already in use.';
-      }
-      _showSnackBar(message);
-    } catch (e) {
-      _showSnackBar('An error occurred: $e');
+    // 8) Roll number
+    if (rollNo.isEmpty) {
+      _showSnackBar("Roll number is required");
+      return;
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    // 9) Call API via repository
+    try {
+      final res = await repository.signupStudent(
+        firstName: firstName,
+        lastName: lastName,
+        emailId: emailId,
+        phone: phone,
+        institutionId: institutionId,
+        password: password,
+        rollNo: rollNo,
+      );
+      _showSnackBar('Signup Successful! Please login.');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => studentlogin()),
+      );
+    } catch (e) {
+      _showSnackBar('Signup failed: $e');
+    }
   }
 
-  // Method to show a Snackbar message
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  Future<void> _loadColleges() async {
+    try {
+      final list = await repository.getColleges();
+      setState(() {
+        colleges = list;
+      });
+    } catch (e) {
+      _showSnackBar('Failed to load colleges: $e');
+    }
   }
 
   @override
@@ -160,7 +209,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.purple.withOpacity(0.3),
+                            color: Colors.purple.withAlpha(76),
                             blurRadius: 24,
                             offset: const Offset(0, 8),
                           ),
@@ -175,7 +224,6 @@ class _StudentSignUpState extends State<StudentSignUp> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Title
                     const Text(
                       'Create Student Account',
                       style: TextStyle(
@@ -185,7 +233,6 @@ class _StudentSignUpState extends State<StudentSignUp> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Subtitle
                     const Text(
                       'Join Present-Me to track your attendance',
                       style: TextStyle(
@@ -194,7 +241,6 @@ class _StudentSignUpState extends State<StudentSignUp> {
                       ),
                     ),
                     const SizedBox(height: 28),
-                    // White card
                     Container(
                       constraints: const BoxConstraints(maxWidth: 400),
                       padding: const EdgeInsets.all(24),
@@ -203,7 +249,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withAlpha(13),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -212,7 +258,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // First Name & Last Name Row
+                          // First & Last Name Row
                           Row(
                             children: [
                               Expanded(
@@ -242,26 +288,30 @@ class _StudentSignUpState extends State<StudentSignUp> {
                                         ),
                                         filled: true,
                                         fillColor: Colors.white,
-                                        contentPadding: const EdgeInsets.symmetric(
+                                        contentPadding:
+                                        const EdgeInsets.symmetric(
                                           vertical: 8,
                                           horizontal: 16,
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                          BorderRadius.circular(12),
                                           borderSide: BorderSide(
                                             color: Colors.grey.shade200,
                                             width: 1,
                                           ),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                          BorderRadius.circular(12),
                                           borderSide: BorderSide(
                                             color: Colors.grey.shade200,
                                             width: 1,
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                          BorderRadius.circular(12),
                                           borderSide: const BorderSide(
                                             color: Color(0xFF6366F1),
                                             width: 1.5,
@@ -300,26 +350,30 @@ class _StudentSignUpState extends State<StudentSignUp> {
                                         ),
                                         filled: true,
                                         fillColor: Colors.white,
-                                        contentPadding: const EdgeInsets.symmetric(
+                                        contentPadding:
+                                        const EdgeInsets.symmetric(
                                           vertical: 8,
                                           horizontal: 16,
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                          BorderRadius.circular(12),
                                           borderSide: BorderSide(
                                             color: Colors.grey.shade200,
                                             width: 1,
                                           ),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                          BorderRadius.circular(12),
                                           borderSide: BorderSide(
                                             color: Colors.grey.shade200,
                                             width: 1,
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                          BorderRadius.circular(12),
                                           borderSide: const BorderSide(
                                             color: Color(0xFF6366F1),
                                             width: 1.5,
@@ -333,7 +387,6 @@ class _StudentSignUpState extends State<StudentSignUp> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          // Email Address
                           const Text(
                             'Email Address',
                             style: TextStyle(
@@ -386,7 +439,6 @@ class _StudentSignUpState extends State<StudentSignUp> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // Institute Name
                           const Text(
                             'Institute Name',
                             style: TextStyle(
@@ -396,12 +448,13 @@ class _StudentSignUpState extends State<StudentSignUp> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          DropdownSearch<String>(
-                            items: _institutes,
-                            selectedItem: _selectedInstitute,
+                          DropdownSearch<Map<String, dynamic>>(
+                            items: colleges,
+                            selectedItem: selectedCollege,
+                            itemAsString: (college) => college?['name']?.toString() ?? '',
                             onChanged: (value) {
                               setState(() {
-                                _selectedInstitute = value;
+                                selectedCollege = value;
                               });
                             },
                             dropdownDecoratorProps: DropDownDecoratorProps(
@@ -417,7 +470,8 @@ class _StudentSignUpState extends State<StudentSignUp> {
                                 ),
                                 filled: true,
                                 fillColor: Colors.white,
-                                contentPadding: const EdgeInsets.symmetric(
+                                contentPadding:
+                                const EdgeInsets.symmetric(
                                   vertical: 8,
                                   horizontal: 16,
                                 ),
@@ -449,16 +503,18 @@ class _StudentSignUpState extends State<StudentSignUp> {
                               searchFieldProps: TextFieldProps(
                                 decoration: InputDecoration(
                                   hintText: "Search Institute",
-                                  prefixIcon: Icon(Icons.search),
+                                  prefixIcon: const Icon(Icons.search),
                                   filled: true,
                                   fillColor: Colors.white,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide: BorderSide(
+                                        color: Colors.grey.shade200),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide: BorderSide(
+                                        color: Colors.grey.shade200),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -480,8 +536,8 @@ class _StudentSignUpState extends State<StudentSignUp> {
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
                                       colors: [
-                                        Color(0xFFEFF6FF), // blue-50
-                                        Color(0xFFF5F3FF), // purple-50
+                                        Color(0xFFEFF6FF),
+                                        Color(0xFFF5F3FF),
                                         Color(0xFFFDF2F8),
                                       ],
                                       begin: Alignment.topCenter,
@@ -496,7 +552,6 @@ class _StudentSignUpState extends State<StudentSignUp> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // Roll Number
                           const Text(
                             'Roll Number',
                             style: TextStyle(
@@ -549,7 +604,6 @@ class _StudentSignUpState extends State<StudentSignUp> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // Phone Number
                           const Text(
                             'Phone Number',
                             style: TextStyle(
@@ -601,10 +655,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
                               ),
                             ),
                           ),
-
-
                           const SizedBox(height: 16),
-                          // Password
                           const Text(
                             'Password',
                             style: TextStyle(
@@ -670,7 +721,6 @@ class _StudentSignUpState extends State<StudentSignUp> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // Confirm Password
                           const Text(
                             'Confirm Password',
                             style: TextStyle(
@@ -702,7 +752,8 @@ class _StudentSignUpState extends State<StudentSignUp> {
                                 ),
                                 onPressed: () {
                                   setState(() {
-                                    _obscureConfirmPassword = !_obscureConfirmPassword;
+                                    _obscureConfirmPassword =
+                                    !_obscureConfirmPassword;
                                   });
                                 },
                               ),
@@ -736,56 +787,49 @@ class _StudentSignUpState extends State<StudentSignUp> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          // Create Account button
                           SizedBox(
                             width: double.infinity,
                             height: 50,
-                            child: _isLoading
-                                ? const Center(
-                                    child: CircularProgressIndicator(
-                                      color: Color(0xFF6366F1),
-                                    ),
-                                  )
-                                : ElevatedButton(
-                                    onPressed: _registerStudent,
-                                    style: ElevatedButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      elevation: 0,
-                                    ),
-                                    child: Ink(
-                                      decoration: const BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Color(0xFF6366F1),
-                                            Color(0xFF8B5CF6)
-                                          ],
-                                          begin: Alignment.centerLeft,
-                                          end: Alignment.centerRight,
-                                        ),
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(12),
-                                        ),
-                                      ),
-                                      child: Container(
-                                        alignment: Alignment.center,
-                                        height: 50,
-                                        child: const Text(
-                                          'Create Account',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                      ),
+                            child: ElevatedButton(
+                              onPressed: _registerStudent,
+                              style: ElevatedButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: Ink(
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Color(0xFF6366F1),
+                                      Color(0xFF8B5CF6)
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(12),
+                                  ),
+                                ),
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  height: 50,
+                                  child: const Text(
+                                    'Create Account',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
                                     ),
                                   ),
+                                ),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 24),
-                          // Sign in link
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -801,15 +845,20 @@ class _StudentSignUpState extends State<StudentSignUp> {
                                   Navigator.push(
                                     context,
                                     PageRouteBuilder(
-                                      transitionDuration: Duration(milliseconds: 600),
-                                      pageBuilder: (_, __, ___) => studentlogin(),
-                                      transitionsBuilder: (_, animation, __, child) {
+                                      transitionDuration:
+                                      const Duration(milliseconds: 600),
+                                      pageBuilder: (_, __, ___) =>
+                                          studentlogin(),
+                                      transitionsBuilder:
+                                          (_, animation, __, child) {
                                         const begin = Offset(1.0, 0.0);
                                         const end = Offset.zero;
                                         const curve = Curves.easeInOutBack;
-                                        var tween = Tween(begin: begin, end: end)
+                                        var tween = Tween(
+                                            begin: begin, end: end)
                                             .chain(CurveTween(curve: curve));
-                                        var offsetAnimation = animation.drive(tween);
+                                        var offsetAnimation =
+                                        animation.drive(tween);
                                         return SlideTransition(
                                           position: offsetAnimation,
                                           child: child,
@@ -833,7 +882,6 @@ class _StudentSignUpState extends State<StudentSignUp> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Copyright
                     const Text(
                       '© 2025 Present-Me. All rights reserved.',
                       style: TextStyle(

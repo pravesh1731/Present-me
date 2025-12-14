@@ -231,7 +231,7 @@ class _studentListReqState extends State<studentListReq> {
                       studentsData[index]['photoUrl']
                           .toString()
                           .isNotEmpty
-                      ? NetworkImage(studentsData[index]['photoUrl'])
+                      ? ((studentsData[index]['photoUrl'] != null && (studentsData[index]['photoUrl'] as String).trim().isNotEmpty && ((studentsData[index]['photoUrl'] as String).startsWith('http://') || (studentsData[index]['photoUrl'] as String).startsWith('https://'))) ? NetworkImage(studentsData[index]['photoUrl']) : null)
                       : AssetImage("assets/image/teacher.png")
                   as ImageProvider,
                 ),

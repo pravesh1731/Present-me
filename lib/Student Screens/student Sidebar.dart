@@ -234,7 +234,7 @@ class StudentSidebar extends StatelessWidget {
           radius: 28,
           backgroundColor: Colors.white.withOpacity(0.3),
           backgroundImage: photoUrl != null && photoUrl.isNotEmpty
-              ? NetworkImage(photoUrl)
+              ? (photoUrl != null && photoUrl.trim().isNotEmpty && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://')) ? NetworkImage(photoUrl) : null)
               : const AssetImage("assets/image/teacher.png") as ImageProvider,
         ),
         const SizedBox(width: 12),

@@ -308,7 +308,7 @@ class _StudentAttendanceTileState extends State<StudentAttendanceTile> {
             radius: 24,
             backgroundColor: Colors.blue.shade100,
             backgroundImage: widget.student['photoUrl'] != ''
-                ? NetworkImage(widget.student['photoUrl'])
+                ? ((widget.student['photoUrl'] != null && (widget.student['photoUrl'] as String).trim().isNotEmpty && ((widget.student['photoUrl'] as String).startsWith('http://') || (widget.student['photoUrl'] as String).startsWith('https://'))) ? NetworkImage(widget.student['photoUrl']) : null)
                 : AssetImage('assets/image/teacher.png') as ImageProvider,
           ),
           SizedBox(width: 16),

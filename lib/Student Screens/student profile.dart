@@ -1,9 +1,12 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import '../services/cloudinary_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../src/bloc/auth/auth_bloc.dart';
+import '../src/bloc/auth/auth_event.dart';
+import '../src/bloc/auth/auth_state.dart';
+import '../src/repositories/studentAuth_repository.dart';
 
 class student_Profile extends StatefulWidget {
   @override
@@ -11,11 +14,11 @@ class student_Profile extends StatefulWidget {
 }
 
 class _student_ProfileState extends State<student_Profile> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final box = GetStorage();
 
   bool isLoading = true;
-  String? photoUrl;
+  bool isUploading = false;
+  String? profilePicUrl;
 
   final nameController = TextEditingController();
   final emailController = TextEditingController();
@@ -25,215 +28,225 @@ class _student_ProfileState extends State<student_Profile> {
   final branchController = TextEditingController();
   final yearController = TextEditingController();
   final sectionController = TextEditingController();
-  
+
   String? joinedDate;
   int classesCount = 0;
   double attendancePercentage = 0.0;
 
+  final ImagePicker _picker = ImagePicker();
+  // When picking an image in edit modal, we store it here and only upload on Save
+  File? _pendingPickedImage;
+
+  // Return a NetworkImage only when `profilePicUrl` is a valid http/https URL.
+  ImageProvider? _validNetworkImage() {
+    final url = profilePicUrl?.trim();
+    if (url == null || url.isEmpty) return null;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return null;
+    if (uri.scheme == 'http' || uri.scheme == 'https') return NetworkImage(url);
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
-    fetchStudentData();
-    fetchClassesAndAttendance();
+
+    // Initialize from stored GetStorage (backwards compatibility) then try to populate from AuthBloc
+    _loadFromStorage();
+    // Listen for AuthAuthenticated to refresh UI
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = context.read<AuthBloc>().state;
+      if (state is AuthAuthenticated) {
+        _populateFromUserMap(state.user);
+      }
+    });
+    // also subscribe to future state changes
+    context.read<AuthBloc>().stream.listen((state) {
+      if (state is AuthAuthenticated) {
+        _populateFromUserMap(state.user);
+      }
+    });
   }
 
-  Future<void> fetchClassesAndAttendance() async {
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    rollController.dispose();
+    semesterController.dispose();
+    branchController.dispose();
+    yearController.dispose();
+    sectionController.dispose();
+    super.dispose();
+  }
+
+  void _loadFromStorage() {
     try {
-      final user = _auth.currentUser;
-      if (user == null) return;
+      // Try to read the raw stored student JSON from GetStorage (may contain extra keys like profilePicUrl)
+      final storedStudentRaw = box.read('student');
+      Map<String, dynamic>? storedStudentMap;
+      if (storedStudentRaw != null) {
+        try {
+          if (storedStudentRaw is Map<String, dynamic>) {
+            storedStudentMap = storedStudentRaw;
+          } else {
+            storedStudentMap = Map<String, dynamic>.from(storedStudentRaw);
+          }
+        } catch (_) {
+          storedStudentMap = null;
+        }
+      }
 
-      // Fetch classes the student is enrolled in
-      final classesSnapshot = await _firestore
-          .collection('classes')
-          .where('students', arrayContains: user.uid)
-          .get();
-
-      // Calculate attendance (you can adjust this logic based on your data structure)
-      int totalClasses = 0;
-      int attendedClasses = 0;
-
-      for (var classDoc in classesSnapshot.docs) {
-        // This is a simplified calculation - adjust based on your actual data structure
-        final attendanceData = classDoc.data()['attendance'] as Map<String, dynamic>? ?? {};
-        totalClasses += attendanceData.length;
-        
-        for (var entry in attendanceData.values) {
-          final studentAttendance = entry[user.uid];
-          if (studentAttendance == true || studentAttendance == 'present') {
-            attendedClasses++;
+      // Populate local controllers if storage present
+      if (storedStudentMap != null) {
+        final fullName = ((storedStudentMap['firstName'] ?? '') + ' ' + (storedStudentMap['lastName'] ?? '')).trim();
+        nameController.text = fullName;
+        emailController.text = storedStudentMap['emailId']?.toString() ?? '';
+        phoneController.text = storedStudentMap['phone']?.toString() ?? '';
+        rollController.text = storedStudentMap['rollNo']?.toString() ?? '';
+        semesterController.text = storedStudentMap['semester']?.toString() ?? '';
+        branchController.text = storedStudentMap['branch']?.toString() ?? '';
+        yearController.text = storedStudentMap['year']?.toString() ?? '';
+        sectionController.text = storedStudentMap['section']?.toString() ?? '';
+        profilePicUrl = storedStudentMap['profilePicUrl']?.toString() ?? storedStudentMap['photoUrl']?.toString() ?? storedStudentMap['avatarUrl']?.toString();
+        final createdAt = storedStudentMap['createdAt']?.toString() ?? '';
+        if (createdAt.isNotEmpty) {
+          try {
+            final dt = DateTime.parse(createdAt);
+            joinedDate = '${dt.day}-${dt.month}-${dt.year}';
+          } catch (_) {
+            joinedDate = createdAt;
           }
         }
       }
 
-      setState(() {
-        classesCount = classesSnapshot.docs.length;
-        attendancePercentage = totalClasses > 0 ? (attendedClasses / totalClasses * 100) : 0.0;
-      });
+      // placeholder stats
+      classesCount = 0;
+      attendancePercentage = 0.0;
     } catch (e) {
-      print('Error fetching classes and attendance: $e');
-      // Keep the default values if error occurs
+      debugPrint('Error loading student from storage: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
-  Future<void> fetchStudentData() async {
+  void _populateFromUserMap(Map<String, dynamic> user) {
     try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        setState(() => isLoading = false);
-        return;
-      }
+      final firstName = (user['firstName'] ?? user['name']?.split(' ')?.first ?? '').toString();
+      final lastName = (user['lastName'] ?? '').toString();
+      final fullName = (firstName + ' ' + lastName).trim();
 
-      final doc = await _firestore.collection("students").doc(user.uid).get();
+      nameController.text = fullName;
+      emailController.text = (user['emailId'] ?? user['email'] ?? '').toString();
+      phoneController.text = (user['phone'] ?? '').toString();
+      rollController.text = (user['rollNo'] ?? '').toString();
+      semesterController.text = (user['semester'] ?? '').toString();
+      branchController.text = (user['branch'] ?? '').toString();
+      yearController.text = (user['year'] ?? '').toString();
+      sectionController.text = (user['section'] ?? '').toString();
+      profilePicUrl = (user['profilePicUrl'] ?? user['photoUrl'] ?? user['avatarUrl'] ?? '').toString();
 
-      if (doc.exists) {
-        final data = doc.data()!;
-        nameController.text = data['name'] ?? '';
-        emailController.text = data['email'] ?? '';
-        phoneController.text = data['phone'] ?? '';
-        rollController.text = data['roll'] ?? '';
-        semesterController.text = data['semester'] ?? '';
-        branchController.text = data['branch'] ?? '';
-        yearController.text = data['year'] ?? '';
-        sectionController.text = data['section'] ?? '';
-        photoUrl = data['photoUrl'];
-        
-        // Format joined date if it exists
-        if (data['createdAt'] != null) {
-          final timestamp = data['createdAt'] as Timestamp;
-          final date = timestamp.toDate();
-          final months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                          'July', 'August', 'September', 'October', 'November', 'December'];
-          joinedDate = '${months[date.month - 1]} ${date.year}';
+      final createdAt = (user['createdAt'] ?? user['created_at'] ?? '').toString();
+      if (createdAt.isNotEmpty) {
+        try {
+          final dt = DateTime.parse(createdAt);
+          joinedDate = '${dt.day}-${dt.month}-${dt.year}';
+        } catch (_) {
+          joinedDate = createdAt;
         }
       }
 
-      setState(() => isLoading = false);
+      // persist merged map for offline use
+      try {
+        box.write('student', user);
+      } catch (_) {}
+
+      setState(() {});
     } catch (e) {
-      print('Error fetching student data: $e');
-      setState(() => isLoading = false);
+      debugPrint('populate error: $e');
     }
   }
 
+
+  /// Save changes: patch profile on backend and update local state
   Future<void> saveChanges() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    // Build payload from form fields
+    final token = box.read<String>('token');
+    final Map<String, dynamic> payload = {
+      'firstName': '',
+      'lastName': '',
+      'phone': phoneController.text.trim(),
+      'rollNo': rollController.text.trim(),
+      if (profilePicUrl != null && profilePicUrl!.trim().isNotEmpty) 'profilePicUrl': profilePicUrl,
+      if (semesterController.text.trim().isNotEmpty) 'semester': semesterController.text.trim(),
+      if (branchController.text.trim().isNotEmpty) 'branch': branchController.text.trim(),
+      if (yearController.text.trim().isNotEmpty) 'year': yearController.text.trim(),
+      if (sectionController.text.trim().isNotEmpty) 'section': sectionController.text.trim(),
+    };
 
-    final docRef = _firestore.collection("students").doc(user.uid);
-    final doc = await docRef.get();
-    if (!doc.exists) return;
-
-    final data = doc.data()!;
-    Map<String, dynamic> updates = {};
-
-    if (nameController.text != data['name']) updates['name'] = nameController.text;
-    if (emailController.text != data['email']) updates['email'] = emailController.text;
-    if (phoneController.text != data['phone']) updates['phone'] = phoneController.text;
-    if (rollController.text != (data['roll'] ?? '')) updates['roll'] = rollController.text;
-    if (semesterController.text != (data['semester'] ?? '')) updates['semester'] = semesterController.text;
-    if (branchController.text != (data['branch'] ?? '')) updates['branch'] = branchController.text;
-    if (yearController.text != (data['year'] ?? '')) updates['year'] = yearController.text;
-    if (sectionController.text != (data['section'] ?? '')) updates['section'] = sectionController.text;
-    if ((photoUrl ?? '') != (data['photoUrl'] ?? '')) updates['photoUrl'] = photoUrl ?? '';
-
-    if (updates.isNotEmpty) {
-      await docRef.update(updates);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle_rounded, color: Colors.white),
-              SizedBox(width: 12),
-              Text("Profile updated successfully"),
-            ],
-          ),
-          backgroundColor: const Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.white),
-              SizedBox(width: 12),
-              Text("No changes to save"),
-            ],
-          ),
-          backgroundColor: const Color(0xFF6B7280),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    }
-  }
-
-  Future<void> pickAndUploadImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked == null) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    final user = _auth.currentUser;
-    if (user == null) return;
-
-    final studentDoc = await _firestore.collection("students").doc(user.uid).get();
-    final existingPhotoId = studentDoc.data()?['photoId'];
-
-    // Delete old image
-    if (existingPhotoId != null) {
-      await CloudinaryHelper.deleteImage(existingPhotoId);
+    final fullName = nameController.text.trim();
+    if (fullName.isNotEmpty) {
+      final parts = fullName.split(' ');
+      payload['firstName'] = parts.first;
+      if (parts.length > 1) payload['lastName'] = parts.sublist(1).join(' ');
     }
 
-    // Upload new image
-    final result = await CloudinaryHelper.uploadImage(File(picked.path));
+    // If there is no token, persist locally and update UI only
+    if (token == null || token.isEmpty) {
+      final stored = box.read('student');
+      final current = (stored is Map<String, dynamic>) ? Map<String, dynamic>.from(stored) : <String, dynamic>{};
+      current.addAll(payload);
+      try {
+        box.write('student', current);
+      } catch (_) {}
+      _populateFromUserMap(current);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated locally (no token)')));
+      return;
+    }
 
-    Navigator.of(context).pop(); // Close loader
+    setState(() => isLoading = true);
+    final repo = RepositoryProvider.of<AuthRepository>(context);
+    try {
+      // If there is a pending picked image, upload it first
+      if (_pendingPickedImage != null) {
+        final file = _pendingPickedImage!;
+        final uploaded = await repo.uploadProfilePic(file);
+        try {
+          final Map<String, dynamic> uploadedMap = Map<String, dynamic>.from(uploaded);
+          if (uploadedMap['profilePicUrl'] != null) {
+            profilePicUrl = uploadedMap['profilePicUrl'].toString();
+          } else if (uploadedMap['photoUrl'] != null) {
+            profilePicUrl = uploadedMap['photoUrl'].toString();
+          }
+        } catch (e) {
+          debugPrint('upload result handling error: $e');
+        }
+      }
 
-    if (result != null) {
-      photoUrl = result['url'];
-      await _firestore.collection("students").doc(user.uid).update({
-        'photoUrl': result['url'],
-        'photoId': result['public_id'],
-      });
+      // Call repository.patchProfile directly
+      final result = await repo.patchProfile(payload);
+      // repository.patchProfile returns a Map<String,dynamic> on success
+      final Map<String, dynamic> updated = Map<String, dynamic>.from(result);
 
-      setState(() {}); // Refresh UI
+      // Update UI and storage
+      try {
+        _populateFromUserMap(updated);
+      } catch (_) {}
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle_rounded, color: Colors.white),
-              SizedBox(width: 12),
-              Text("Image uploaded successfully"),
-            ],
-          ),
-          backgroundColor: const Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.white),
-              SizedBox(width: 12),
-              Text("Image upload failed"),
-            ],
-          ),
-          backgroundColor: const Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully'), backgroundColor: Colors.green));
+
+      // Notify bloc to refresh internal state
+      try {
+        context.read<AuthBloc>().add(FetchProfileRequested());
+      } catch (_) {}
+    } catch (e, st) {
+      debugPrint('saveChanges -> patchProfile failed: $e\n$st');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update profile: $e'), backgroundColor: Colors.red));
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
@@ -254,23 +267,27 @@ class _student_ProfileState extends State<student_Profile> {
           ),
           child: Column(
             children: [
-              // Header
+              // header
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
                     colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
-                  borderRadius: const BorderRadius.only(
+                  borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(28),
                     topRight: Radius.circular(28),
                   ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.edit_rounded, color: Colors.white, size: 28),
+                    const Icon(
+                      Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
@@ -283,19 +300,23 @@ class _student_ProfileState extends State<student_Profile> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
-              // Form Content
+
+              // content
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      // Profile Photo Section
+                      // profile image with upload button
                       Center(
                         child: Stack(
                           children: [
@@ -305,15 +326,18 @@ class _student_ProfileState extends State<student_Profile> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
+                                  colors: [
+                                    Color(0xFF06B6D4),
+                                    Color(0xFF2563EB),
+                                  ],
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF06B6D4).withOpacity(0.3),
+                                    color: const Color(0x4D06B6D4),
                                     blurRadius: 20,
-                                    offset: const Offset(0, 8),
+                                    offset: Offset(0, 8),
                                   ),
                                 ],
                               ),
@@ -322,10 +346,14 @@ class _student_ProfileState extends State<student_Profile> {
                                 backgroundColor: Colors.white,
                                 child: CircleAvatar(
                                   radius: 55,
-                                  backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
                                   backgroundColor: const Color(0xFF06B6D4),
-                                  child: photoUrl == null
-                                      ? const Icon(Icons.person, size: 50, color: Colors.white)
+                                  backgroundImage: _validNetworkImage(),
+                                  child: _validNetworkImage() == null
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 50,
+                                          color: Colors.white,
+                                        )
                                       : null,
                                 ),
                               ),
@@ -335,64 +363,148 @@ class _student_ProfileState extends State<student_Profile> {
                               right: 0,
                               child: GestureDetector(
                                 onTap: () async {
-                                  await pickAndUploadImage();
-                                  setModalState(() {});
+                                  setModalState(() => isUploading = true);
+                                  try {
+                                    final XFile? picked = await _picker.pickImage(
+                                      source: ImageSource.gallery,
+                                      imageQuality: 80,
+                                    );
+                                    if (picked == null) {
+                                      setModalState(() => isUploading = false);
+                                      return;
+                                    }
+
+                                    final file = File(picked.path);
+                                    final repo = RepositoryProvider.of<AuthRepository>(context);
+
+                                    // upload the image immediately
+                                    final uploaded = await repo.uploadProfilePic(file);
+
+                                    try {
+                                      final Map<String, dynamic> uploadedMap = Map<String, dynamic>.from(uploaded);
+                                      if (uploadedMap['profilePicUrl'] != null) {
+                                        profilePicUrl = uploadedMap['profilePicUrl'].toString();
+                                      } else if (uploadedMap['photoUrl'] != null) {
+                                        profilePicUrl = uploadedMap['photoUrl'].toString();
+                                      }
+                                      _populateFromUserMap(uploadedMap);
+                                      // Refresh bloc's internal state
+                                      context.read<AuthBloc>().add(FetchProfileRequested());
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile picture updated'), backgroundColor: Colors.green));
+                                    } catch (e) {
+                                      debugPrint('upload result handling error: $e');
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload completed')));
+                                    }
+                                  } catch (e) {
+                                    debugPrint('upload error: $e');
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+                                  } finally {
+                                    setModalState(() => isUploading = false);
+                                    setState(() {});
+                                  }
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF06B6D4),
                                     shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 3),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 3,
+                                    ),
                                   ),
-                                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                                  child: isUploading
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.camera_alt,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
+
                       const SizedBox(height: 32),
-                      // Form Fields
-                      _buildModalTextField('Full Name', nameController, Icons.person_outline),
+
+                      _buildModalTextField(
+                        'Full Name',
+                        nameController,
+                        Icons.person_outline,
+                      ),
                       const SizedBox(height: 16),
-                      _buildModalTextField('Email', emailController, Icons.email_outlined, enabled: false),
+                      _buildModalTextField(
+                        'Email',
+                        emailController,
+                        Icons.email_outlined,
+                        enabled: false,
+                      ),
                       const SizedBox(height: 16),
-                      _buildModalTextField('Phone Number', phoneController, Icons.phone_outlined),
+                      _buildModalTextField(
+                        'Phone Number',
+                        phoneController,
+                        Icons.phone_outlined,
+                      ),
                       const SizedBox(height: 16),
-                      _buildModalTextField('Roll Number', rollController, Icons.badge_outlined),
+                      _buildModalTextField(
+                        'Roll Number',
+                        rollController,
+                        Icons.badge_outlined,
+                      ),
                       const SizedBox(height: 16),
-                      _buildModalTextField('Semester', semesterController, Icons.school_outlined),
+                      _buildModalTextField(
+                        'Semester',
+                        semesterController,
+                        Icons.school_outlined,
+                      ),
                       const SizedBox(height: 16),
-                      _buildModalTextField('Branch', branchController, Icons.account_tree_outlined),
+                      _buildModalTextField(
+                        'Branch',
+                        branchController,
+                        Icons.account_tree_outlined,
+                      ),
                       const SizedBox(height: 16),
-                      _buildModalTextField('Year', yearController, Icons.calendar_today_outlined),
+                      _buildModalTextField(
+                        'Year',
+                        yearController,
+                        Icons.calendar_today_outlined,
+                      ),
                       const SizedBox(height: 16),
-                      _buildModalTextField('Section', sectionController, Icons.group_outlined),
+                      _buildModalTextField(
+                        'Section',
+                        sectionController,
+                        Icons.group_outlined,
+                      ),
                       const SizedBox(height: 32),
-                      // Save Button
+
+                      // save
                       Container(
                         width: double.infinity,
                         height: 56,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
+                            colors: [
+                              Color(0xFF06B6D4),
+                              Color(0xFF2563EB),
+                            ],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                           ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF06B6D4).withOpacity(0.4),
+                              color: const Color(0x6606B6D4),
                               blurRadius: 16,
-                              offset: const Offset(0, 8),
+                              offset: Offset(0, 8),
                             ),
                           ],
                         ),
@@ -408,7 +520,11 @@ class _student_ProfileState extends State<student_Profile> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.save_rounded, color: Colors.white, size: 24),
+                                  Icon(
+                                    Icons.save_rounded,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
                                   SizedBox(width: 12),
                                   Text(
                                     'Save Changes',
@@ -435,7 +551,12 @@ class _student_ProfileState extends State<student_Profile> {
     );
   }
 
-  Widget _buildModalTextField(String label, TextEditingController controller, IconData icon, {bool enabled = true}) {
+  Widget _buildModalTextField(
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    bool enabled = true,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -464,11 +585,17 @@ class _student_ProfileState extends State<student_Profile> {
             hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFFE5E7EB),
+                width: 1.5,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFFE5E7EB),
+                width: 1.5,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -476,9 +603,15 @@ class _student_ProfileState extends State<student_Profile> {
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFFE5E7EB),
+                width: 1.5,
+              ),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
         ),
       ],
@@ -489,7 +622,9 @@ class _student_ProfileState extends State<student_Profile> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF06B6D4))),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF06B6D4)),
+        ),
       );
     }
 
@@ -498,10 +633,7 @@ class _student_ProfileState extends State<student_Profile> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFFECFEFF), // cyan-50
-              Color(0xFFEFF6FF), // blue-50
-            ],
+            colors: [Color(0xFFECFEFF), Color(0xFFEFF6FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -509,7 +641,7 @@ class _student_ProfileState extends State<student_Profile> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Header with gradient
+              // Header region
               Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
@@ -530,7 +662,7 @@ class _student_ProfileState extends State<student_Profile> {
                       children: [
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: const Color(0x33FFFFFF),
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
@@ -539,7 +671,8 @@ class _student_ProfileState extends State<student_Profile> {
                   ),
                 ),
               ),
-              // Profile Card
+
+              // Card
               Transform.translate(
                 offset: const Offset(0, -70),
                 child: Column(
@@ -552,7 +685,7 @@ class _student_ProfileState extends State<student_Profile> {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
+                            color: const Color(0x14000000),
                             blurRadius: 24,
                             offset: const Offset(0, 8),
                           ),
@@ -560,55 +693,56 @@ class _student_ProfileState extends State<student_Profile> {
                       ),
                       child: Column(
                         children: [
-                          // Profile Photo
-                          Stack(
-                            children: [
-                              Container(
-                                width: 90,
-                                height: 90,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF06B6D4).withOpacity(0.3),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: CircleAvatar(
-                                  radius: 58,
-                                  backgroundColor: Colors.white,
-                                  child: CircleAvatar(
-                                    radius: 55,
-                                    backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
-                                    backgroundColor: const Color(0xFF06B6D4),
-                                    child: photoUrl == null
-                                        ? const Icon(Icons.person, size: 50, color: Colors.white)
-                                        : null,
-                                  ),
-                                ),
+                          // profile image
+                          Container(
+                            width: 90,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                            ],
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0x4D06B6D4),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 58,
+                              backgroundColor: Colors.white,
+                              child: CircleAvatar(
+                                radius: 55,
+                                backgroundColor: const Color(0xFF06B6D4),
+                                backgroundImage:
+                                    _validNetworkImage(),
+                                child: _validNetworkImage() == null
+                                    ? const Icon(
+                                      Icons.person,
+                                      size: 50,
+                                      color: Colors.white,
+                                    )
+                                    : null,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 16),
-                          // Name
                           Text(
-                            nameController.text.isNotEmpty ? nameController.text : 'Student Name',
+                            nameController.text.isNotEmpty
+                                ? nameController.text
+                                : 'Student Name',
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF111827),
                             ),
                           ),
-                          // Roll & Semester
                           Text(
-                            rollController.text.isNotEmpty 
+                            rollController.text.isNotEmpty
                                 ? 'Roll No: ${rollController.text}'
                                 : 'Roll Number',
                             style: const TextStyle(
@@ -617,13 +751,18 @@ class _student_ProfileState extends State<student_Profile> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          // Semester Badge
                           if (semesterController.text.isNotEmpty)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
+                                  colors: [
+                                    Color(0xFF06B6D4),
+                                    Color(0xFF2563EB),
+                                  ],
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,
                                 ),
@@ -639,7 +778,6 @@ class _student_ProfileState extends State<student_Profile> {
                               ),
                             ),
                           const SizedBox(height: 24),
-                          // Edit Profile Button
                           Container(
                             width: double.infinity,
                             height: 50,
@@ -652,7 +790,7 @@ class _student_ProfileState extends State<student_Profile> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF06B6D4).withOpacity(0.3),
+                                  color: const Color(0x4D06B6D4),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -666,7 +804,11 @@ class _student_ProfileState extends State<student_Profile> {
                                 child: const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.edit_outlined, color: Colors.white, size: 20),
+                                    Icon(
+                                      Icons.edit_outlined,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
                                     SizedBox(width: 8),
                                     Text(
                                       'Edit Profile',
@@ -684,8 +826,10 @@ class _student_ProfileState extends State<student_Profile> {
                         ],
                       ),
                     ),
+
                     const SizedBox(height: 16),
-                    // Stats Row
+
+                    // stats row
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
@@ -702,7 +846,8 @@ class _student_ProfileState extends State<student_Profile> {
                           Expanded(
                             child: _buildStatCard(
                               icon: Icons.check_circle_outline,
-                              value: '${attendancePercentage.toStringAsFixed(0)}%',
+                              value:
+                                  '${attendancePercentage.toStringAsFixed(0)}%',
                               label: 'Attendance',
                               color: const Color(0xFF3B82F6),
                             ),
@@ -711,9 +856,10 @@ class _student_ProfileState extends State<student_Profile> {
                           Expanded(
                             child: _buildStatCard(
                               icon: Icons.calendar_today_outlined,
-                              value: semesterController.text.isNotEmpty 
-                                  ? '${semesterController.text}'
-                                  : '-',
+                              value:
+                                  semesterController.text.isNotEmpty
+                                      ? semesterController.text
+                                      : '-',
                               label: 'Semester',
                               color: const Color(0xFFF59E0B),
                             ),
@@ -721,24 +867,10 @@ class _student_ProfileState extends State<student_Profile> {
                         ],
                       ),
                     ),
+
                     const SizedBox(height: 16),
-                    // Personal Information Section
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20, right: 20),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: const Text(
-                          'Personal Information',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF111827),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Personal Information Card
+
+                    // personal card
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       padding: const EdgeInsets.all(20),
@@ -747,7 +879,7 @@ class _student_ProfileState extends State<student_Profile> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: const Color(0x0D000000),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -756,34 +888,40 @@ class _student_ProfileState extends State<student_Profile> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildInfoRow(Icons.email_outlined, 'Email', emailController.text),
+                          _buildInfoRow(
+                            Icons.email_outlined,
+                            'Email',
+                            emailController.text,
+                          ),
                           const SizedBox(height: 16),
-                          _buildInfoRow(Icons.phone_outlined, 'Phone', phoneController.text.isNotEmpty ? phoneController.text : 'Not provided'),
+                          _buildInfoRow(
+                            Icons.phone_outlined,
+                            'Phone',
+                            phoneController.text.isNotEmpty
+                                ? phoneController.text
+                                : 'Not provided',
+                          ),
                           const SizedBox(height: 16),
-                          _buildInfoRow(Icons.account_tree_outlined, 'Branch', branchController.text.isNotEmpty ? branchController.text : 'Not provided'),
+                          _buildInfoRow(
+                            Icons.account_tree_outlined,
+                            'Branch',
+                            branchController.text.isNotEmpty
+                                ? branchController.text
+                                : 'Not provided',
+                          ),
                           const SizedBox(height: 16),
-                          _buildInfoRow(Icons.calendar_today_outlined, 'Joined', joinedDate ?? 'Not available'),
+                          _buildInfoRow(
+                            Icons.calendar_today_outlined,
+                            'Joined',
+                            joinedDate ?? 'Not available',
+                          ),
                         ],
                       ),
                     ),
+
                     const SizedBox(height: 16),
-                    // Academic Information Section
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20, right: 20),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: const Text(
-                          'Academic Information',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF111827),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Academic Information Card
+
+                    // academic card
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       padding: const EdgeInsets.all(20),
@@ -792,7 +930,7 @@ class _student_ProfileState extends State<student_Profile> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: const Color(0x0D000000),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -801,34 +939,40 @@ class _student_ProfileState extends State<student_Profile> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildAcademicInfoRow('Roll Number', rollController.text.isNotEmpty ? rollController.text : 'Not provided'),
+                          _buildAcademicInfoRow(
+                            'Roll Number',
+                            rollController.text.isNotEmpty
+                                ? rollController.text
+                                : 'Not provided',
+                          ),
                           const SizedBox(height: 16),
-                          _buildAcademicInfoRow('Semester', semesterController.text.isNotEmpty ? semesterController.text : 'Not provided'),
+                          _buildAcademicInfoRow(
+                            'Semester',
+                            semesterController.text.isNotEmpty
+                                ? semesterController.text
+                                : 'Not provided',
+                          ),
                           const SizedBox(height: 16),
-                          _buildAcademicInfoRow('Year', yearController.text.isNotEmpty ? yearController.text : 'Not provided'),
+                          _buildAcademicInfoRow(
+                            'Year',
+                            yearController.text.isNotEmpty
+                                ? yearController.text
+                                : 'Not provided',
+                          ),
                           const SizedBox(height: 16),
-                          _buildAcademicInfoRow('Section', sectionController.text.isNotEmpty ? sectionController.text : 'Not provided'),
+                          _buildAcademicInfoRow(
+                            'Section',
+                            sectionController.text.isNotEmpty
+                                ? sectionController.text
+                                : 'Not provided',
+                          ),
                         ],
                       ),
                     ),
+
                     const SizedBox(height: 16),
-                    // Performance Section
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20, right: 20),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: const Text(
-                          'Performance',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF111827),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Performance Card
+
+                    // performance
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       padding: const EdgeInsets.all(20),
@@ -837,7 +981,7 @@ class _student_ProfileState extends State<student_Profile> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: const Color(0x0D000000),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -864,6 +1008,7 @@ class _student_ProfileState extends State<student_Profile> {
                       ),
                     ),
 
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -874,7 +1019,12 @@ class _student_ProfileState extends State<student_Profile> {
     );
   }
 
-  Widget _buildStatCard({required IconData icon, required String value, required String label, required Color color}) {
+  Widget _buildStatCard({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -882,7 +1032,7 @@ class _student_ProfileState extends State<student_Profile> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: const Color(0x0D000000),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -893,7 +1043,7 @@ class _student_ProfileState extends State<student_Profile> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withAlpha((0.1 * 255).round()),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 24),
@@ -910,10 +1060,7 @@ class _student_ProfileState extends State<student_Profile> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF6B7280),
-            ),
+            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
           ),
         ],
       ),
@@ -926,7 +1073,7 @@ class _student_ProfileState extends State<student_Profile> {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: const Color(0xFF10B981).withOpacity(0.1),
+            color: const Color(0x1A10B981),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: const Color(0xFF10B981), size: 20),
@@ -938,10 +1085,7 @@ class _student_ProfileState extends State<student_Profile> {
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF6B7280),
-                ),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
               ),
               const SizedBox(height: 2),
               Text(
@@ -965,10 +1109,7 @@ class _student_ProfileState extends State<student_Profile> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF6B7280),
-          ),
+          style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
         ),
         Text(
           value,
@@ -982,30 +1123,28 @@ class _student_ProfileState extends State<student_Profile> {
     );
   }
 
-  Widget _buildPerformanceCard({required IconData icon, required String title, required String subtitle}) {
+  Widget _buildPerformanceCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFFFFF7ED),
-            const Color(0xFFFEF3C7),
-          ],
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFF7ED), Color(0xFFFEF3C7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFF59E0B).withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0x33F59E0B), width: 1),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B).withOpacity(0.2),
+              color: const Color(0x33F59E0B),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: const Color(0xFFF59E0B), size: 28),
@@ -1023,10 +1162,7 @@ class _student_ProfileState extends State<student_Profile> {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: const Color(0xFF6B7280),
-            ),
+            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
           ),
         ],
       ),

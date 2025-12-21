@@ -33,24 +33,7 @@ class _Student_Notice_MainState extends State<Student_Notice_Main> {
     // background check for enrollment (won’t block UI)
     _checkEnrollment();
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      RemoteNotification? notification = message.notification;
-      if (notification != null) {
-        flutterLocalNotificationsPlugin.show(
-          notification.hashCode,
-          notification.title,
-          notification.body,
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'notice_channel',
-              'Notice Notifications',
-              importance: Importance.max,
-              priority: Priority.high,
-            ),
-          ),
-        );
-      }
-    });
+    
   }
 
   void saveStudentToken(String classCode) async {

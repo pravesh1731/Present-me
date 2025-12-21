@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:present_me_flutter/Teacher%20Authentication/teacher%20login%20screen.dart';
 
 import '../services/auth_service.dart';
 import '../teacher_model.dart';
-import '../components/common/Button/button.dart';
 
 class TeacherSignup extends StatefulWidget {
   @override

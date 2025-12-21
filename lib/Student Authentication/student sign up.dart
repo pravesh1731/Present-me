@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:present_me_flutter/Student%20Authentication/student%20login%20screen.dart';
@@ -11,6 +10,7 @@ class StudentSignUp extends StatefulWidget {
 
 class _StudentSignUpState extends State<StudentSignUp> {
   final AuthRepository repository = AuthRepository();
+  
   List<Map<String, dynamic>> colleges = [];
   Map<String, dynamic>? selectedCollege;
   bool _loadingColleges = false;

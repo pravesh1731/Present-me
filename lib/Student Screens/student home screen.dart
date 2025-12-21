@@ -10,8 +10,8 @@ import 'student mark attendance.dart';
 import 'student profile.dart';
 import '../common Page/notifications_page.dart';
 import '../src/models/student.dart';
-import '../src/bloc/auth/auth_bloc.dart';
-import '../src/bloc/auth/auth_state.dart';
+import '../src/bloc/student_auth/auth_bloc.dart';
+import '../src/bloc/student_auth/auth_state.dart';
 import '../Student Authentication/student login screen.dart';
 
 class studentHome extends StatefulWidget {
@@ -42,22 +42,22 @@ class _studentHomeState extends State<studentHome> {
     Student? student;
     final authState = context.watch<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
-      final dynamic userMap = authState.user;
+      final dynamic studentMap = authState.student;
       // Ensure we only call Map.from on actual Map objects. Support server oddities
       // where user may be a JSON string or other shape.
-      if (userMap is Map) {
+      if (studentMap is Map) {
         try {
-          student = Student.fromJson(Map<String, dynamic>.from(userMap));
+          student = Student.fromJson(Map<String, dynamic>.from(studentMap));
         } catch (_) {}
-      } else if (userMap is String) {
+      } else if (studentMap is String) {
         try {
-          final decoded = jsonDecode(userMap);
+          final decoded = jsonDecode(studentMap);
           if (decoded is Map) student = Student.fromJson(Map<String, dynamic>.from(decoded));
         } catch (_) {}
-      } else if (userMap != null) {
+      } else if (studentMap != null) {
         // If it's some other type (e.g., already a Student-like object), try a best-effort map conversion
         try {
-          final maybeMap = Map<String, dynamic>.from(userMap as Map);
+          final maybeMap = Map<String, dynamic>.from(studentMap as Map);
           student = Student.fromJson(maybeMap);
         } catch (_) {}
       }

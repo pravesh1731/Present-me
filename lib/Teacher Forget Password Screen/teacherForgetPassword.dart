@@ -1,8 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../components/common/Button/button.dart';
 import 'teacherForgetPasswordEmailSend.dart';
 
 class ForgetPassword extends StatefulWidget {

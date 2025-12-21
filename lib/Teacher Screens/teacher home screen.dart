@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:present_me_flutter/Teacher%20Screens/create%20class.dart';
-import 'package:present_me_flutter/teachers%20class%20Notice.dart';
 import '../common Page/notifications_page.dart';
 import 'TeacherAttendance.dart';
 import 'teacher profile.dart';

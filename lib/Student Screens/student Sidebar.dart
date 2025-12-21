@@ -5,9 +5,9 @@ import 'package:present_me_flutter/Help%20&%20Support%20Page/help_support_page.d
 import 'package:present_me_flutter/IntroScreen/introScreen.dart';
 import 'package:present_me_flutter/Policy/privacy_policy.dart';
 import 'package:present_me_flutter/Setting%20Page/settings_page.dart';
-
-import '../src/bloc/auth/auth_bloc.dart';
-import '../src/bloc/auth/auth_state.dart';
+import '../src/bloc/student_auth/auth_event.dart';
+import '../src/bloc/student_auth/auth_bloc.dart';
+import '../src/bloc/student_auth/auth_state.dart';
 
 class StudentSidebar extends StatelessWidget {
   final String? name;
@@ -56,14 +56,12 @@ class StudentSidebar extends StatelessWidget {
 
                   // 2️⃣ If user is logged in
                   if (state is AuthAuthenticated) {
-                    final user = state.user;
+                    final student = state.student;
 
                     // Get name from API user data
-                    if ((displayName == 'Student' || displayName.isEmpty) && user is Map) {
-                      final firstName =
-                      (user['firstName'] ?? '').toString();
-                      final lastName =
-                      (user['lastName']  ?? '').toString();
+                    if ((displayName == 'Student' || displayName.isEmpty)) {
+                      final firstName = (student['firstName'] ?? '').toString();
+                      final lastName = (student['lastName']  ?? '').toString();
 
                       final fullName = ('$firstName $lastName').trim();
 
@@ -71,12 +69,12 @@ class StudentSidebar extends StatelessWidget {
                         displayName = fullName;
                       } else {
                         displayName =
-                            (user['emailId'] ?? user['email'] ?? 'Student').toString();
+                            (student['emailId'] ?? student['email'] ?? 'Student').toString();
                       }
                     }
 
                     // Get profile picture from API
-                    avatarUrl ??= user['profilePicUrl']?.toString();
+                    avatarUrl ??= student['profilePicUrl']?.toString();
                   }
 
                   // 3️⃣ Fallback: Get data from local storage
@@ -216,8 +214,8 @@ class StudentSidebar extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: InkWell(
                 onTap: () async {
-                  // Firebase removed: just navigate to intro screen. If you later
-                  // wire auth via Bloc, call signOut in your bloc listener instead.
+                 context.read<AuthBloc>().add(LogoutRequested());
+                 
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (context) => introscreen()),
                     (route) => false,

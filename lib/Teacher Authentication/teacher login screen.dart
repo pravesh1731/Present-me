@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../Teacher Forget Password Screen/teacherForgetPassword.dart';
 import '../Teacher Screens/teacher home screen.dart';
 import 'teacher sign up.dart';
-import '../components/common/Button/button.dart';
 
 class teacherLogin extends StatefulWidget {
   @override

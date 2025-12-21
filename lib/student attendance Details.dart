@@ -191,7 +191,7 @@ class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
               children: [
                 CircleAvatar(
                   radius: 40,
-                  backgroundImage: (widget.profileImage != null && widget.profileImage!.trim().isNotEmpty && (widget.profileImage!.startsWith('http://') || widget.profileImage!.startsWith('https://'))) ? NetworkImage(widget.profileImage!) : null,
+                  backgroundImage: (widget.profileImage.trim().isNotEmpty && (widget.profileImage.startsWith('http://') || widget.profileImage.startsWith('https://'))) ? NetworkImage(widget.profileImage) : null,
                 ),
                 SizedBox(height: 8),
                 Text(widget.studentName,

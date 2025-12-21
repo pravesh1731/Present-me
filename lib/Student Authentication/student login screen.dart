@@ -5,9 +5,9 @@ import 'package:present_me_flutter/Student Forget Password Screen/studentForgetP
 import 'package:present_me_flutter/Student Screens/student home screen.dart';
 import 'package:present_me_flutter/Student Authentication/student sign up.dart';
 
-import '../src/bloc/auth/auth_bloc.dart';
-import '../src/bloc/auth/auth_event.dart';
-import '../src/bloc/auth/auth_state.dart';
+import '../src/bloc/student_auth/auth_bloc.dart';
+import '../src/bloc/student_auth/auth_event.dart';
+import '../src/bloc/student_auth/auth_state.dart';
 
 class studentlogin extends StatefulWidget {
   @override

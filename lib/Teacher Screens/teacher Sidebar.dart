@@ -5,7 +5,6 @@ import 'package:present_me_flutter/Teacher%20Screens/create%20class.dart';
 
 import 'package:present_me_flutter/records.dart';
 import 'package:present_me_flutter/Teacher%20Screens/downloadAttendance.dart';
-import 'package:present_me_flutter/Teacher%20Screens/teacher%20profile.dart';
 import 'package:present_me_flutter/teachers%20class%20Notice.dart';
 import 'package:present_me_flutter/teacher%20track%20attendance%20classes.dart';
 

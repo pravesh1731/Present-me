@@ -184,7 +184,7 @@ class _DownloadAttendancePageState extends State<DownloadAttendancePage> {
                               filled: true,
                               fillColor: Colors.white,
                             ),
-                            value: selectedFormat,
+                            initialValue: selectedFormat,
                             items: [
                               DropdownMenuItem(value: 'pdf', child: Text('PDF')),
                               DropdownMenuItem(value: 'excel', child: Text('Excel')),
@@ -456,7 +456,7 @@ class _DownloadAttendancePageState extends State<DownloadAttendancePage> {
       List<Map<String, dynamic>> data, String className) async {
     var excel = Excel.createExcel();
     final String sheetName = 'Attendance';
-    Sheet sheetObject = excel[sheetName] ?? excel[excel.getDefaultSheet()!]!;
+    Sheet sheetObject = excel[sheetName] ?? excel[excel.getDefaultSheet()!];
     excel.setDefaultSheet(sheetName);
 
     // Append headers

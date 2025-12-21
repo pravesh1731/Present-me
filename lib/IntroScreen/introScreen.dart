@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:present_me_flutter/components/common/Button/button.dart';
 import 'package:present_me_flutter/Student%20Authentication/student%20login%20screen.dart';
 import 'package:present_me_flutter/Teacher%20Authentication/teacher%20login%20screen.dart';

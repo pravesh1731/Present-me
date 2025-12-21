@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:present_me_flutter/constants/constants.dart' as constants;
@@ -52,14 +51,14 @@ class AuthRepository {
       _storage.write('token', decodedMap['token']);
     }
 
-    final user = decodedMap['data'] ?? decodedMap['student'] ?? decodedMap['user'] ?? decodedMap;
+    final student = decodedMap['data'] ?? decodedMap['student'] ?? decodedMap['user'] ?? decodedMap;
     // persist minimal user map for quick access in UI
     try {
-      _storage.write('student', user);
+      _storage.write('student', student);
     } catch (_) {}
 
     return {
-      'user': user,
+      'student': student,
       'token': decodedMap['token'],
     };
   }

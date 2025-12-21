@@ -332,7 +332,7 @@ class _SmartAttendanceTeacherPageState
                   CircleAvatar(
                     radius: 24,
                     backgroundImage: student.photoUrl.isNotEmpty
-                        ? ((student.photoUrl != null && student.photoUrl.trim().isNotEmpty && (student.photoUrl.startsWith('http://') || student.photoUrl.startsWith('https://'))) ? NetworkImage(student.photoUrl) : null)
+                        ? ((student.photoUrl.trim().isNotEmpty && (student.photoUrl.startsWith('http://') || student.photoUrl.startsWith('https://'))) ? NetworkImage(student.photoUrl) : null)
                         : const AssetImage('assets/placeholder_profile.png') as ImageProvider,
                   ),
                   const SizedBox(height: 8),
@@ -369,8 +369,8 @@ class _SmartAttendanceTeacherPageState
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
           ).copyWith(
-            backgroundColor: MaterialStateProperty.resolveWith((states) => null),
-            elevation: MaterialStateProperty.all(0),
+            backgroundColor: WidgetStateProperty.resolveWith((states) => null),
+            elevation: WidgetStateProperty.all(0),
           ),
           child: Ink(
             decoration: BoxDecoration(

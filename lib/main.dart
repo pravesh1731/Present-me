@@ -3,18 +3,14 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/splash%20screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'src/repositories/studentAuth_repository.dart';
-import 'src/bloc/auth/auth_bloc.dart';
-import 'src/bloc/auth/auth_event.dart';
+import 'src/bloc/student_auth/auth_bloc.dart';
+import 'src/bloc/student_auth/auth_event.dart';
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-}
+
 
 
 void main() async{
@@ -27,7 +23,7 @@ void main() async{
   const InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
   );
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+ 
 
   final authRepository = AuthRepository();
 

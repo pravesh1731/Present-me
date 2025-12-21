@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../src/bloc/auth/auth_bloc.dart';
-import '../src/bloc/auth/auth_event.dart';
-import '../src/bloc/auth/auth_state.dart';
+import '../src/bloc/student_auth/auth_bloc.dart';
+import '../src/bloc/student_auth/auth_event.dart';
+import '../src/bloc/student_auth/auth_state.dart';
 import '../src/repositories/studentAuth_repository.dart';
 
 class student_Profile extends StatefulWidget {
@@ -57,13 +57,13 @@ class _student_ProfileState extends State<student_Profile> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final state = context.read<AuthBloc>().state;
       if (state is AuthAuthenticated) {
-        _populateFromUserMap(state.user);
+        _populateFromUserMap(state.student);
       }
     });
     // also subscribe to future state changes
     context.read<AuthBloc>().stream.listen((state) {
       if (state is AuthAuthenticated) {
-        _populateFromUserMap(state.user);
+        _populateFromUserMap(state.student);
       }
     });
   }

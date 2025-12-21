@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:present_me_flutter/Teacher%20Screens/student%20request%20list.dart';
 import 'package:present_me_flutter/Teacher%20Screens/track%20attendance%20of%20specificStudent%20for%20Teacher.dart';
-import 'package:present_me_flutter/student%20attendance%20Details.dart';
 
 import 'dart:math';
 import 'package:shimmer/shimmer.dart';

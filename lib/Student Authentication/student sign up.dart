@@ -581,7 +581,8 @@ class _StudentSignUpState extends State<StudentSignUp> {
                                  }
                                  return const SizedBox(
                                    height: 120,
-                                   child: Center(child: Text('No institutes found.')),
+                                   child: Center(child: Text('No institutes found.')
+                                   ),
                                  );
                                },
                                containerBuilder: (context, popupWidget) {

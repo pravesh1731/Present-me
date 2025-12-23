@@ -1,9 +1,8 @@
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:present_me_flutter/Teacher%20Authentication/teacher%20login%20screen.dart';
-
-import '../services/auth_service.dart';
-import '../teacher_model.dart';
+import 'package:present_me_flutter/src/repositories/studentAuth_repository.dart';
+import 'package:present_me_flutter/src/repositories/teacherAuth_repository.dart';
 
 class TeacherSignup extends StatefulWidget {
   @override
@@ -11,260 +10,173 @@ class TeacherSignup extends StatefulWidget {
 }
 
 class _TeacherSignupState extends State<TeacherSignup> {
-  final _formKey = GlobalKey<FormState>();
+  final TeacherAuthRepository t_repository = TeacherAuthRepository();
+  final AuthRepository repository = AuthRepository();
 
-  final firstNameController = TextEditingController();
-  final lastNameController = TextEditingController();
-  final emailController = TextEditingController();
-  final hotspotController = TextEditingController();
-  final phoneController = TextEditingController();
-  final passwordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
+  List<Map<String, dynamic>> colleges = [];
+  Map<String, dynamic>? selectedCollege;
+  bool _loadingColleges = false;
 
-  final _authService = AuthService();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _hotspotController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  final _formKey = GlobalKey<FormState>();
   bool _submitted = false;
-  
   String? selectedInstitute;
-  final List<String> institutes = [
-    'MIT College',
-    'Stanford University',
-    'Harvard University',
-    'Oxford University',
-    'Cambridge University',
-    'IIT Bombay',
-    'IIT Delhi',
-    'Other',
-  ];
 
-  Future<void> createUser() async {
-    setState(() {
-      _submitted = true;
-    });
-    if (_formKey.currentState!.validate()) {
-      if (selectedInstitute == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Please select an institute")),
-        );
-        return;
-      }
-      
-      if (passwordController.text != confirmPasswordController.text) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Passwords do not match")),
-        );
-        return;
-      }
+  @override
+  void initState() {
+    super.initState();
+    _loadColleges();
+  }
 
-      try {
-        final user = await _authService.signUp(
-          emailController.text.trim(),
-          passwordController.text.trim(),
-        );
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _hotspotController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
-        if (user != null) {
-          final teacher = Teacher(
-            uid: user.uid,
-            name: '${firstNameController.text.trim()} ${lastNameController.text.trim()}',
-            email: emailController.text.trim(),
-            phone: phoneController.text.trim(),
-            hotspot: hotspotController.text.trim(),
-            createdAt: DateTime.now(),
-          );
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
 
-          await FirebaseFirestore.instance
-              .collection('teachers')
-              .doc(user.uid)
-              .set(teacher.toMap());
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Registration successful!")),
-          );
-          Navigator.pushReplacement(
-            context,
-            PageRouteBuilder(
-              transitionDuration: Duration(milliseconds: 600),
-              pageBuilder: (_, __, ___) => teacherLogin(),
-              transitionsBuilder: (_, animation, __, child) {
-                const begin = Offset(1.0, 0.0);
-                const end = Offset.zero;
-                const curve = Curves.easeInOutBack;
-                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                var offsetAnimation = animation.drive(tween);
-                return SlideTransition(position: offsetAnimation, child: child);
-              },
-            ),
-          );
+  bool _isValidPhone(String phone) {
+    // /^[0-9]{10}$/ from Joi
+    final phoneRegex = RegExp(r'^[0-9]{10}$');
+    return phoneRegex.hasMatch(phone);
+  }
 
-          // Optionally clear the form fields
-          _formKey.currentState!.reset();
-          firstNameController.clear();
-          lastNameController.clear();
-          emailController.clear();
-          phoneController.clear();
-          hotspotController.clear();
-          passwordController.clear();
-          confirmPasswordController.clear();
-          setState(() {
-            selectedInstitute = null;
-            _submitted = false;
-          });
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Sign up failed: $e")),
-        );
-      }
+  bool _isValidPassword(String password) {
+    // Joi: min 6, max 20, must include uppercase, lowercase, number, special char
+    if (password.length < 6 || password.length > 20) return false;
+    final passwordRegex = RegExp(
+      r'^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[@$!%*?&]).+$',
+    );
+    return passwordRegex.hasMatch(password);
+  }
+
+  Future<void> _registerTeacher() async {
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final emailId = _emailController.text.trim();
+    final hotspotName = _hotspotController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    // 1) Basic empty check
+    if (firstName.isEmpty ||
+        lastName.isEmpty ||
+        emailId.isEmpty ||
+        hotspotName.isEmpty ||
+        phone.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
+      _showSnackBar("Please fill in all the fields.");
+      return;
+    }
+
+    // 2) First/Last name length
+    if (firstName.length < 2) {
+      _showSnackBar("First name must be at least 2 characters long");
+      return;
+    }
+    if (lastName.length < 2) {
+      _showSnackBar("Last name must be at least 2 characters long");
+      return;
+    }
+
+    // 3) College selected -> institutionId
+    if (selectedCollege == null) {
+      _showSnackBar("Institution selection is required");
+      return;
+    }
+    final institutionId = selectedCollege!['id']?.toString() ?? '';
+
+    if (!_isValidEmail(emailId)) {
+      _showSnackBar("Email must be valid");
+      return;
+    }
+
+    if (!_isValidPhone(phone)) {
+      _showSnackBar("Phone number must be 10 digits");
+      return;
+    }
+    if (!_isValidPassword(password)) {
+      _showSnackBar(
+        "Password must be 6–20 chars and include uppercase, lowercase, number, and special character",
+      );
+      return;
+    }
+    if (password != confirmPassword) {
+      _showSnackBar("Passwords do not match.");
+      return;
+    }
+    if (hotspotName.isEmpty) {
+      _showSnackBar("Hotspot name is required");
+      return;
+    }
+
+    // 9) Call API via repository
+    try {
+      await t_repository.signupTeacher(
+        firstName: firstName,
+        lastName: lastName,
+        emailId: emailId,
+        phone: phone,
+        hotspotName: hotspotName,
+        institutionId: institutionId,
+        password: password,
+      );
+      _showSnackBar('Signup Successful! Please login.');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => teacherLogin()),
+      );
+    } catch (e) {
+      _showSnackBar('Signup failed: $e');
     }
   }
 
-  void _showInstituteSearchDialog(BuildContext context) {
-    final searchController = TextEditingController();
-    List<String> filteredInstitutes = List.from(institutes);
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.7,
-                ),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFECFDF5), // emerald-50
-                      Color(0xFFF0FDFA), // teal-50
-                      Color(0xFFECFEFF), // cyan-50
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Title
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Select Institute',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.pop(context),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Search field
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: TextField(
-                        controller: searchController,
-                        decoration: InputDecoration(
-                          hintText: "Search institute...",
-                          prefixIcon: const Icon(Icons.search),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade200),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade200),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF10B981),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                        onChanged: (value) {
-                          setDialogState(() {
-                            filteredInstitutes = institutes
-                                .where((institute) => institute
-                                    .toLowerCase()
-                                    .contains(value.toLowerCase()))
-                                .toList();
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // List
-                    Flexible(
-                      child: filteredInstitutes.isEmpty
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(20),
-                                child: Text(
-                                  'No institutes found',
-                                  style: TextStyle(color: Colors.black54),
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              itemCount: filteredInstitutes.length,
-                              itemBuilder: (context, index) {
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                    horizontal: 8,
-                                  ),
-                                  elevation: 0,
-                                  color: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: ListTile(
-                                    title: Text(
-                                      filteredInstitutes[index],
-                                      style: const TextStyle(fontSize: 15),
-                                    ),
-                                    onTap: () {
-                                      setState(() {
-                                        selectedInstitute = filteredInstitutes[index];
-                                      });
-                                      Navigator.pop(context);
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
+  Future<void> _loadColleges() async {
+    setState(() {
+      _loadingColleges = true;
+    });
+    try {
+      final list = await repository.getColleges();
+      setState(() {
+        colleges = list;
+      });
+    } catch (e) {
+      _showSnackBar('Failed to load colleges: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingColleges = false;
+        });
+      }
+    }
   }
 
   @override
@@ -286,7 +198,10 @@ class _TeacherSignupState extends State<TeacherSignup> {
           child: Center(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 0,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -312,7 +227,11 @@ class _TeacherSignupState extends State<TeacherSignup> {
                             ],
                           ),
                           child: const Center(
-                            child: Icon(Icons.groups_outlined, color: Colors.white, size: 44),
+                            child: Icon(
+                              Icons.groups_outlined,
+                              color: Colors.white,
+                              size: 44,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -359,7 +278,6 @@ class _TeacherSignupState extends State<TeacherSignup> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              
                               const SizedBox(height: 24),
 
                               // First Name and Last Name in a row
@@ -368,7 +286,8 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                   // First Name
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           "First Name",
@@ -380,7 +299,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                         ),
                                         const SizedBox(height: 4),
                                         TextFormField(
-                                          controller: firstNameController,
+                                          controller: _firstNameController,
                                           decoration: InputDecoration(
                                             hintText: "First Name",
                                             hintStyle: TextStyle(
@@ -393,40 +312,49 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                             ),
                                             filled: true,
                                             fillColor: Colors.white,
-                                            contentPadding: const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                              horizontal: 16,
-                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  vertical: 8,
+                                                  horizontal: 16,
+                                                ),
                                             border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                               borderSide: BorderSide(
                                                 color: Colors.grey.shade200,
                                                 width: 1,
                                               ),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                               borderSide: BorderSide(
                                                 color: Colors.grey.shade200,
                                                 width: 1,
                                               ),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFF10B981),
                                                 width: 1.5,
                                               ),
                                             ),
                                             errorBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                               borderSide: const BorderSide(
                                                 color: Colors.red,
                                                 width: 1,
                                               ),
                                             ),
                                           ),
-                                          validator: (value) => value!.isEmpty ? 'Enter first name' : null,
+                                          validator:
+                                              (value) =>
+                                                  value!.isEmpty
+                                                      ? 'Enter first name'
+                                                      : null,
                                         ),
                                       ],
                                     ),
@@ -435,7 +363,8 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                   // Last Name
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           "Last Name",
@@ -447,7 +376,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                         ),
                                         const SizedBox(height: 4),
                                         TextFormField(
-                                          controller: lastNameController,
+                                          controller: _lastNameController,
                                           decoration: InputDecoration(
                                             hintText: "Last Name",
                                             hintStyle: TextStyle(
@@ -460,40 +389,49 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                             ),
                                             filled: true,
                                             fillColor: Colors.white,
-                                            contentPadding: const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                              horizontal: 16,
-                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  vertical: 8,
+                                                  horizontal: 16,
+                                                ),
                                             border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                               borderSide: BorderSide(
                                                 color: Colors.grey.shade200,
                                                 width: 1,
                                               ),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                               borderSide: BorderSide(
                                                 color: Colors.grey.shade200,
                                                 width: 1,
                                               ),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                               borderSide: const BorderSide(
                                                 color: Color(0xFF10B981),
                                                 width: 1.5,
                                               ),
                                             ),
                                             errorBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                               borderSide: const BorderSide(
                                                 color: Colors.red,
                                                 width: 1,
                                               ),
                                             ),
                                           ),
-                                          validator: (value) => value!.isEmpty ? 'Enter last name' : null,
+                                          validator:
+                                              (value) =>
+                                                  value!.isEmpty
+                                                      ? 'Enter last name'
+                                                      : null,
                                         ),
                                       ],
                                     ),
@@ -516,7 +454,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                   ),
                                   const SizedBox(height: 4),
                                   TextFormField(
-                                    controller: emailController,
+                                    controller: _emailController,
                                     keyboardType: TextInputType.emailAddress,
                                     decoration: InputDecoration(
                                       hintText: "Email address",
@@ -530,10 +468,11 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                       ),
                                       filled: true,
                                       fillColor: Colors.white,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 16,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 16,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
@@ -563,7 +502,11 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                         ),
                                       ),
                                     ),
-                                    validator: (value) => value!.isEmpty ? 'Enter email' : null,
+                                    validator:
+                                        (value) =>
+                                            value!.isEmpty
+                                                ? 'Enter email'
+                                                : null,
                                   ),
                                 ],
                               ),
@@ -583,7 +526,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                   ),
                                   const SizedBox(height: 4),
                                   TextFormField(
-                                    controller: phoneController,
+                                    controller: _phoneController,
                                     keyboardType: TextInputType.phone,
                                     decoration: InputDecoration(
                                       hintText: "Phone Number",
@@ -597,10 +540,11 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                       ),
                                       filled: true,
                                       fillColor: Colors.white,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 16,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 16,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
@@ -630,7 +574,11 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                         ),
                                       ),
                                     ),
-                                    validator: (value) => value!.isEmpty ? 'Enter phone number' : null,
+                                    validator:
+                                        (value) =>
+                                            value!.isEmpty
+                                                ? 'Enter phone number'
+                                                : null,
                                   ),
                                 ],
                               ),
@@ -650,7 +598,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                   ),
                                   const SizedBox(height: 4),
                                   TextFormField(
-                                    controller: hotspotController,
+                                    controller: _hotspotController,
                                     decoration: InputDecoration(
                                       hintText: "Enter hotspot name",
                                       hintStyle: TextStyle(
@@ -663,10 +611,11 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                       ),
                                       filled: true,
                                       fillColor: Colors.white,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 16,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 16,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
@@ -696,7 +645,11 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                         ),
                                       ),
                                     ),
-                                    validator: (value) => value!.isEmpty ? 'Enter hotspot name' : null,
+                                    validator:
+                                        (value) =>
+                                            value!.isEmpty
+                                                ? 'Enter hotspot name'
+                                                : null,
                                   ),
                                 ],
                               ),
@@ -715,78 +668,192 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  InkWell(
-                                    onTap: () => _showInstituteSearchDialog(context),
-                                    child: InputDecorator(
-                                      decoration: InputDecoration(
-                                        hintText: "Select Institute",
-                                        hintStyle: TextStyle(
-                                          color: Colors.grey.shade400,
-                                          fontSize: 15,
+                                  DropdownSearch<Map<String, dynamic>>(
+                                    asyncItems: (String? filter) async {
+                                      // If we already have loaded colleges, return immediately
+                                      if (colleges.isNotEmpty) return colleges;
+                                      if (!mounted)
+                                        return <Map<String, dynamic>>[];
+                                      setState(() {
+                                        _loadingColleges = true;
+                                      });
+                                      try {
+                                        final list =
+                                            await repository.getColleges();
+                                        if (!mounted) return list;
+                                        setState(() {
+                                          colleges = list;
+                                        });
+                                        return list;
+                                      } catch (e) {
+                                        // returning empty will trigger emptyBuilder
+                                        return <Map<String, dynamic>>[];
+                                      } finally {
+                                        if (mounted) {
+                                          setState(() {
+                                            _loadingColleges = false;
+                                          });
+                                        }
+                                      }
+                                    },
+                                    selectedItem: selectedCollege,
+                                    itemAsString:
+                                        (college) =>
+                                            (college['name'] ?? '').toString(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        selectedCollege = value;
+                                      });
+                                    },
+                                    dropdownDecoratorProps:
+                                        DropDownDecoratorProps(
+                                          dropdownSearchDecoration:
+                                              InputDecoration(
+                                                hintText: "Select Institute",
+                                                hintStyle: TextStyle(
+                                                  color: Colors.grey.shade400,
+                                                  fontSize: 15,
+                                                ),
+                                                prefixIcon: Icon(
+                                                  Icons.school_outlined,
+                                                  color: Colors.grey.shade400,
+                                                ),
+                                                filled: true,
+                                                fillColor: Colors.white,
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8,
+                                                      horizontal: 16,
+                                                    ),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  borderSide: BorderSide(
+                                                    color: Colors.grey.shade200,
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                enabledBorder:
+                                                    OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                      borderSide: BorderSide(
+                                                        color:
+                                                            Colors
+                                                                .grey
+                                                                .shade200,
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                focusedBorder:
+                                                    OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                      borderSide:
+                                                          const BorderSide(
+                                                            color: Color(
+                                                              0xFF6366F1,
+                                                            ),
+                                                            width: 1.5,
+                                                          ),
+                                                    ),
+                                              ),
                                         ),
-                                        prefixIcon: Icon(
-                                          Icons.school_outlined,
-                                          color: Colors.grey.shade400,
-                                        ),
-                                        suffixIcon: Icon(
-                                          Icons.arrow_drop_down,
-                                          color: Colors.black87,
-                                        ),
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                        contentPadding: const EdgeInsets.symmetric(
-                                          vertical: 8,
-                                          horizontal: 16,
-                                        ),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
-                                            color: Colors.grey.shade200,
-                                            width: 1,
+                                    popupProps: PopupProps.dialog(
+                                      showSearchBox: true,
+                                      searchFieldProps: TextFieldProps(
+                                        decoration: InputDecoration(
+                                          hintText: "Search Institute",
+                                          prefixIcon: const Icon(Icons.search),
+                                          filled: true,
+                                          fillColor: Colors.white,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.grey.shade200,
+                                            ),
                                           ),
-                                        ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
-                                            color: Colors.grey.shade200,
-                                            width: 1,
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.grey.shade200,
+                                            ),
                                           ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(
-                                            color: Color(0xFF10B981),
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        errorBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(
-                                            color: Colors.red,
-                                            width: 1,
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: const BorderSide(
+                                              color: Color(0xFF6366F1),
+                                              width: 1.5,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                      child: Text(
-                                        selectedInstitute ?? "Select Institute",
-                                        style: TextStyle(
-                                          color: Colors.black87,
-                                          fontSize: 15,
+                                      dialogProps: DialogProps(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
                                         ),
+                                        backgroundColor: Colors.transparent,
                                       ),
+                                      // When popup opens and the colleges list is still loading,
+                                      // show a centered CircularProgressIndicator. If loading finished
+                                      // and the list is empty, show a friendly message.
+                                      loadingBuilder: (_, __) {
+                                        return const SizedBox(
+                                          height: 120,
+                                          child: Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        );
+                                      },
+                                      emptyBuilder: (_, __) {
+                                        if (_loadingColleges) {
+                                          return const SizedBox(
+                                            height: 120,
+                                            child: Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
+                                          );
+                                        }
+                                        return const SizedBox(
+                                          height: 120,
+                                          child: Center(
+                                            child: Text('No institutes found.'),
+                                          ),
+                                        );
+                                      },
+                                      containerBuilder: (context, popupWidget) {
+                                        return Container(
+                                          decoration: BoxDecoration(
+                                            gradient: const LinearGradient(
+                                              colors: [
+                                                Color(0xFFEFF6FF),
+                                                Color(0xFFF5F3FF),
+                                                Color(0xFFFDF2F8),
+                                              ],
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                            ),
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          padding: const EdgeInsets.all(20),
+                                          child: popupWidget,
+                                        );
+                                      },
                                     ),
                                   ),
-                                  if (_submitted && selectedInstitute == null)
-                                    const Padding(
-                                      padding: EdgeInsets.only(left: 12, top: 8),
-                                      child: Text(
-                                        'Select an institute',
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
                                 ],
                               ),
                               const SizedBox(height: 16),
@@ -805,7 +872,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                   ),
                                   const SizedBox(height: 4),
                                   TextFormField(
-                                    controller: passwordController,
+                                    controller: _passwordController,
                                     obscureText: _obscurePassword,
                                     decoration: InputDecoration(
                                       hintText: "Password",
@@ -826,16 +893,18 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                         ),
                                         onPressed: () {
                                           setState(() {
-                                            _obscurePassword = !_obscurePassword;
+                                            _obscurePassword =
+                                                !_obscurePassword;
                                           });
                                         },
                                       ),
                                       filled: true,
                                       fillColor: Colors.white,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 16,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 16,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
@@ -865,7 +934,11 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                         ),
                                       ),
                                     ),
-                                    validator: (value) => value!.length < 6 ? 'Minimum 6 characters' : null,
+                                    validator:
+                                        (value) =>
+                                            value!.length < 6
+                                                ? 'Minimum 6 characters'
+                                                : null,
                                   ),
                                 ],
                               ),
@@ -885,7 +958,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                   ),
                                   const SizedBox(height: 4),
                                   TextFormField(
-                                    controller: confirmPasswordController,
+                                    controller: _confirmPasswordController,
                                     obscureText: _obscureConfirmPassword,
                                     decoration: InputDecoration(
                                       hintText: "Confirm Password",
@@ -906,16 +979,18 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                         ),
                                         onPressed: () {
                                           setState(() {
-                                            _obscureConfirmPassword = !_obscureConfirmPassword;
+                                            _obscureConfirmPassword =
+                                                !_obscureConfirmPassword;
                                           });
                                         },
                                       ),
                                       filled: true,
                                       fillColor: Colors.white,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 16,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 16,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
@@ -945,7 +1020,11 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                         ),
                                       ),
                                     ),
-                                    validator: (value) => value!.isEmpty ? 'Confirm your password' : null,
+                                    validator:
+                                        (value) =>
+                                            value!.isEmpty
+                                                ? 'Confirm your password'
+                                                : null,
                                   ),
                                 ],
                               ),
@@ -956,7 +1035,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                 width: double.infinity,
                                 height: 48,
                                 child: ElevatedButton(
-                                  onPressed: createUser,
+                                  onPressed: _registerTeacher,
                                   style: ElevatedButton.styleFrom(
                                     padding: EdgeInsets.zero,
                                     shape: RoundedRectangleBorder(
@@ -967,11 +1046,16 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                   child: Ink(
                                     decoration: const BoxDecoration(
                                       gradient: LinearGradient(
-                                        colors: [Color(0xFF10B981), Color(0xFF0D9488)],
+                                        colors: [
+                                          Color(0xFF10B981),
+                                          Color(0xFF0D9488),
+                                        ],
                                         begin: Alignment.centerLeft,
                                         end: Alignment.centerRight,
                                       ),
-                                      borderRadius: BorderRadius.all(Radius.circular(14)),
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(14),
+                                      ),
                                     ),
                                     child: Container(
                                       alignment: Alignment.center,
@@ -996,13 +1080,18 @@ class _TeacherSignupState extends State<TeacherSignup> {
                                 children: [
                                   const Text(
                                     "Already have an account? ",
-                                    style: TextStyle(color: Colors.black54, fontSize: 14),
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                   GestureDetector(
                                     onTap: () {
                                       Navigator.pushReplacement(
                                         context,
-                                        MaterialPageRoute(builder: (_) => teacherLogin()),
+                                        MaterialPageRoute(
+                                          builder: (_) => teacherLogin(),
+                                        ),
                                       );
                                     },
                                     child: const Text(
@@ -1024,10 +1113,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
                     const SizedBox(height: 24),
                     const Text(
                       '© 2025 Present-Me. All rights reserved.',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),

@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:present_me_flutter/constants/constants.dart' as constants;
@@ -133,7 +135,130 @@ class TeacherAuthRepository {
     throw Exception('Failed to fetch profile: invalid response');
   }
 
+  Future<Map<String, dynamic>> patchTeacherProfile(Map<String, dynamic> payload) async {
+    final uri = Uri.parse('$baseUrl/teachers/profile');
+    final t = token;
+    if (t == null) throw Exception('No token available');
+    final res = await _client.patch(uri,
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $t'}, body: jsonEncode(payload));
+
+    // Debug logging - help diagnose server responses that aren't maps
+    try {
+      debugPrint('patchProfile: status=${res.statusCode} body=${res.body}');
+    } catch (_) {}
+
+    dynamic decodedRaw;
+    try {
+      decodedRaw = jsonDecode(res.body);
+    } catch (_) {
+      decodedRaw = null;
+    }
+
+
+    final is2xx = res.statusCode >= 200 && res.statusCode < 300;
+    final messageLooksLikeSuccess = decodedRaw is Map && decodedRaw['message'] is String && decodedRaw['message'].toString().toLowerCase().contains('success');
+
+    // Treat as success if 2xx OR decoded message looks like success
+    if (is2xx || messageLooksLikeSuccess) {
+      // If server returned a map with `data`, use it; otherwise fetch profile to get canonical data
+      if (decodedRaw is Map) {
+        final result = (decodedRaw['data'] is Map) ? Map<String, dynamic>.from(decodedRaw['data']) : (decodedRaw['data'] ?? decodedRaw);
+        // if result is a Map, persist and return it
+        if (result is Map<String, dynamic>) {
+          try {
+            _storage.write('teacher', result);
+          } catch (_) {}
+          return result;
+        }
+      }
+
+      // If decode didn't return an object with data, fetch canonical profile
+      try {
+        final profile = await getTeacherProfile();
+        return profile;
+      } catch (_) {
+        // last-resort: if decodedRaw is a String message, return a map with message
+        if (decodedRaw is String) return {'message': decodedRaw};
+        throw Exception('Profile update failed');
+      }
+    }
+
+    // Not successful
+    if (decodedRaw is Map && decodedRaw['message'] != null) {
+      final msg = decodedRaw['message'].toString();
+      throw Exception(msg);
+    }
+    throw Exception('Profile update failed (status ${res.statusCode})');
+  }
+
+
+  /// Upload a profile picture using the same PATCH `/students/profile` API.
+  /// Sends a multipart PATCH request with field name 'profilePicUrl'.
+  /// Returns the updated profile map when available, or falls back to getProfile().
+  Future<Map<String, dynamic>> uploadTeacherProfilePic(File file) async {
+    final t = token;
+    if (t == null) throw Exception('No token available');
+
+    final uri = Uri.parse('$baseUrl/teachers/profile');
+    final request = http.MultipartRequest('PATCH', uri);
+    request.headers['Authorization'] = 'Bearer $t';
+
+    // Use the server-expected field name 'profilePicUrl'
+    final fieldName = 'profilePicUrl';
+    try {
+      final multipartFile = await http.MultipartFile.fromPath(fieldName, file.path);
+      request.files.clear();
+      request.files.add(multipartFile);
+    } catch (e) {
+      throw Exception('Failed to read file for upload: $e');
+    }
+
+    final streamed = await request.send();
+    final res = await http.Response.fromStream(streamed);
+
+    debugPrint('uploadProfilePic($fieldName): status=${res.statusCode}');
+    debugPrint('uploadProfilePic($fieldName): body=${res.body}');
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(res.body);
+    } catch (_) {
+      decoded = null;
+    }
+
+    final is2xx = res.statusCode >= 200 && res.statusCode < 300;
+    if (is2xx) {
+      if (decoded is Map) {
+        final result = decoded['data'] ?? decoded;
+        if (result is Map<String, dynamic>) {
+          try {
+            _storage.write('teacher', result);
+          } catch (_) {}
+          return Map<String, dynamic>.from(result);
+        }
+      }
+
+      // fallback to GET profile when PATCH didn't return object
+      try {
+        final profile = await getTeacherProfile();
+        return profile;
+      } catch (e) {
+        if (decoded is String) return {'message': decoded};
+        throw Exception('Upload succeeded but failed to obtain profile: $e');
+      }
+    }
+
+    if (decoded is Map && decoded['message'] != null) {
+      throw Exception(decoded['message'].toString());
+    }
+    throw Exception('Upload failed (status ${res.statusCode})');
+  }
+
+
   Future<void> signOut() async {
     _storage.remove('token');
   }
+
+
+
 }

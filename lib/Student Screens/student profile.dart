@@ -147,7 +147,7 @@ class _student_ProfileState extends State<student_Profile> {
       branchController.text = (user['branch'] ?? '').toString();
       yearController.text = (user['year'] ?? '').toString();
       sectionController.text = (user['section'] ?? '').toString();
-      profilePicUrl = (user['profilePicUrl'] ?? user['photoUrl'] ?? user['avatarUrl'] ?? '').toString();
+      profilePicUrl = (user['profilePicUrl'] ?? '').toString();
 
       final createdAt = (user['createdAt'] ?? user['created_at'] ?? '').toString();
       if (createdAt.isNotEmpty) {
@@ -163,7 +163,6 @@ class _student_ProfileState extends State<student_Profile> {
       try {
         box.write('student', user);
       } catch (_) {}
-
       setState(() {});
     } catch (e) {
       debugPrint('populate error: $e');

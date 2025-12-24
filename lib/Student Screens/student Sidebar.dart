@@ -94,7 +94,6 @@ class StudentSidebar extends StatelessWidget {
                       if (fullName.isNotEmpty) {
                         displayName = fullName;
                       }
-
                       avatarUrl ??= (stored['profilePicUrl'])?.toString();
                     }
                   }

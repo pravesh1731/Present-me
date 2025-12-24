@@ -1,28 +1,28 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:present_me_flutter/Teacher%20Authentication/teacher%20login%20screen.dart';
 import 'package:present_me_flutter/Teacher%20Screens/create%20class.dart';
 import 'package:present_me_flutter/src/bloc/teacher_auth/teacher_auth_bloc.dart';
-import 'package:present_me_flutter/src/models/teacher.dart';
 import '../common Page/notifications_page.dart';
 import 'TeacherAttendance.dart';
 import 'teacher profile.dart';
 import 'teacher Sidebar.dart';
 
 class teacherHome extends StatefulWidget {
+
   @override
   State<teacherHome> createState() => _teacherHomeState();
 }
 
+
 class _teacherHomeState extends State<teacherHome> {
   int _selectedIndex = 0;
   final box = GetStorage();
+
+
   final String formattedDate = DateFormat('EEEE, MMMM d, y').format(DateTime.now());
 
   @override
@@ -37,55 +37,15 @@ class _teacherHomeState extends State<teacherHome> {
     });
   }
 
+
+
   @override
   Widget build(BuildContext context) {
-    // Try to obtain student from AuthBloc state, fallback to storage
-    Teacher? teacher;
-    final authState = context.watch<TeacherAuthBloc>().state;
-    if (authState is TeacherAuthAuthenticated) {
-      final dynamic teacherMap = authState.teacher;
-      // Ensure we only call Map.from on actual Map objects. Support server oddities
-      // where user may be a JSON string or other shape.
-      if (teacherMap is Map) {
-        try {
-          teacher = Teacher.fromJson(Map<String, dynamic>.from(teacherMap));
-        } catch (_) {}
-      } else if (teacherMap is String) {
-        try {
-          final decoded = jsonDecode(teacherMap);
-          if (decoded is Map) teacher = Teacher.fromJson(Map<String, dynamic>.from(decoded));
-        } catch (_) {}
-      } else if (teacherMap != null) {
-        // If it's some other type (e.g., already a Student-like object), try a best-effort map conversion
-        try {
-          final maybeMap = Map<String, dynamic>.from(teacherMap as Map);
-          teacher = Teacher.fromJson(maybeMap);
-        } catch (_) {}
-      }
-    }
-    if (teacher == null) {
-      final storedStudent = box.read('teacher');
-      if (storedStudent != null) {
-        try {
-          if (storedStudent is Map) {
-            teacher = Teacher.fromJson(Map<String, dynamic>.from(storedStudent));
-          } else if (storedStudent is String) {
-            final decoded = jsonDecode(storedStudent);
-            if (decoded is Map) teacher = Teacher.fromJson(Map<String, dynamic>.from(decoded));
-          } else {
-            // Attempt best-effort conversion for other map-like types
-            final maybeMap = Map<String, dynamic>.from(storedStudent as Map);
-            teacher = Teacher.fromJson(maybeMap);
-          }
-        } catch (_) {
-          // ignore: if parsing fails, leave student null and show login screen
-        }
-      }
-    }
-
-    // If still null → not logged in (no token)
+    // Robust token check: ensure there's a token AND teacher data stored
     final String? token = box.read<String>('token');
-    if (token == null || teacher == null) {
+
+    // If we don't have a token or we don't have teacher data stored, force login
+    if (token == null || !box.hasData('teacher')) {
       return Scaffold(
         body: Center(
           child: Column(
@@ -101,7 +61,7 @@ class _teacherHomeState extends State<teacherHome> {
                   // Clear storage token and go to login
                   final box = GetStorage();
                   box.remove('token');
-                  box.remove('student');
+                  box.remove('teacher');
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (_) => teacherLogin()),
@@ -120,7 +80,7 @@ class _teacherHomeState extends State<teacherHome> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          _buildHomeScreen(teacher),
+          _buildHomeScreen(),
           CreateClass(),
           takeAttendnace(),
           teacher_Profile(),
@@ -163,11 +123,13 @@ class _teacherHomeState extends State<teacherHome> {
 
 
 
-  Widget _buildHomeScreen(Teacher teacher) {
-    final String fullName = '${teacher.firstName} ${teacher.lastName}'.trim();
-    final String name = fullName.isEmpty ? 'Teacher' : fullName;
-    final String designation = teacher.qualification ?? 'Educator';
-    final String profilePicUrl = teacher.profilePicUrl ?? '';
+  Widget _buildHomeScreen() {
+
+    // Use a single variable for teacher display name to avoid shadowing and null issues
+    String? teacherName;
+    String? department;
+    String? profilePicUrl;
+
 
     return Container(
       decoration: const BoxDecoration(
@@ -197,105 +159,203 @@ class _teacherHomeState extends State<teacherHome> {
                       ),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: IconButton(
-                                icon: const Icon(Icons.menu, color: Colors.white, size: 20),
-                                onPressed: () {
-                                  showTeacherSidebar(context, teacherName:name, designation: designation, photoUrl: profilePicUrl);
-                                },
-                              ),
-                            ),
-                            Expanded(
-                              child: Column(
+                    child: BlocBuilder<TeacherAuthBloc, TeacherAuthState>(
+                        builder: (context, state) {
+
+                          // 1) Try to read data from authenticated state (if available)
+                          if (state is TeacherAuthAuthenticated) {
+                            final dynamic teacher = state.teacher;
+
+                            // Safely extract first/last name if teacher is a Map-like structure
+                            try {
+                              if (teacher is Map) {
+                                final firstName = (teacher['firstName'] ?? '').toString();
+                                final lastName = (teacher['lastName'] ?? '').toString();
+                                final computed = ('$firstName $lastName').trim();
+                                if (computed.isNotEmpty) {
+                                  teacherName = computed;
+                                } else {
+                                  teacherName = (teacher['emailId'] ?? teacher['email'] ?? 'Teacher').toString();
+                                }
+
+                                profilePicUrl ??= teacher['profilePicUrl']?.toString();
+                                department ??= teacher['department']?.toString();
+
+                              } else if (teacher is String) {
+                                // attempt to decode JSON string
+                                try {
+                                  final decoded = jsonDecode(teacher);
+                                  if (decoded is Map) {
+                                    final firstName = (decoded['firstName'] ?? '').toString();
+                                    final lastName = (decoded['lastName'] ?? '').toString();
+                                    final computed = ('$firstName $lastName').trim();
+                                    teacherName = computed.isNotEmpty ? computed : (decoded['emailId'] ?? decoded['email'] ?? 'Teacher').toString();
+                                    profilePicUrl ??= decoded['profilePicUrl']?.toString();
+                                    department ??= decoded['department']?.toString();
+                                  }
+                                } catch (_) {
+                                  // ignore decode errors
+                                }
+                              }
+                            } catch (_) {
+                              // ignore parsing errors
+                            }
+                          }
+
+                          // 2) Fallback to local storage if we still don't have a teacherName
+                          if ((teacherName?.isEmpty ?? true) && GetStorage().hasData('teacher')) {
+                            final stored = GetStorage().read('teacher');
+                            try {
+                              if (stored is Map) {
+                                final firstName = (stored['firstName'] ?? '').toString();
+                                final lastName = (stored['lastName'] ?? '').toString();
+                                final computed = ('$firstName $lastName').trim();
+                                if (computed.isNotEmpty) {
+                                  teacherName = computed;
+                                }
+                                profilePicUrl ??= (stored['profilePicUrl'])?.toString();
+                                department ??= stored['department']?.toString();
+                              } else if (stored is String) {
+                                final decoded = jsonDecode(stored);
+                                if (decoded is Map) {
+                                  final firstName = (decoded['firstName'] ?? '').toString();
+                                  final lastName = (decoded['lastName'] ?? '').toString();
+                                  final computed = ('$firstName $lastName').trim();
+                                  if (computed.isNotEmpty) teacherName = computed;
+                                  profilePicUrl ??= decoded['profilePicUrl']?.toString();
+                                  department ??= decoded['department']?.toString();
+                                }
+                              }
+                            } catch (_) {
+                              // ignore parsing errors
+                            }
+                          }
+
+                          // Ensure we have a non-null name for display
+                          final String displayName = (teacherName?.isNotEmpty == true) ? teacherName! : 'Teacher';
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment
+                                    .spaceBetween,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.wb_sunny_outlined,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _getGreeting(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: IconButton(
+                                      icon: const Icon(
+                                          Icons.menu, color: Colors.white,
+                                          size: 20),
+                                      onPressed: () {
+                                        showTeacherSidebar(
+                                            context,
+                                            teacherName: displayName,
+                                            designation:  'Faculty',
+                                            photoUrl: profilePicUrl
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment
+                                              .center,
+                                          children: [
+                                            const Icon(
+                                              Icons.wb_sunny_outlined,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              _getGreeting(),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Prof. $name',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Prof. $displayName',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        const Text(
+                                          'Mathematics Department',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'Mathematics Department',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 14,
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.3),
+                                      shape: BoxShape.circle,
                                     ),
-                                    textAlign: TextAlign.center,
+                                    child: IconButton(
+                                      icon: const Icon(
+                                          Icons.notifications_active_outlined,
+                                          color: Colors.white, size: 20),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (
+                                                context) => const NotificationsPage(),
+                                          ),
+                                        );
+                                      },
+                                      padding: EdgeInsets.zero,
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.3),
-                                shape: BoxShape.circle,
+                              const SizedBox(height: 20),
+                              // Stats Row
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment
+                                    .spaceBetween,
+                                children: [
+                                  _buildStatCard(
+                                      'Students', '145', Icons.people_outline,
+                                      Colors.blue),
+                                  _buildStatCard(
+                                      'Classes', '8', Icons.class_outlined,
+                                      Colors.purple),
+                                  _buildStatCard('Avg\nAttendance', '88%',
+                                      Icons.trending_up, Colors.green),
+                                ],
                               ),
-                              child: IconButton(
-                                icon: const Icon(Icons.notifications_active_outlined, color: Colors.white, size: 20),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const NotificationsPage(),
-                                    ),
-                                  );
-                                },
-                                padding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        // Stats Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildStatCard('Students', '145', Icons.people_outline, Colors.blue),
-                            _buildStatCard('Classes', '8', Icons.class_outlined, Colors.purple),
-                            _buildStatCard('Avg\nAttendance', '88%', Icons.trending_up, Colors.green),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                            ],
+                          );
+                        }
+                    )
+
+                ),
+
+
                   
                   // Quick Actions
                   Padding(

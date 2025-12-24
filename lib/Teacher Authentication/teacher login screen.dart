@@ -17,7 +17,6 @@ class _teacherLoginState extends State<teacherLogin> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
@@ -46,6 +45,12 @@ class _teacherLoginState extends State<teacherLogin> {
   }
 
   Future<void> _login() async {
+    // This method is kept for backward compatibility; prefer calling _loginWithContext from widget callbacks
+    return _loginWithContext(context);
+  }
+
+  // Use the BuildContext coming from the widget subtree (e.g. the BlocBuilder's context)
+  Future<void> _loginWithContext(BuildContext ctx) async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -59,10 +64,14 @@ class _teacherLoginState extends State<teacherLogin> {
       return;
     }
 
-    // Dispatch login event to AuthBloc
-    context.read<TeacherAuthBloc>().add(
-      TeacherLoginRequested(email: email, password: password),
-    );
+    try {
+      // Dispatch login event to AuthBloc using the provided context (from BlocBuilder)
+      ctx.read<TeacherAuthBloc>().add(
+        TeacherLoginRequested(email: email, password: password),
+      );
+    } catch (e) {
+      _showSnackBar('Internal error: unable to access authentication provider.');
+    }
   }
 
   Widget _buildBody() {
@@ -404,7 +413,7 @@ class _teacherLoginState extends State<teacherLogin> {
                                     }
 
                                     return ElevatedButton(
-                                      onPressed: _login,
+                                      onPressed: () => _loginWithContext(context),
                                       style: ElevatedButton.styleFrom(
                                         padding: EdgeInsets.zero,
                                         shape: RoundedRectangleBorder(

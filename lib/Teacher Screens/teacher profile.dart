@@ -1,9 +1,11 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import '../services/cloudinary_service.dart';
+import 'package:present_me_flutter/src/bloc/teacher_auth/teacher_auth_bloc.dart';
+import 'package:present_me_flutter/src/repositories/teacherAuth_repository.dart';
+
 
 class teacher_Profile extends StatefulWidget {
   @override
@@ -11,12 +13,13 @@ class teacher_Profile extends StatefulWidget {
 }
 
 class _teacher_ProfileState extends State<teacher_Profile> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final box = GetStorage();
 
-  bool isEditing = false;
   bool isLoading = true;
-  String? photoUrl;
+  bool isUploading = false;
+  String? profilePicUrl;
+
+
 
   final nameController = TextEditingController();
   final emailController = TextEditingController();
@@ -32,205 +35,231 @@ class _teacher_ProfileState extends State<teacher_Profile> {
   int classesCount = 5;
   int studentsCount = 145;
 
+  final ImagePicker _picker = ImagePicker();
+  // When picking an image in edit modal, we store it here and only upload on Save
+  File? _pendingPickedImage;
+
+  // Return a NetworkImage only when `profilePicUrl` is a valid http/https URL.
+  ImageProvider? _validNetworkImage() {
+    final url = profilePicUrl?.trim();
+    if (url == null || url.isEmpty) return null;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return null;
+    if (uri.scheme == 'http' || uri.scheme == 'https') return NetworkImage(url);
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
-    fetchTeacherData();
-    fetchClassesAndStudents();
+    // Initialize from stored GetStorage (backwards compatibility) then try to populate from AuthBloc
+    _loadFromStorage();
+    // Listen for AuthAuthenticated to refresh UI
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = context.read<TeacherAuthBloc>().state;
+      if (state is TeacherAuthAuthenticated) {
+        _populateFromUserMap(state.teacher);
+      }
+    });
+    // also subscribe to future state changes
+    context.read<TeacherAuthBloc>().stream.listen((state) {
+      if (state is TeacherAuthAuthenticated) {
+        _populateFromUserMap(state.teacher);
+      }
+    });
+
   }
 
-  Future<void> fetchClassesAndStudents() async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return;
-
-      final classesSnapshot = await _firestore
-          .collection('classes')
-          .where('createdBy', isEqualTo: user.uid)
-          .get();
-
-      int totalStudents = 0;
-      for (var doc in classesSnapshot.docs) {
-        final students = doc.data()['students'] as List? ?? [];
-        totalStudents += students.length;
-      }
-
-      setState(() {
-        classesCount = classesSnapshot.docs.length;
-        studentsCount = totalStudents;
-      });
-    } catch (e) {
-      print('Error fetching classes and students: $e');
-      // Keep the default values if error occurs
-    }
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    officeController.dispose();
+    departmentController.dispose();
+    specializationController.dispose();
+    qualificationController.dispose();
+    experienceController.dispose();
+    employeeIdController.dispose();
+    super.dispose();
   }
 
-  Future<void> fetchTeacherData() async {
+
+  void _loadFromStorage() {
     try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        setState(() => isLoading = false);
-        return;
-      }
-
-      final doc = await _firestore.collection("teachers").doc(user.uid).get();
-
-      if (doc.exists) {
-        final data = doc.data()!;
-        nameController.text = data['name'] ?? '';
-        emailController.text = data['email'] ?? '';
-        phoneController.text = data['phone'] ?? '';
-        officeController.text = data['office'] ?? '';
-        departmentController.text = data['department'] ?? '';
-        specializationController.text = data['specialization'] ?? '';
-        qualificationController.text = data['qualification'] ?? '';
-        experienceController.text = data['experience'] ?? '';
-        employeeIdController.text = data['employeeId'] ?? '';
-        photoUrl = data['photoUrl'];
-        
-        // Format joined date if it exists
-        if (data['createdAt'] != null) {
-          final timestamp = data['createdAt'] as Timestamp;
-          final date = timestamp.toDate();
-          final months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                          'July', 'August', 'September', 'October', 'November', 'December'];
-          joinedDate = '${months[date.month - 1]} ${date.year}';
+      // Try to read the raw stored student JSON from GetStorage (may contain extra keys like profilePicUrl)
+      final storedTeacherRaw = box.read('teacher');
+      Map<String, dynamic>? storedTeacherMap;
+      if (storedTeacherRaw != null) {
+        try {
+          if (storedTeacherRaw is Map<String, dynamic>) {
+            storedTeacherMap = storedTeacherRaw;
+          } else {
+            storedTeacherMap = Map<String, dynamic>.from(storedTeacherRaw);
+          }
+        } catch (_) {
+          storedTeacherMap = null;
         }
       }
 
-      setState(() => isLoading = false);
+      // Populate local controllers if storage present
+      if (storedTeacherMap != null) {
+        final fullName = ((storedTeacherMap['firstName'] ?? '') + ' ' + (storedTeacherMap['lastName'] ?? '')).trim();
+        nameController.text = fullName;
+        emailController.text = storedTeacherMap['emailId']?.toString() ?? '';
+        phoneController.text = storedTeacherMap['phone']?.toString() ?? '';
+        officeController.text = storedTeacherMap['officeLocation']?.toString() ?? '';
+        departmentController.text = storedTeacherMap['department']?.toString() ?? '';
+        specializationController.text = storedTeacherMap['specialization']?.toString() ?? '';
+        qualificationController.text = storedTeacherMap['qualification']?.toString() ?? '';
+        experienceController.text = storedTeacherMap['experience']?.toString() ?? '';
+        employeeIdController.text = storedTeacherMap['empId']?.toString() ?? '';
+        profilePicUrl = storedTeacherMap['profilePicUrl']?.toString()  ;
+        final createdAt = storedTeacherMap['createdAt']?.toString() ?? '';
+        if (createdAt.isNotEmpty) {
+          try {
+            final dt = DateTime.parse(createdAt);
+            joinedDate = '${dt.day}-${dt.month}-${dt.year}';
+          } catch (_) {
+            joinedDate = createdAt;
+          }
+        }
+      }
+
+
+      classesCount = 0;
+
     } catch (e) {
-      print('Error fetching teacher data: $e');
+      debugPrint('Error loading student from storage: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+// local storage mai save karna..
+  void _populateFromUserMap(Map<String, dynamic> user) {
+    try {
+      final firstName = (user['firstName'] ?? user['name']?.split(' ')?.first ?? '').toString();
+      final lastName = (user['lastName'] ?? '').toString();
+      final fullName = (firstName + ' ' + lastName).trim();
+
+      nameController.text = fullName;
+      emailController.text = (user['emailId'] ?? '').toString();
+      phoneController.text = (user['phone'] ?? '').toString();
+      officeController.text = (user['officeLocation'] ?? '').toString();
+      departmentController.text = (user['department'] ?? '').toString();
+      specializationController.text = (user['specialization'] ?? '').toString();
+      qualificationController .text = (user['qualification'] ?? '').toString();
+      experienceController.text = (user['experience'] ?? '').toString();
+      employeeIdController.text = (user['empId'] ?? '').toString();
+      profilePicUrl = (user['profilePicUrl'] ?? '').toString();
+      final createdAt = (user['createdAt'] ?? user['created_at'] ?? '').toString();
+      if (createdAt.isNotEmpty) {
+        try {
+          final dt = DateTime.parse(createdAt);
+          joinedDate = '${dt.day}-${dt.month}-${dt.year}';
+        } catch (_) {
+          joinedDate = createdAt;
+        }
+      }
+
+      // persist merged map for offline use
+      try {
+        box.write('teacher', user);
+      } catch (_) {}
+
+      setState(() {});
+    } catch (e) {
+      debugPrint('populate error: $e');
+    }
+  }
+
+  /// Save changes: patch profile on backend and update local state
+  Future<void> saveChanges() async {
+    // Build payload from form fields
+    final token = box.read<String>('token');
+    final Map<String, dynamic> payload = {
+      'firstName': '',
+      'lastName': '',
+      'phone': phoneController.text.trim(),
+
+      if (profilePicUrl != null && profilePicUrl!.trim().isNotEmpty) 'profilePicUrl': profilePicUrl,
+      if (officeController.text.trim().isNotEmpty) 'officeLocation': officeController.text.trim(),
+      if (departmentController.text.trim().isNotEmpty) 'department': departmentController.text.trim(),
+      if (specializationController.text.trim().isNotEmpty) 'specialization': specializationController.text.trim(),
+      if (qualificationController.text.trim().isNotEmpty) 'qualification': qualificationController.text.trim(),
+      if (experienceController.text.trim().isNotEmpty) 'experience': experienceController.text.trim(),
+      if (employeeIdController.text.trim().isNotEmpty) 'empId': employeeIdController.text.trim(),
+    };
+
+    final fullName = nameController.text.trim();
+    if (fullName.isNotEmpty) {
+      final parts = fullName.split(' ');
+      payload['firstName'] = parts.first;
+      if (parts.length > 1) payload['lastName'] = parts.sublist(1).join(' ');
+    }
+
+    // If there is no token, persist locally and update UI only
+    if (token == null || token.isEmpty) {
+      final stored = box.read('teacher');
+      final current = (stored is Map<String, dynamic>) ? Map<String, dynamic>.from(stored) : <String, dynamic>{};
+      current.addAll(payload);
+      try {
+        box.write('teacher', current);
+      } catch (_) {}
+      _populateFromUserMap(current);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated locally (no token)')));
+      return;
+    }
+
+    setState(() => isLoading = true);
+    final repo = RepositoryProvider.of<TeacherAuthRepository>(context);
+    try {
+      // If there is a pending picked image, upload it first
+      if (_pendingPickedImage != null) {
+        final file = _pendingPickedImage!;
+        final uploaded = await repo.uploadTeacherProfilePic(file);
+        try {
+          final Map<String, dynamic> uploadedMap = Map<String, dynamic>.from(uploaded);
+          if (uploadedMap['profilePicUrl'] != null) {
+            profilePicUrl = uploadedMap['profilePicUrl'].toString();
+          } else if (uploadedMap['photoUrl'] != null) {
+            profilePicUrl = uploadedMap['photoUrl'].toString();
+          }
+        } catch (e) {
+          debugPrint('upload result handling error: $e');
+        }
+      }
+
+      // Call repository.patchProfile directly
+      final result = await repo.patchTeacherProfile(payload);
+      // repository.patchProfile returns a Map<String,dynamic> on success
+      final Map<String, dynamic> updated = Map<String, dynamic>.from(result);
+
+      // Update UI and storage
+      try {
+        _populateFromUserMap(updated);
+      } catch (_) {}
+
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully'), backgroundColor: Colors.green));
+
+      // Notify bloc to refresh internal state
+      try {
+        context.read<TeacherAuthBloc>().add(TeacherFetchProfileRequested());
+      } catch (_) {}
+    } catch (e, st) {
+      debugPrint('saveChanges -> patchProfile failed: $e\n$st');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update profile: $e'), backgroundColor: Colors.red));
+    } finally {
       setState(() => isLoading = false);
     }
   }
 
-  Future<void> saveChanges() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-
-    final docRef = _firestore.collection("teachers").doc(user.uid);
-    final doc = await docRef.get();
-    if (!doc.exists) return;
-
-    final data = doc.data()!;
-    Map<String, dynamic> updates = {};
-
-    if (nameController.text != data['name']) updates['name'] = nameController.text;
-    if (emailController.text != data['email']) updates['email'] = emailController.text;
-    if (phoneController.text != data['phone']) updates['phone'] = phoneController.text;
-    if (officeController.text != (data['office'] ?? '')) updates['office'] = officeController.text;
-    if (departmentController.text != (data['department'] ?? '')) updates['department'] = departmentController.text;
-    if (specializationController.text != (data['specialization'] ?? '')) updates['specialization'] = specializationController.text;
-    if (qualificationController.text != (data['qualification'] ?? '')) updates['qualification'] = qualificationController.text;
-    if (experienceController.text != (data['experience'] ?? '')) updates['experience'] = experienceController.text;
-    if (employeeIdController.text != (data['employeeId'] ?? '')) updates['employeeId'] = employeeIdController.text;
-    if ((photoUrl ?? '') != (data['photoUrl'] ?? '')) updates['photoUrl'] = photoUrl ?? '';
-
-    if (updates.isNotEmpty) {
-      await docRef.update(updates);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle_rounded, color: Colors.white),
-              SizedBox(width: 12),
-              Text("Profile updated successfully"),
-            ],
-          ),
-          backgroundColor: const Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.white),
-              SizedBox(width: 12),
-              Text("No changes to save"),
-            ],
-          ),
-          backgroundColor: const Color(0xFF6B7280),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    }
-
-    setState(() => isEditing = false);
-  }
 
 
-  Future<void> pickAndUploadImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked == null) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    final user = _auth.currentUser;
-    if (user == null) return;
-
-    final teacherDoc = await _firestore.collection("teachers").doc(user.uid).get();
-    final existingPhotoId = teacherDoc.data()?['photoId'];
-
-    // Delete old image
-    if (existingPhotoId != null) {
-      await CloudinaryHelper.deleteImage(existingPhotoId);
-    }
-
-    // Upload new image
-    final result = await CloudinaryHelper.uploadImage(File(picked.path));
-
-    Navigator.of(context).pop(); // Close loader
-
-    if (result != null) {
-      photoUrl = result['url'];
-      await _firestore.collection("teachers").doc(user.uid).update({
-        'photoUrl': result['url'],
-        'photoId': result['public_id'],
-      });
-
-      setState(() {}); // Refresh UI
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle_rounded, color: Colors.white),
-              SizedBox(width: 12),
-              Text("Image uploaded successfully"),
-            ],
-          ),
-          backgroundColor: const Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.white),
-              SizedBox(width: 12),
-              Text("Image upload failed"),
-            ],
-          ),
-          backgroundColor: const Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    }
-  }
 
   void _showEditProfileModal() {
     showModalBottomSheet(
@@ -317,10 +346,14 @@ class _teacher_ProfileState extends State<teacher_Profile> {
                                 backgroundColor: Colors.white,
                                 child: CircleAvatar(
                                   radius: 55,
-                                  backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
                                   backgroundColor: const Color(0xFF06B6D4),
-                                  child: photoUrl == null
-                                      ? const Icon(Icons.person, size: 50, color: Colors.white)
+                                  backgroundImage: _validNetworkImage(),
+                                  child: _validNetworkImage() == null
+                                      ? const Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Colors.white,
+                                  )
                                       : null,
                                 ),
                               ),
@@ -330,8 +363,45 @@ class _teacher_ProfileState extends State<teacher_Profile> {
                               right: 0,
                               child: GestureDetector(
                                 onTap: () async {
-                                  await pickAndUploadImage();
-                                  setModalState(() {});
+                                  setModalState(() => isUploading = true);
+                                  try {
+                                    final XFile? picked = await _picker.pickImage(
+                                      source: ImageSource.gallery,
+                                      imageQuality: 80,
+                                    );
+                                    if (picked == null) {
+                                      setModalState(() => isUploading = false);
+                                      return;
+                                    }
+
+                                    final file = File(picked.path);
+                                    final repo = RepositoryProvider.of<TeacherAuthRepository>(context);
+
+                                    // upload the image immediately
+                                    final uploaded = await repo.uploadTeacherProfilePic(file);
+
+                                    try {
+                                      final Map<String, dynamic> uploadedMap = Map<String, dynamic>.from(uploaded);
+                                      if (uploadedMap['profilePicUrl'] != null) {
+                                        profilePicUrl = uploadedMap['profilePicUrl'].toString();
+                                      } else if (uploadedMap['photoUrl'] != null) {
+                                        profilePicUrl = uploadedMap['photoUrl'].toString();
+                                      }
+                                      _populateFromUserMap(uploadedMap);
+                                      // Refresh bloc's internal state
+                                      context.read<TeacherAuthBloc>().add(TeacherFetchProfileRequested());
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile picture updated'), backgroundColor: Colors.green));
+                                    } catch (e) {
+                                      debugPrint('upload result handling error: $e');
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload completed')));
+                                    }
+                                  } catch (e) {
+                                    debugPrint('upload error: $e');
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+                                  } finally {
+                                    setModalState(() => isUploading = false);
+                                    setState(() {});
+                                  }
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
@@ -585,10 +655,15 @@ class _teacher_ProfileState extends State<teacher_Profile> {
                                 backgroundColor: Colors.white,
                                 child: CircleAvatar(
                                   radius: 55,
-                                  backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
                                   backgroundColor: const Color(0xFF06B6D4),
-                                  child: photoUrl == null
-                                      ? const Icon(Icons.person, size: 50, color: Colors.white)
+                                  backgroundImage:
+                                  _validNetworkImage(),
+                                  child: _validNetworkImage() == null
+                                      ? const Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Colors.white,
+                                  )
                                       : null,
                                 ),
                               ),
@@ -610,7 +685,7 @@ class _teacher_ProfileState extends State<teacher_Profile> {
                         // Department
                         Text(
                           departmentController.text.isNotEmpty 
-                              ? '${departmentController.text} Department'
+                              ? '${departmentController.text}'
                               : 'Department',
                           style: const TextStyle(
                             fontSize: 16,
@@ -810,47 +885,7 @@ class _teacher_ProfileState extends State<teacher_Profile> {
                         const SizedBox(height: 16),
                         _buildProfessionalInfoRow('Specialization', specializationController.text.isNotEmpty ? specializationController.text : 'Not provided'),
                         const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            const Text(
-                              'Qualification',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF6B7280),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            if (qualificationController.text.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  qualificationController.text,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              )
-                            else
-                              const Text(
-                                'Not provided',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF111827),
-                                ),
-                              ),
-                          ],
-                        ),
+                        _buildProfessionalInfoRow('Qualification', qualificationController.text.isNotEmpty ? qualificationController.text : 'Not provided'),
                       ],
                     ),
                   ),

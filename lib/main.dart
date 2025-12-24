@@ -1,15 +1,14 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/splash%20screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'src/repositories/studentAuth_repository.dart';
+import 'src/repositories/teacherAuth_repository.dart';
 import 'src/bloc/student_auth/auth_bloc.dart';
 import 'src/bloc/student_auth/auth_event.dart';
-
+import 'src/bloc/teacher_auth/teacher_auth_bloc.dart';
 
 
 
@@ -18,20 +17,25 @@ void main() async{
   await GetStorage.init();
   await Firebase.initializeApp();
 
-  const AndroidInitializationSettings initializationSettingsAndroid =
-  AndroidInitializationSettings('@mipmap/ic_launcher');
-  const InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-  );
- 
-
   final authRepository = AuthRepository();
+  final teacherRepository = TeacherAuthRepository();
 
   runApp(ProviderScope(
-    child: RepositoryProvider.value(
-      value: authRepository,
-      child: BlocProvider(
-        create: (_) => AuthBloc(repository: authRepository)..add(AppStarted()),
+    child: MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider.value(value: authRepository),
+        RepositoryProvider.value(value: teacherRepository),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (_) => AuthBloc(repository: authRepository)..add(AppStarted()),
+          ),
+          // Provide TeacherAuthBloc so teacher login screen can access it via context.read
+          BlocProvider<TeacherAuthBloc>(
+            create: (_) => TeacherAuthBloc(teacherRepository)..add(TeacherAppStarted()),
+          ),
+        ],
         child: const MyApp(),
       ),
     ),

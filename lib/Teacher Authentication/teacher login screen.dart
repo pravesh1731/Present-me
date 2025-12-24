@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:present_me_flutter/src/bloc/teacher_auth/teacher_auth_bloc.dart';
 
 import '../Teacher Forget Password Screen/teacherForgetPassword.dart';
 import '../Teacher Screens/teacher home screen.dart';
@@ -15,62 +17,20 @@ class _teacherLoginState extends State<teacherLogin> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  bool isLoading = false;
+
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
-  void _loginTeacher() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+  @override
+  void initState() {
+    super.initState();
+  }
 
-    if (email.isEmpty || password.isEmpty) {
-      _showSnackBar("Email and password can't be empty");
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      final uid = userCredential.user?.uid;
-
-      if (uid != null) {
-        final userDoc =
-            await FirebaseFirestore.instance
-                .collection('teachers')
-                .doc(uid)
-                .get();
-
-        if (userDoc.exists && userDoc.data()?['role'] == 'teacher') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => teacherHome()),
-          );
-        } else {
-          await _auth.signOut(); // Sign out if role is not teacher
-          _showSnackBar("Access denied. You are not registered as a teacher.");
-        }
-      } else {
-        _showSnackBar("Login failed. No user ID found.");
-      }
-    } on FirebaseAuthException catch (e) {
-      String message = 'Login failed';
-      if (e.code == 'user-not-found') {
-        message = 'No user found for that email.';
-      } else if (e.code == 'wrong-password') {
-        message = 'Incorrect password.';
-      }
-      _showSnackBar(message);
-    } catch (e) {
-      _showSnackBar('An error occurred: $e');
-    }
-
-    setState(() => isLoading = false);
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   void _showSnackBar(String message) {
@@ -79,8 +39,33 @@ class _teacherLoginState extends State<teacherLogin> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  @override
-  Widget build(BuildContext context) {
+  bool _isValidEmail(String email) {
+    // Simple and reliable email validation: enough for client-side checks.
+    final emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+    return emailPattern.hasMatch(email.trim());
+  }
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar("Please fill in all the fields.");
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      _showSnackBar("Please enter a valid email address.");
+      return;
+    }
+
+    // Dispatch login event to AuthBloc
+    context.read<TeacherAuthBloc>().add(
+      TeacherLoginRequested(email: email, password: password),
+    );
+  }
+
+  Widget _buildBody() {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -115,7 +100,7 @@ class _teacherLoginState extends State<teacherLogin> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF10B981), Color(0xFF0D9488),],
+                                colors: [Color(0xFF10B981), Color(0xFF0D9488)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
@@ -154,7 +139,6 @@ class _teacherLoginState extends State<teacherLogin> {
                             ),
                             textAlign: TextAlign.center,
                           ),
-
                         ],
                       ),
                       const SizedBox(height: 32),
@@ -181,7 +165,6 @@ class _teacherLoginState extends State<teacherLogin> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-
                               // Email Address
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,10 +193,11 @@ class _teacherLoginState extends State<teacherLogin> {
                                       ),
                                       filled: true,
                                       fillColor: Colors.white,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 16,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 16,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
@@ -275,16 +259,18 @@ class _teacherLoginState extends State<teacherLogin> {
                                         ),
                                         onPressed: () {
                                           setState(() {
-                                            _obscurePassword = !_obscurePassword;
+                                            _obscurePassword =
+                                                !_obscurePassword;
                                           });
                                         },
                                       ),
                                       filled: true,
                                       fillColor: Colors.white,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 16,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 16,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
@@ -313,7 +299,8 @@ class _teacherLoginState extends State<teacherLogin> {
                               const SizedBox(height: 20),
                               // Remember me and Forgot password
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   // Remember me checkbox
                                   Row(
@@ -330,7 +317,9 @@ class _teacherLoginState extends State<teacherLogin> {
                                           },
                                           activeColor: const Color(0xFF10B981),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -368,9 +357,8 @@ class _teacherLoginState extends State<teacherLogin> {
                                               begin: begin,
                                               end: end,
                                             ).chain(CurveTween(curve: curve));
-                                            var offsetAnimation = animation.drive(
-                                              tween,
-                                            );
+                                            var offsetAnimation = animation
+                                                .drive(tween);
                                             return SlideTransition(
                                               position: offsetAnimation,
                                               child: child,
@@ -382,7 +370,8 @@ class _teacherLoginState extends State<teacherLogin> {
                                     style: TextButton.styleFrom(
                                       padding: EdgeInsets.zero,
                                       minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     child: const Text(
                                       "Forgot Password?",
@@ -400,48 +389,61 @@ class _teacherLoginState extends State<teacherLogin> {
                               SizedBox(
                                 width: double.infinity,
                                 height: 48,
-                                child:
-                                    isLoading
-                                        ? const Center(
-                                          child: CircularProgressIndicator(),
-                                        )
-                                        : ElevatedButton(
-                                          onPressed: _loginTeacher,
-                                          style: ElevatedButton.styleFrom(
-                                            padding: EdgeInsets.zero,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(14),
-                                            ),
-                                            elevation: 0,
+                                child: BlocBuilder<
+                                  TeacherAuthBloc,
+                                  TeacherAuthState
+                                >(
+                                  builder: (context, state) {
+                                    final loading = state is TeacherAuthLoading;
+                                    if (loading) {
+                                      return const Center(
+                                        child: CircularProgressIndicator(
+                                          color: Color(0xFF6366F1),
+                                        ),
+                                      );
+                                    }
+
+                                    return ElevatedButton(
+                                      onPressed: _login,
+                                      style: ElevatedButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            14,
                                           ),
-                                          child: Ink(
-                                            decoration: const BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: [
-                                                  Color(0xFF10B981), Color(0xFF0D9488),
-                                                ],
-                                                begin: Alignment.centerLeft,
-                                                end: Alignment.centerRight,
-                                              ),
-                                              borderRadius: BorderRadius.all(
-                                                Radius.circular(14),
-                                              ),
-                                            ),
-                                            child: Container(
-                                              alignment: Alignment.center,
-                                              height: 48,
-                                              child: const Text(
-                                                'Sign In',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 16,
-                                                ),
-                                              ),
+                                        ),
+                                        elevation: 0,
+                                      ),
+                                      child: Ink(
+                                        decoration: const BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Color(0xFF10B981),
+                                              Color(0xFF0D9488),
+                                            ],
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                          ),
+                                          borderRadius: BorderRadius.all(
+                                            Radius.circular(14),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          alignment: Alignment.center,
+                                          height: 48,
+                                          child: const Text(
+                                            'Sign In',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16,
                                             ),
                                           ),
                                         ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                               const SizedBox(height: 40),
                               // Sign up link
@@ -482,10 +484,7 @@ class _teacherLoginState extends State<teacherLogin> {
                       const SizedBox(height: 28),
                       const Text(
                         '© 2025 Present-Me. All rights reserved.',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -495,6 +494,38 @@ class _teacherLoginState extends State<teacherLogin> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<TeacherAuthBloc, TeacherAuthState>(
+      listener: (context, state) {
+        if (state is TeacherAuthAuthenticated) {
+          // show success and navigate
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Login Successful!')));
+          Navigator.pushReplacement(
+            context,
+            PageRouteBuilder(
+              transitionDuration: const Duration(milliseconds: 600),
+              pageBuilder: (_, __, ___) => teacherHome(),
+              transitionsBuilder: (_, animation, __, child) {
+                const begin = Offset(1.0, 0.0);
+                const end = Offset.zero;
+                const curve = Curves.easeInOutBack;
+                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                var offsetAnimation = animation.drive(tween);
+                return SlideTransition(position: offsetAnimation, child: child);
+              },
+            ),
+          );
+        } else if (state is TeacherAuthFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
+        }
+      },
+      child: Scaffold(
+        body: _buildBody(),
       ),
     );
   }

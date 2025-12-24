@@ -21,4 +21,12 @@ class TeacherLogoutRequested extends TeacherAuthEvent {}
 
 class TeacherFetchProfileRequested extends TeacherAuthEvent {}
 
+class TeacherUpdateProfileRequested extends TeacherAuthEvent {
+  final Map<String, dynamic> payload;
+
+  const TeacherUpdateProfileRequested({required this.payload});
+  @override
+  List<Object> get props => [payload];
+}
+
 

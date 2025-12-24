@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:present_me_flutter/IntroScreen/introScreen.dart';
 import 'package:present_me_flutter/Policy/privacy_policy.dart';
 import 'package:present_me_flutter/Teacher%20Screens/create%20class.dart';
 
 
 import 'package:present_me_flutter/records.dart';
 import 'package:present_me_flutter/Teacher%20Screens/downloadAttendance.dart';
+import 'package:present_me_flutter/src/bloc/teacher_auth/teacher_auth_bloc.dart';
 import 'package:present_me_flutter/teachers%20class%20Notice.dart';
 import 'package:present_me_flutter/teacher%20track%20attendance%20classes.dart';
 
@@ -334,13 +337,14 @@ class _TeacherSidebar extends StatelessWidget {
         ],
       ),
       child: GestureDetector(
-        onTap: () {
-          Navigator.of(context).pop();
-          // TODO: Replace with real logout logic.
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Logout coming soon')));
-        },
+          onTap: () async {
+            context.read<TeacherAuthBloc>().add(TeacherLogoutRequested());
+
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => introscreen()),
+                  (route) => false,
+            );
+          },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(

@@ -11,6 +11,8 @@ final class TeacherAuthInitial extends TeacherAuthState {}
 
 class TeacherAuthLoading extends TeacherAuthState {}
 
+class TeacherPendingVerification extends TeacherAuthState {}
+
 final class TeacherAuthAuthenticated extends TeacherAuthState {
   final Map<String, dynamic> teacher;
   final String? token;

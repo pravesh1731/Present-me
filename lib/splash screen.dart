@@ -5,6 +5,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/IntroScreen/introScreen.dart';
 import 'package:present_me_flutter/onBoarding/onBoardingScreen.dart';
 import 'package:present_me_flutter/Student Screens/student home screen.dart';
+import 'package:present_me_flutter/Teacher Screens/teacher home screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class splashScreen extends StatefulWidget {
@@ -29,28 +30,51 @@ class _splashScreenState extends State<splashScreen> {
     final prefs = await SharedPreferences.getInstance();
     final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
 
-    // 2) Check if we have a saved token (from login)
+    // 2) Check if we have a saved token (from login) and whether it's a teacher or student
     final String? token = box.read<String>('token');
+    final dynamic storedTeacher = box.read('teacher');
+    final dynamic storedStudent = box.read('student');
+
+    // Safety: ensure widget still in tree before navigating
+    if (!mounted) return;
 
     if (token != null) {
-      // ⭐ User is considered logged-in → go directly to studentHome
+      // Prefer teacher if both exist (teacher accounts are distinct)
+      if (storedTeacher != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => teacherHome()),
+        );
+        return;
+      }
+
+      if (storedStudent != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => studentHome()),
+        );
+        return;
+      }
+
+      // If token exists but no stored profile, try to fall back to intro so user can be re-validated
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => studentHome()),
+        MaterialPageRoute(builder: (_) => introscreen()),
+      );
+      return;
+    }
+
+    // No saved login → show onboarding or intro based on preference
+    if (!hasSeenOnboarding) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const onBoardingScreen()),
       );
     } else {
-      // No saved login → show onboarding or intro based on preference
-      if (!hasSeenOnboarding) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const onBoardingScreen()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => introscreen()),
-        );
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => introscreen()),
+      );
     }
   }
 

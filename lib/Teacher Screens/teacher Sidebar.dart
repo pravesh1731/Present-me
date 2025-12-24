@@ -19,7 +19,7 @@ import '../Setting Page/settings_page.dart';
 void showTeacherSidebar(
   BuildContext context, {
   required String teacherName,
-  required String role,
+  required String designation,
   String? photoUrl,
 }) {
   showGeneralDialog(
@@ -60,7 +60,7 @@ void showTeacherSidebar(
               opacity: fadeInCurve,
               child: _TeacherSidebar(
                 teacherName: teacherName,
-                role: role,
+                designation:designation,
                 photoUrl: photoUrl,
               ),
             ),
@@ -74,12 +74,13 @@ void showTeacherSidebar(
 class _TeacherSidebar extends StatelessWidget {
   final double panelWidth = 280; // reduced width from 320 to 270
   final String teacherName;
-  final String role;
+  final String designation;
   final String? photoUrl;
   const _TeacherSidebar({
     required this.teacherName,
-    required this.role,
+    required this.designation,
     this.photoUrl,
+
   });
 
   @override
@@ -302,7 +303,7 @@ class _TeacherSidebar extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      role.isNotEmpty ? role : 'Teacher',
+                     designation.isNotEmpty ? designation : 'Teacher',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13,

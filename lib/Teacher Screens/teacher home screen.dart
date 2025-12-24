@@ -1,8 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:present_me_flutter/Teacher%20Authentication/teacher%20login%20screen.dart';
 import 'package:present_me_flutter/Teacher%20Screens/create%20class.dart';
+import 'package:present_me_flutter/src/bloc/teacher_auth/teacher_auth_bloc.dart';
+import 'package:present_me_flutter/src/models/teacher.dart';
 import '../common Page/notifications_page.dart';
 import 'TeacherAttendance.dart';
 import 'teacher profile.dart';
@@ -15,7 +22,14 @@ class teacherHome extends StatefulWidget {
 
 class _teacherHomeState extends State<teacherHome> {
   int _selectedIndex = 0;
+  final box = GetStorage();
   final String formattedDate = DateFormat('EEEE, MMMM d, y').format(DateTime.now());
+
+  @override
+  void initState() {
+    super.initState();
+
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -25,15 +39,88 @@ class _teacherHomeState extends State<teacherHome> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    // Try to obtain student from AuthBloc state, fallback to storage
+    Teacher? teacher;
+    final authState = context.watch<TeacherAuthBloc>().state;
+    if (authState is TeacherAuthAuthenticated) {
+      final dynamic teacherMap = authState.teacher;
+      // Ensure we only call Map.from on actual Map objects. Support server oddities
+      // where user may be a JSON string or other shape.
+      if (teacherMap is Map) {
+        try {
+          teacher = Teacher.fromJson(Map<String, dynamic>.from(teacherMap));
+        } catch (_) {}
+      } else if (teacherMap is String) {
+        try {
+          final decoded = jsonDecode(teacherMap);
+          if (decoded is Map) teacher = Teacher.fromJson(Map<String, dynamic>.from(decoded));
+        } catch (_) {}
+      } else if (teacherMap != null) {
+        // If it's some other type (e.g., already a Student-like object), try a best-effort map conversion
+        try {
+          final maybeMap = Map<String, dynamic>.from(teacherMap as Map);
+          teacher = Teacher.fromJson(maybeMap);
+        } catch (_) {}
+      }
+    }
+    if (teacher == null) {
+      final storedStudent = box.read('teacher');
+      if (storedStudent != null) {
+        try {
+          if (storedStudent is Map) {
+            teacher = Teacher.fromJson(Map<String, dynamic>.from(storedStudent));
+          } else if (storedStudent is String) {
+            final decoded = jsonDecode(storedStudent);
+            if (decoded is Map) teacher = Teacher.fromJson(Map<String, dynamic>.from(decoded));
+          } else {
+            // Attempt best-effort conversion for other map-like types
+            final maybeMap = Map<String, dynamic>.from(storedStudent as Map);
+            teacher = Teacher.fromJson(maybeMap);
+          }
+        } catch (_) {
+          // ignore: if parsing fails, leave student null and show login screen
+        }
+      }
+    }
+
+    // If still null → not logged in (no token)
+    final String? token = box.read<String>('token');
+    if (token == null || teacher == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                "User not logged in",
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  // Clear storage token and go to login
+                  final box = GetStorage();
+                  box.remove('token');
+                  box.remove('student');
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => teacherLogin()),
+                  );
+                },
+                child: const Text("Go to Login"),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
 
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          _buildHomeScreen(currentUser, screenWidth, screenHeight),
+          _buildHomeScreen(teacher),
           CreateClass(),
           takeAttendnace(),
           teacher_Profile(),
@@ -74,7 +161,14 @@ class _teacherHomeState extends State<teacherHome> {
     );
   }
 
-  Widget _buildHomeScreen(User? currentUser, double screenWidth, double screenHeight) {
+
+
+  Widget _buildHomeScreen(Teacher teacher) {
+    final String fullName = '${teacher.firstName} ${teacher.lastName}'.trim();
+    final String name = fullName.isEmpty ? 'Teacher' : fullName;
+    final String designation = teacher.qualification ?? 'Educator';
+    final String profilePicUrl = teacher.profilePicUrl ?? '';
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -86,22 +180,7 @@ class _teacherHomeState extends State<teacherHome> {
           end: Alignment.bottomCenter,
         ),
       ),
-      child: currentUser == null
-          ? Center(child: Text("User not logged in"))
-          : StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('teachers')
-                  .doc(currentUser.uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Center(child: CircularProgressIndicator());
-                }
-
-                final teacherData = snapshot.data!.data() as Map<String, dynamic>;
-                final teacherName = teacherData['name'] ?? 'Teacher';
-
-                return SingleChildScrollView(
+      child: SingleChildScrollView(
                   child: Column(
                     children: [
                 // Header Card
@@ -134,10 +213,7 @@ class _teacherHomeState extends State<teacherHome> {
                               child: IconButton(
                                 icon: const Icon(Icons.menu, color: Colors.white, size: 20),
                                 onPressed: () {
-                                  final teacherName = teacherData['name']?.toString() ?? 'Teacher';
-                                  final role = teacherData['designation']?.toString() ?? 'Teacher';
-                                  final photoUrl = teacherData['photoUrl']?.toString();
-                                  showTeacherSidebar(context, teacherName: teacherName, role: role, photoUrl: photoUrl);
+                                  showTeacherSidebar(context, teacherName:name, designation: designation, photoUrl: profilePicUrl);
                                 },
                               ),
                             ),
@@ -165,7 +241,7 @@ class _teacherHomeState extends State<teacherHome> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Prof. $teacherName',
+                                    'Prof. $name',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 20,
@@ -492,10 +568,9 @@ class _teacherHomeState extends State<teacherHome> {
                   const SizedBox(height: 12),
                 ],
               ),
-            );
-          },
-        ),
+            )
     );
+
   }
 
   Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {

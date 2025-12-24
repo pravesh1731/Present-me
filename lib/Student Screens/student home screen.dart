@@ -27,7 +27,7 @@ class _studentHomeState extends State<studentHome> {
   @override
   void initState() {
     super.initState();
-    // No controller initialization needed; AuthBloc is provided at app root
+
   }
 
   void _onItemTapped(int index) {

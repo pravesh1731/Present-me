@@ -6,6 +6,7 @@ sealed class TeacherAuthEvent extends Equatable {
   @override
   List<Object> get props => [];
 }
+
 class TeacherAppStarted extends TeacherAuthEvent {}
 
 class TeacherLoginRequested extends TeacherAuthEvent {
@@ -28,5 +29,4 @@ class TeacherUpdateProfileRequested extends TeacherAuthEvent {
   @override
   List<Object> get props => [payload];
 }
-
 

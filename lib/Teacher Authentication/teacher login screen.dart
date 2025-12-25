@@ -95,10 +95,7 @@ class _teacherLoginState extends State<teacherLogin> {
 
     // Determine status fields that servers commonly use
     final statusCandidates = [
-      teacherMap['status'],
-      teacherMap['accountStatus'],
-      teacherMap['verificationStatus'],
-      teacherMap['state'],
+      teacherMap['status']
     ];
 
     String statusLower = '';

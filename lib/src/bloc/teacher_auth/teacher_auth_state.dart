@@ -33,3 +33,4 @@ final class TeacherAuthFailure extends TeacherAuthState {
   @override
   List<Object> get props => [message];
 }
+

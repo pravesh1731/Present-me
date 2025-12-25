@@ -261,4 +261,46 @@ class TeacherAuthRepository {
 
 
 
+  // create class api
+  Future<Map<String, dynamic>> createClass({
+    required String className,
+    required String roomNo,
+    required String startTime,
+    required String endTime,
+    required List classDays,
+
+  }) async {
+    final uri = Uri.parse('$baseUrl/teachers/class');
+    final t = token;
+    if (t == null) throw Exception('No token available');
+    final res = await _client.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $t',
+      },
+      body: jsonEncode({
+        'className': className,
+        'roomNo': roomNo,
+        'startTime': startTime,
+        'endTime': endTime,
+        'classDays': classDays,
+      }),
+    );
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      try {
+        final body = jsonDecode(res.body);
+        throw Exception(body['message'] ?? 'Create class failed');
+      } catch (_) {
+        throw Exception('Create class failed with status ${res.statusCode}');
+      }
+    }
+
+    final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+    final data = decoded['data'] ?? decoded;
+    return {'data': data};
+  }
+
+
 }

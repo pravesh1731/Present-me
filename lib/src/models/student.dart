@@ -5,7 +5,6 @@ class Student {
   final String lastName;
   final String phone;
   final String rollNo;
-
   final String semester;
   final String branch;
   final String year;

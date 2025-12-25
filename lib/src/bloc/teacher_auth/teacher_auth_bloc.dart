@@ -9,12 +9,11 @@ part 'teacher_auth_state.dart';
 class TeacherAuthBloc extends Bloc<TeacherAuthEvent, TeacherAuthState> {
   final TeacherAuthRepository t_repository;
 
-
   TeacherAuthBloc(this.t_repository) : super(TeacherAuthInitial()) {
     on<TeacherAuthEvent>(_onAppStarted);
     on<TeacherLoginRequested>(_onLoginRequested);
     on<TeacherLogoutRequested>(_onLogoutRequested);
-    // on<TeacherFetchProfileRequested>(_onFetchProfileRequested);
+
   }
 
   Future<void> _onAppStarted(
@@ -39,7 +38,10 @@ class TeacherAuthBloc extends Bloc<TeacherAuthEvent, TeacherAuthState> {
     }
   }
 
-  Future<void> _onLoginRequested(TeacherLoginRequested event, Emitter<TeacherAuthState> emit) async {
+  Future<void> _onLoginRequested(
+    TeacherLoginRequested event,
+    Emitter<TeacherAuthState> emit,
+  ) async {
     emit(TeacherAuthLoading());
     try {
       final res = await t_repository.teacherLogin(event.email, event.password);
@@ -75,8 +77,10 @@ class TeacherAuthBloc extends Bloc<TeacherAuthEvent, TeacherAuthState> {
     }
   }
 
-
-  Future<void> _onLogoutRequested(TeacherLogoutRequested event, Emitter<TeacherAuthState> emit) async {
+  Future<void> _onLogoutRequested(
+    TeacherLogoutRequested event,
+    Emitter<TeacherAuthState> emit,
+  ) async {
     await t_repository.signOut();
     emit(TeacherAuthUnauthenticated());
   }

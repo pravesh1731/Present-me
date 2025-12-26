@@ -23,37 +23,74 @@ class ClassModel extends Equatable {
     required this.createdAt,
   });
 
-  /// ✅ Convert JSON → Dart Object
+  // normalize dynamic values (List, Map, String) to List<String>
+  static List<String> _toStringList(dynamic value) {
+    if (value == null) return [];
+    if (value is List) return value.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+    if (value is Map) return value.values.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+    if (value is String) return value.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    return [];
+  }
+
   factory ClassModel.fromJson(Map<String, dynamic> json) {
+    // helpers to read fields from multiple possible keys
+    String pickString(List<String> keys) {
+      for (final k in keys) {
+        if (json.containsKey(k) && json[k] != null) return json[k].toString();
+      }
+      return '';
+    }
+
+    dynamic createdRaw;
+    if (json.containsKey('createdAt')) createdRaw = json['createdAt'];
+    else if (json.containsKey('created_at')) createdRaw = json['created_at'];
+    else if (json.containsKey('created')) createdRaw = json['created'];
+
+    DateTime createdAt;
+    try {
+      if (createdRaw == null) {
+        createdAt = DateTime.now();
+      } else if (createdRaw is int) {
+        // assume milliseconds since epoch if > 10^10, else seconds
+        createdAt = createdRaw > 10000000000 ? DateTime.fromMillisecondsSinceEpoch(createdRaw) : DateTime.fromMillisecondsSinceEpoch(createdRaw * 1000);
+      } else if (createdRaw is double) {
+        createdAt = DateTime.fromMillisecondsSinceEpoch(createdRaw.toInt());
+      } else if (createdRaw is String) {
+        createdAt = DateTime.tryParse(createdRaw) ?? DateTime.now();
+      } else {
+        createdAt = DateTime.now();
+      }
+    } catch (_) {
+      createdAt = DateTime.now();
+    }
+
     return ClassModel(
-      classCode: json['classCode'] ?? '',
-      className: json['className'] ?? '',
-      roomNo: json['roomNo'] ?? '',
-      startTime: json['startTime'] ?? '',
-      endTime: json['endTime'] ?? '',
-      classDays: List<String>.from(json['classDays'] ?? []),
-      students: List<String>.from(json['students'] ?? []),
-      joinRequests: List<String>.from(json['joinRequests'] ?? []),
-      createdAt: DateTime.parse(json['createdAt']),
+      classCode: pickString(['classCode', 'code', 'id']),
+      className: pickString(['className', 'name', 'title']),
+      roomNo: pickString(['roomNo', 'room', 'room_no']),
+      startTime: pickString(['startTime', 'start_time', 'start']),
+      endTime: pickString(['endTime', 'end_time', 'end']),
+      classDays: _toStringList(json['classDays'] ?? json['days'] ?? json['class_days'] ?? json['days_of_week']),
+      students: _toStringList(json['students'] ?? json['members'] ?? json['participants']),
+      joinRequests: _toStringList(json['joinRequests'] ?? json['requests'] ?? json['pendingRequests']),
+      createdAt: createdAt,
     );
   }
 
-  /// ✅ Convert Dart Object → JSON
   Map<String, dynamic> toJson() {
     return {
-      'classCode': classCode,
-      'className': className,
-      'roomNo': roomNo,
-      'startTime': startTime,
-      'endTime': endTime,
-      'classDays': classDays,
-      'students': students,
-      'joinRequests': joinRequests,
-      'createdAt': createdAt.toIso8601String(),
+      "classCode": classCode,
+      "className": className,
+      "roomNo": roomNo,
+      "startTime": startTime,
+      "endTime": endTime,
+      "classDays": classDays,
+      "students": students,
+      "joinRequests": joinRequests,
+      "createdAt": createdAt.toIso8601String(),
     };
   }
 
-  /// ✅ Helpful for PATCH / copy updates
   ClassModel copyWith({
     String? classCode,
     String? className,

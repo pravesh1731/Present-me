@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:present_me_flutter/Teacher%20Screens/student%20request%20list.dart';
 import 'package:present_me_flutter/Teacher%20Screens/track%20attendance%20of%20specificStudent%20for%20Teacher.dart';
+import 'package:present_me_flutter/src/utils/normalize.dart';
 
 import 'dart:math';
 import 'package:shimmer/shimmer.dart';
@@ -16,7 +17,7 @@ class classDetailsStudentList extends StatelessWidget {
           .doc('AllDates');
       try {
         final snapshot = await datesRef.get();
-        final dateList = List<String>.from(snapshot.get('dates') ?? []);
+        final dateList = toStringList(snapshot.get('dates') ?? []);
         if (dateList.isEmpty) return 0.0;
         int present = 0;
         for (var dateKey in dateList) {
@@ -623,4 +624,6 @@ class classDetailsStudentList extends StatelessWidget {
       ),
     );
   }
+
+  toStringList(param0) {}
 }

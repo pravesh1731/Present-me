@@ -13,7 +13,6 @@ final class TeacherClassLoading extends TeacherClassState {}
 
 final class TeacherClassLoaded extends TeacherClassState {
   final List<ClassModel> classes;
-
   const TeacherClassLoaded(this.classes);
 
   @override
@@ -22,7 +21,6 @@ final class TeacherClassLoaded extends TeacherClassState {
 
 final class TeacherClassError extends TeacherClassState {
   final String message;
-
   const TeacherClassError(this.message);
 
   @override

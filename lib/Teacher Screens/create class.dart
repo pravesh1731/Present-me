@@ -610,10 +610,10 @@ class _CreateClassState extends State<CreateClass>
                                         fontWeight: FontWeight.w600,
                                       ),
                                       overflow: TextOverflow.ellipsis,
-                              
+
                                     ),
-                              
-                              
+
+
                                   SizedBox(height: 4),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
@@ -824,7 +824,7 @@ class _CreateClassState extends State<CreateClass>
                   ),
                   const SizedBox(height: 12),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       Row(
                         children: [
@@ -835,7 +835,7 @@ class _CreateClassState extends State<CreateClass>
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '$students students',
+                            '$students Stud.',
                             style: const TextStyle(
                               fontSize: 13,
                               color: Colors.black54,
@@ -846,18 +846,47 @@ class _CreateClassState extends State<CreateClass>
                       const SizedBox(width: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: 8,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: badgeColor, // solid green background
-                          borderRadius: BorderRadius.circular(14),
+                          color: const Color(
+                            0xFFEFF6FF,
+                          ), // light blue background
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
                         ),
-                        child: Text(
-                          '$attendance% attendance',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.vpn_key_outlined,
+                              size: 16,
+                              color: Color(0xFF2563EB),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${c.classCode}', // will be replaced below
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: badgeColor,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Text(
+                            '$attendance% Attendance',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -894,7 +923,7 @@ class _CreateClassState extends State<CreateClass>
                       MaterialPageRoute(
                         builder:
                             (_) =>
-                                classDetailsStudentList(classCode: c.classCode),
+                                classDetailsStudentList(classCode: c.classCode , roomNo: c.roomNo, className1: c.className),
                       ),
                     );
                   },

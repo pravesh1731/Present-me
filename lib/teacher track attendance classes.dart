@@ -73,7 +73,7 @@ class TeacherTrackAttendanceClass extends StatelessWidget {
                       context,
                       PageRouteBuilder(
                         transitionDuration: Duration(milliseconds: 500), // Adjust speed here
-                        pageBuilder: (_, __, ___) =>classDetailsStudentList(classCode: classItem['code']),
+                        pageBuilder: (_, __, ___) =>classDetailsStudentList(classCode: '', roomNo: '', className1: '',),
                         transitionsBuilder: (_, animation, __, child) {
                           const begin = Offset(1.0, 0.0); // Slide from right
                           const end = Offset.zero;

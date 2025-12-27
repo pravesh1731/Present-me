@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/src/bloc/teacher_auth/teacher_auth_bloc.dart' hide TeacherPendingVerification;
 import 'package:present_me_flutter/Teacher%20Authentication/teacher_pending_verification.dart' as pending_widget;
@@ -124,11 +125,27 @@ class _teacherLoginState extends State<teacherLogin> {
         await box.remove('teacher');
         await box.remove('role');
       } catch (_) {}
+      Fluttertoast.showToast(
+        msg: "Contact admin: Your accounts verification is pending.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.yellow[800],
+        textColor: Colors.white,
+        fontSize: 14,
+      );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => pending_widget.TeacherPendingVerification()),
       );
     } else {
+      Fluttertoast.showToast(
+        msg: "Welcome back! Login Successful...",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 14,
+      );
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(

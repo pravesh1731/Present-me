@@ -337,14 +337,19 @@ class _TeacherSidebar extends StatelessWidget {
         ],
       ),
       child: GestureDetector(
-          onTap: () async {
+        onTap: () async {
+          final confirm = await _showLogoutConfirmation(context);
+
+          if (confirm == true) {
             context.read<TeacherAuthBloc>().add(TeacherLogoutRequested());
 
             Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => introscreen()),
+              MaterialPageRoute(builder: (_) => introscreen()),
                   (route) => false,
             );
-          },
+          }
+        },
+
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
@@ -370,6 +375,48 @@ class _TeacherSidebar extends StatelessWidget {
     );
   }
 }
+
+
+Future<bool?> _showLogoutConfirmation(BuildContext context) {
+  return showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Logout',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+          'Are you sure you want to logout?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Logout',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
 // Helpers
 void _pushSlide(BuildContext context, Widget page) {

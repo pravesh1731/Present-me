@@ -213,13 +213,18 @@ class StudentSidebar extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: InkWell(
                 onTap: () async {
-                 context.read<AuthBloc>().add(LogoutRequested());
-                 
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => introscreen()),
-                    (route) => false,
-                  );
+                  final confirm = await _showLogoutConfirmation(context);
+
+                  if (confirm == true) {
+                    context.read<AuthBloc>().add(LogoutRequested());
+
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => introscreen()),
+                          (route) => false,
+                    );
+                  }
                 },
+
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -251,6 +256,48 @@ class StudentSidebar extends StatelessWidget {
       ),
     );
   }
+
+  Future<bool?> _showLogoutConfirmation(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Logout',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          content: const Text(
+            'Are you sure you want to logout?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
 
   Widget _buildUserProfile({required String name, String? photoUrl}) {
     return Row(

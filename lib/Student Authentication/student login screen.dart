@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 import 'package:present_me_flutter/Student Forget Password Screen/studentForgetPassword.dart';
 import 'package:present_me_flutter/Student Screens/student home screen.dart';
@@ -441,7 +442,15 @@ class _studentloginState extends State<studentlogin> {
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           // show success and navigate
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Login Successful!')));
+          Fluttertoast.showToast(
+            msg: "Welcome back! Login Successful...",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+            fontSize: 14,
+          );
+
           Navigator.pushReplacement(
             context,
             PageRouteBuilder(

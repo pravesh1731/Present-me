@@ -122,6 +122,7 @@ class _teacherLoginState extends State<teacherLogin> {
         final box = GetStorage();
         await box.remove('token');
         await box.remove('teacher');
+        await box.remove('role');
       } catch (_) {}
       Navigator.pushReplacement(
         context,

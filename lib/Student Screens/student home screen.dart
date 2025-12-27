@@ -101,6 +101,7 @@ class _studentHomeState extends State<studentHome> {
                   final box = GetStorage();
                   box.remove('token');
                   box.remove('student');
+                  box.remove('role');
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (_) => studentlogin()),

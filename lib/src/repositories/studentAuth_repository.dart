@@ -49,6 +49,12 @@ class AuthRepository {
     // attempt to pick token & user
     if (decodedMap['token'] != null) {
       _storage.write('token', decodedMap['token']);
+      // mark current role as student
+      try {
+        _storage.write('role', 'student');
+        // clear any stale teacher profile if present
+        _storage.remove('teacher');
+      } catch (_) {}
     }
 
     final student = decodedMap['data'] ?? decodedMap['student'] ?? decodedMap['user'] ?? decodedMap;
@@ -268,6 +274,11 @@ class AuthRepository {
 
 
   Future<void> signOut() async {
-    _storage.remove('token');
+    // Clear all auth-related keys
+    try {
+      _storage.remove('token');
+      _storage.remove('role');
+      _storage.remove('student');
+    } catch (_) {}
   }
 }

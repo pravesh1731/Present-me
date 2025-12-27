@@ -62,6 +62,7 @@ class _teacherHomeState extends State<teacherHome> {
                   final box = GetStorage();
                   box.remove('token');
                   box.remove('teacher');
+                  box.remove('role');
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (_) => teacherLogin()),

@@ -90,6 +90,11 @@ class TeacherAuthRepository {
     // attempt to pick token & user
     if (decodedMap['token'] != null) {
       _storage.write('token', decodedMap['token']);
+      // mark role as teacher and clear any student profile
+      try {
+        _storage.write('role', 'teacher');
+        _storage.remove('student');
+      } catch (_) {}
     }
 
     final teacher = decodedMap['data'] ?? decodedMap['teacher'] ?? decodedMap['user'] ?? decodedMap;
@@ -256,7 +261,12 @@ class TeacherAuthRepository {
 
 
   Future<void> signOut() async {
-    _storage.remove('token');
+    // Clear all auth-related keys
+    try {
+      _storage.remove('token');
+      _storage.remove('role');
+      _storage.remove('teacher');
+    } catch (_) {}
   }
 
 

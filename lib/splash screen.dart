@@ -14,7 +14,7 @@ class splashScreen extends StatefulWidget {
 }
 
 class _splashScreenState extends State<splashScreen> {
-  final box = GetStorage(); // ⭐ GetStorage instance
+  final box = GetStorage();
 
   @override
   void initState() {
@@ -34,25 +34,34 @@ class _splashScreenState extends State<splashScreen> {
     final String? token = box.read<String>('token');
     final dynamic storedTeacher = box.read('teacher');
     final dynamic storedStudent = box.read('student');
+    // Preferred stored role (set on login/logout) - should be 'teacher' or 'student'
+    final String? storedRole = box.read<String>('role');
 
     // Safety: ensure widget still in tree before navigating
     if (!mounted) return;
 
     if (token != null) {
-      // Prefer teacher if both exist (teacher accounts are distinct)
-      if (storedTeacher != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => teacherHome()),
-        );
+      // If a role was explicitly saved on login, honor it (most reliable)
+      if (storedRole != null) {
+        if (storedRole == 'teacher') {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => teacherHome()));
+          return;
+        }
+        if (storedRole == 'student') {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => studentHome()));
+          return;
+        }
+      }
+
+      // Fallback: if role wasn't saved, use available profile objects.
+      // Prefer recent explicit student profile over stale teacher profile if both present.
+      if (storedStudent != null) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => studentHome()));
         return;
       }
 
-      if (storedStudent != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => studentHome()),
-        );
+      if (storedTeacher != null) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => teacherHome()));
         return;
       }
 

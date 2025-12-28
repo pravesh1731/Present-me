@@ -18,7 +18,7 @@ class classDetailsStudentList extends StatelessWidget {
     classDetailsStudentList({
       required this.classCode,
       required this.roomNo,
-      required this.className1,
+      required this.className1,s
     });
 
     // Placeholder implementations - replace these with your API calls.

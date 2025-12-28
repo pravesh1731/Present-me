@@ -12,14 +12,40 @@ class classDetailsStudentList extends StatelessWidget {
     final String classCode;
     final String roomNo;
     final String className1;
+    final List classDays;
+    final String startTime;
+    final String endTime;
+    final int student;
+
 
 
 
     classDetailsStudentList({
       required this.classCode,
       required this.roomNo,
-      required this.className1,s
+      required this.className1,
+      required this.classDays,
+      required this.startTime,
+      required this.endTime,
+      required this.student,
+
+
     });
+
+    String _shortDay(String day) {
+      const map = {
+        'Monday': 'Mon',
+        'Tuesday': 'Tue',
+        'Wednesday': 'Wed',
+        'Thursday': 'Thu',
+        'Friday': 'Fri',
+        'Saturday': 'Sat',
+        'Sunday': 'Sun',
+      };
+
+      return map[day] ?? day;
+    }
+
 
     // Placeholder implementations - replace these with your API calls.
     Future<Map<String, dynamic>> _fetchClassDetails() async {
@@ -77,7 +103,7 @@ class classDetailsStudentList extends StatelessWidget {
     @override
     Widget build(BuildContext context) {
       // Static header and summary cards
-      Widget headerSection({String className = '', String room = '', int requestCount = 0}) {
+      Widget headerSection({String className = '', String roomNo = '', int requestCount = 0}) {
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.only(top: 44, bottom: 24, left: 24, right: 24),
@@ -119,7 +145,7 @@ class classDetailsStudentList extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                room.isNotEmpty ? 'Room $roomNo' : 'Room --',
+                                roomNo.isNotEmpty ? 'Room $roomNo' : 'Room --',
                                 style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 15,
@@ -180,86 +206,72 @@ class classDetailsStudentList extends StatelessWidget {
         );
       }
 
-      Widget summaryCards({int students = 0, int attendance = 94, int classes = 45}) => Padding(
+      Widget summaryCards({int student = 0, int attendance = 94, int classes = 45}) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _summaryCard(Icons.people_alt_rounded, students.toString(), 'Students', Colors.blue),
+            _summaryCard(Icons.people_alt_rounded, '$student', 'Students', Colors.blue),
             _summaryCard(Icons.check_circle_rounded, '$attendance%', 'Attendance', Color(0xFF10B981)),
             _summaryCard(Icons.calendar_month_rounded, '$classes', 'Classes', Colors.purple),
           ],
         ),
       );
 
-      Widget shimmerClassInfo() => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Class Information', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-            const SizedBox(height: 10),
-            Shimmer.fromColors(
-              baseColor: Colors.grey.shade300,
-              highlightColor: Colors.grey.shade100,
-              child: Container(
-                width: double.infinity,
-                height: 90,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+      // Widget shimmerClassInfo() => Padding(
+      //   padding: const EdgeInsets.symmetric(horizontal: 18),
+      //   child: Column(
+      //     crossAxisAlignment: CrossAxisAlignment.start,
+      //     children: [
+      //       const Text('Class Information', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+      //       const SizedBox(height: 10),
+      //       Shimmer.fromColors(
+      //         baseColor: Colors.grey.shade300,
+      //         highlightColor: Colors.grey.shade100,
+      //         child: Container(
+      //           width: double.infinity,
+      //           height: 90,
+      //           decoration: BoxDecoration(
+      //             color: Colors.white,
+      //             borderRadius: BorderRadius.circular(18),
+      //           ),
+      //         ),
+      //       ),
+      //     ],
+      //   ),
+      // );
 
-      Widget shimmerStudentList() => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Enrolled Students (--)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
-            const SizedBox(height: 10),
-            Column(
-              children: List.generate(4, (i) => Shimmer.fromColors(
-                baseColor: Colors.grey.shade300,
-                highlightColor: Colors.grey.shade100,
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              )),
-            ),
-          ],
-        ),
-      );
+      // Widget shimmerStudentList() => Padding(
+      //   padding: const EdgeInsets.symmetric(horizontal: 18),
+      //   child: Column(
+      //     crossAxisAlignment: CrossAxisAlignment.start,
+      //     children: [
+      //       const Text('Enrolled Students (--)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
+      //       const SizedBox(height: 10),
+      //       Column(
+      //         children: List.generate(4, (i) => Shimmer.fromColors(
+      //           baseColor: Colors.grey.shade300,
+      //           highlightColor: Colors.grey.shade100,
+      //           child: Container(
+      //             margin: const EdgeInsets.symmetric(vertical: 6),
+      //             height: 56,
+      //             decoration: BoxDecoration(
+      //               color: Colors.white,
+      //               borderRadius: BorderRadius.circular(16),
+      //             ),
+      //           ),
+      //         )),
+      //       ),
+      //     ],
+      //   ),
+      // );
 
       return Scaffold(
         backgroundColor: const Color(0xFFEFF6FF),
-        body: FutureBuilder<Map<String, dynamic>>(
-          future: _fetchClassDetails(),
-          builder: (context, classSnapshot) {
-            final loadingClass = classSnapshot.connectionState == ConnectionState.waiting || classSnapshot.data == null;
-            final classData = classSnapshot.data ?? {};
-            final studentsUIDs = classData['students'] ?? [];
-            final className = classData['name'] ?? '';
-            final room = classData['room'] ?? '';
-            final startTime = classData['startTime'] ?? '';
-            final endTime = classData['endTime'] ?? '';
-            final days = classData['days'] ?? [];
-            final attendance = classData['attendance'] ?? 94;
-            final classes = classData['classes'] ?? 45;
-
-            return Column(
+        body: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                headerSection(className: className, room: room, requestCount: (classData['joinRequests'] as List?)?.length ?? 0),
+                headerSection(className: className1, roomNo: roomNo, requestCount: 0),
                 Expanded(
                   child: SafeArea(
                     top: false,
@@ -269,14 +281,14 @@ class classDetailsStudentList extends StatelessWidget {
                         children: [
                           const SizedBox(height: 18),
                           summaryCards(
-                            students: loadingClass ? 0 : (studentsUIDs.length),
-                            attendance: attendance,
-                            classes: classes,
+                            student:  student,
+                            attendance: 94,
+                            classes: 20,
                           ),
                           const SizedBox(height: 18),
-                          if (loadingClass)
-                            shimmerClassInfo()
-                          else
+                          // if (loadingClass)
+                          //   shimmerClassInfo()
+                          // else
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 18),
                               child: Column(
@@ -317,7 +329,7 @@ class classDetailsStudentList extends StatelessWidget {
                                             const SizedBox(width: 10),
                                             Text('Location', style: TextStyle(fontWeight: FontWeight.w500)),
                                             const Spacer(),
-                                            Text('Room $room', style: TextStyle(fontWeight: FontWeight.w600)),
+                                            Text('Room $roomNo', style: TextStyle(fontWeight: FontWeight.w600)),
                                           ],
                                         ),
                                         const SizedBox(height: 12),
@@ -327,7 +339,8 @@ class classDetailsStudentList extends StatelessWidget {
                                             const SizedBox(width: 10),
                                             Text('Schedule', style: TextStyle(fontWeight: FontWeight.w500)),
                                             const Spacer(),
-                                            Text((days is List) ? days.join(', ') : days.toString(), style: TextStyle(fontWeight: FontWeight.w600)),
+                                            Text((classDays is List) ? classDays.map((d) => _shortDay(d.toString())).join(', ')
+                                                : _shortDay(classDays.toString()), style: TextStyle(fontWeight: FontWeight.w600)),
                                           ],
                                         ),
                                       ],
@@ -337,53 +350,54 @@ class classDetailsStudentList extends StatelessWidget {
                               ),
                             ),
                           const SizedBox(height: 18),
-                          FutureBuilder<List<Map<String, dynamic>>>(
-                            future: loadingClass ? null : _fetchStudents(studentsUIDs),
-                            builder: (context, studentSnapshot) {
-                              final loadingStudents = loadingClass || studentSnapshot.connectionState == ConnectionState.waiting;
-                              final students = studentSnapshot.data ?? [];
-                              if (loadingStudents) return shimmerStudentList();
-
-                              return Padding(
+                          // FutureBuilder<List<Map<String, dynamic>>>(
+                          //   future: loadingClass ? null : _fetchStudents(studentsUIDs),
+                          //   builder: (context, studentSnapshot) {
+                          //     final loadingStudents = loadingClass || studentSnapshot.connectionState == ConnectionState.waiting;
+                          //     final students = studentSnapshot.data ?? [];
+                          //     if (loadingStudents) return shimmerStudentList();
+                          //
+                          //     return
+                           Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 18),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Enrolled Students (${students.length})',
+                                      'Enrolled Students (${student})',
                                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87),
                                     ),
                                     const SizedBox(height: 10),
-                                    if (students.isEmpty)
-                                      const Center(
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(vertical: 8.0),
-                                          child: Text('No students found in this class', style: TextStyle(fontSize: 16, color: Colors.black54)),
-                                        ),
-                                      )
-                                    else
-                                      ListView.builder(
-                                        shrinkWrap: true,
-                                        physics: const NeverScrollableScrollPhysics(),
-                                        itemCount: students.length,
-                                        itemBuilder: (context, index) {
-                                          final student = students[index];
-                                          return FutureBuilder<double>(
-                                            future: _fetchAttendancePercentage(classCode, student['uid']),
-                                            builder: (context, snapshot) {
-                                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                                return _buildStudentRowLoading(student);
-                                              }
-                                              final percent = snapshot.data ?? 0.0;
-                                              return _buildStudentRow(student, percent, className, classCode, context);
-                                            },
-                                          );
-                                        },
-                                      ),
+                                    // if (student.isEmpty)
+                                    //   const Center(
+                                    //     child: Padding(
+                                    //       padding: EdgeInsets.symmetric(vertical: 8.0),
+                                    //       child: Text('No students found in this class', style: TextStyle(fontSize: 16, color: Colors.black54)),
+                                    //     ),
+                                    //   )
+                                    // else
+                                    //   ListView.builder(
+                                    //     shrinkWrap: true,
+                                    //     physics: const NeverScrollableScrollPhysics(),
+                                    //     itemCount: student,
+                                    //     itemBuilder: (context, index) {
+                                    //       final student = student[index];
+                                    //       return FutureBuilder<double>(
+                                    //         future: _fetchAttendancePercentage(classCode, student['uid']),
+                                    //         builder: (context, snapshot) {
+                                    //           if (snapshot.connectionState == ConnectionState.waiting) {
+                                    //             return _buildStudentRowLoading(student);
+                                    //           }
+                                    //           final percent = snapshot.data ?? 0.0;
+                                    //           return _buildStudentRow(student, percent, className1, classCode, context);
+                                    //         },
+                                    //       );
+                                    //     },
+                                    //   ),
                                   ],
                                 ),
-                              );
-                            },
+
+
                           ),
                         const SizedBox(height: 24),
                       ],
@@ -394,8 +408,7 @@ class classDetailsStudentList extends StatelessWidget {
             )
 
               ],
-            );
-          },
+
         ),
       );
     }

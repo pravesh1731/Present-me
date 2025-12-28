@@ -1,6 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:present_me_flutter/Student%20Screens/StudentJoinedClassScreen.dart';
 
 class joined_Class extends StatefulWidget {
   @override
@@ -9,7 +8,9 @@ class joined_Class extends StatefulWidget {
 
 class _joined_ClassState extends State<joined_Class> {
   final TextEditingController _codeController = TextEditingController();
-  final currentUser = FirebaseAuth.instance.currentUser;
+
+  // Mock current user id (replace with your auth integration later)
+  final String currentUserId = 'demo_user';
 
   // Palette: [primary, secondary] per class theme
   static const List<List<Color>> _classThemes = [
@@ -25,22 +26,40 @@ class _joined_ClassState extends State<joined_Class> {
     [Color(0xFFF97316), Color(0xFFEA580C)], // orange
   ];
 
+  // Local sample classes used purely for UI (no Firebase)
+  final List<Map<String, dynamic>> _sampleClasses = [
+    {
+      'name': 'Mathematics',
+      'code': '123456',
+      'room': 'A1',
+      'startTime': '09:00',
+      'endTime': '10:00',
+      'days': ['Mon', 'Tue', 'Wed'],
+    },
+    {
+      'name': 'Physics',
+      'code': '654321',
+      'room': 'B2',
+      'startTime': '11:00',
+      'endTime': '12:00',
+      'days': ['Thu', 'Fri'],
+    },
+  ];
+
   void _joinClass(String code) async {
-    if (currentUser == null) return;
-
-    final classDocRef = FirebaseFirestore.instance.collection('classes').doc(code);
-
+    // This method previously interacted with Firestore. For UI-only mode we
+    // validate and show the same snackbars/dialog behaviors but do not call
+    // any backend. Integrate your API where indicated later.
     try {
-      final classSnapshot = await classDocRef.get();
-
-      if (!classSnapshot.exists) {
+      // Simulate checks that used to exist in Firestore
+      if (code.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.white),
+                Icon(Icons.warning_rounded, color: Colors.white),
                 SizedBox(width: 12),
-                Text("Class code not found"),
+                Text('Please enter class code'),
               ],
             ),
             backgroundColor: const Color(0xFFEF4444),
@@ -51,21 +70,18 @@ class _joined_ClassState extends State<joined_Class> {
         return;
       }
 
-      final classData = classSnapshot.data()!;
-      final userId = currentUser!.uid;
-
-      final List<dynamic> joinedStudents = classData['students'] ?? [];
-      if (joinedStudents.contains(userId)) {
+      // If the code length is wrong
+      if (code.length != 6) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.white),
+                Icon(Icons.warning_rounded, color: Colors.white),
                 SizedBox(width: 12),
-                Text("You have already joined this class"),
+                Text('Class code must be exactly 6 digits'),
               ],
             ),
-            backgroundColor: const Color(0xFF6B7280),
+            backgroundColor: const Color(0xFFEF4444),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -73,19 +89,17 @@ class _joined_ClassState extends State<joined_Class> {
         return;
       }
 
-      final List<dynamic> joinRequests = classData['joinRequests'] ?? [];
-      final alreadyRequested = joinRequests.any((req) => req['uid'] == userId);
-      if (alreadyRequested) {
+      if (!RegExp(r'^[0-9]{6}$').hasMatch(code)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.pending_outlined, color: Colors.white),
+                Icon(Icons.warning_rounded, color: Colors.white),
                 SizedBox(width: 12),
-                Text("You have already requested to join this class"),
+                Text('Class code must contain only digits'),
               ],
             ),
-            backgroundColor: const Color(0xFFF59E0B),
+            backgroundColor: const Color(0xFFEF4444),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -93,21 +107,7 @@ class _joined_ClassState extends State<joined_Class> {
         return;
       }
 
-      final studentSnapshot = await FirebaseFirestore.instance
-          .collection('students')
-          .doc(userId)
-          .get();
-
-      final studentData = {
-        'uid': userId,
-        'name': studentSnapshot['name'] ?? '',
-        'rollNo': studentSnapshot['roll'] ?? '',
-      };
-
-      await classDocRef.update({
-        'joinRequests': FieldValue.arrayUnion([studentData]),
-      });
-
+      // Simulate successful request
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Row(
@@ -328,7 +328,7 @@ class _joined_ClassState extends State<joined_Class> {
                               borderRadius: BorderRadius.circular(16),
                               onTap: () {
                                 final code = _codeController.text.trim();
-                                
+
                                 if (code.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
@@ -346,7 +346,7 @@ class _joined_ClassState extends State<joined_Class> {
                                   );
                                   return;
                                 }
-                                
+
                                 if (code.length != 6) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
@@ -364,7 +364,7 @@ class _joined_ClassState extends State<joined_Class> {
                                   );
                                   return;
                                 }
-                                
+
                                 if (!RegExp(r'^[0-9]{6}$').hasMatch(code)) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
@@ -382,7 +382,7 @@ class _joined_ClassState extends State<joined_Class> {
                                   );
                                   return;
                                 }
-                                
+
                                 _joinClass(code);
                                 _codeController.clear();
                               },
@@ -426,30 +426,10 @@ class _joined_ClassState extends State<joined_Class> {
   // Store inactive class codes locally (simulate moving to inactive)
   List<String> _inactiveClassCodes = [];
 
+  // Return a stream of sample classes for UI rendering. Replace this with
+  // your API stream when integrating a backend.
   Stream<List<Map<String, dynamic>>> _getJoinedClassesStream() {
-    return FirebaseFirestore.instance.collection('classes').snapshots().map((snapshot) {
-      final userUid = currentUser?.uid;
-      if (userUid == null) return [];
-
-      final List<Map<String, dynamic>> userClasses = [];
-
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final students = List<String>.from(data['students'] ?? []);
-        if (students.contains(userUid)) {
-          userClasses.add({
-            'name': data['name'] ?? 'Untitled Class',
-            'code': doc.id,
-            'room': data['room'] ?? '',
-            'startTime': data['startTime'] ?? '',
-            'endTime': data['endTime'] ?? '',
-            'days': data['days'] ?? [],
-          });
-        }
-      }
-
-      return userClasses;
-    });
+    return Stream.value(List<Map<String, dynamic>>.from(_sampleClasses));
   }
 
   List<Map<String, dynamic>> _filterActiveClasses(List<Map<String, dynamic>> classes) {
@@ -745,6 +725,31 @@ class _joined_ClassState extends State<joined_Class> {
               ],
             ),
           ),
+          Padding(
+            padding: EdgeInsets.only(top: 8,right: 10),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.25),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                color: Colors.white,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const StudentJoinedClassScreen(),
+                    ),
+                  );
+
+                },
+                icon: const Icon(Icons.access_time),
+              ),
+            ),
+          ),
+
         ],
       ),
     );

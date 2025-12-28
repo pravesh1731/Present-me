@@ -313,7 +313,10 @@ class _CreateClassState extends State<CreateClass>
 
               // If we were awaiting a save (create/update), show a toast (Fluttertoast)
               if (_awaitingSave && _lastAction != null) {
-                final successMessage = _lastAction == 'create' ? 'Class created successfully' : 'Class updated successfully';
+                final successMessage =
+                    _lastAction == 'create'
+                        ? 'Class created successfully'
+                        : 'Class updated successfully';
                 Fluttertoast.showToast(
                   msg: successMessage,
                   toastLength: Toast.LENGTH_SHORT,
@@ -346,7 +349,6 @@ class _CreateClassState extends State<CreateClass>
                 fontSize: 14,
               );
 
-
               // // If an error occurred while awaiting save, show a contextual error snackbar as well
               // if (_awaitingSave && _lastAction != null) {
               //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to ${_lastAction == 'create' ? 'create' : 'update'} class')));
@@ -358,7 +360,11 @@ class _CreateClassState extends State<CreateClass>
               final token = _getToken();
               if (token.isNotEmpty) {
                 // schedule a microtask to avoid calling bloc while in the middle of processing the current event
-                Future.microtask(() => context.read<TeacherClassBloc>().add(TeacherFetchClasses(token)));
+                Future.microtask(
+                  () => context.read<TeacherClassBloc>().add(
+                    TeacherFetchClasses(token),
+                  ),
+                );
               }
             }
           },
@@ -602,17 +608,15 @@ class _CreateClassState extends State<CreateClass>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                   Text(
-                                      c.className,
-                                      textAlign: TextAlign.left,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-
+                                  Text(
+                                    c.className,
+                                    textAlign: TextAlign.left,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
                                     ),
-
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
 
                                   SizedBox(height: 4),
                                   Container(
@@ -787,7 +791,6 @@ class _CreateClassState extends State<CreateClass>
                   ),
                   const SizedBox(height: 20),
 
-
                   Row(
                     children: [
                       const Icon(
@@ -874,7 +877,10 @@ class _CreateClassState extends State<CreateClass>
                       const SizedBox(width: 12),
                       Flexible(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: badgeColor,
                             borderRadius: BorderRadius.circular(14),
@@ -922,8 +928,15 @@ class _CreateClassState extends State<CreateClass>
                       context,
                       MaterialPageRoute(
                         builder:
-                            (_) =>
-                                classDetailsStudentList(classCode: c.classCode , roomNo: c.roomNo, className1: c.className),
+                            (_) => classDetailsStudentList(
+                              classCode: c.classCode,
+                              roomNo: c.roomNo,
+                              className1: c.className,
+                              classDays: c.classDays,
+                              startTime: c.startTime,
+                              endTime: c.endTime,
+                              student: students,
+                            ),
                       ),
                     );
                   },

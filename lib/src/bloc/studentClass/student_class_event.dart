@@ -6,3 +6,13 @@ sealed class StudentClassEvent extends Equatable {
   @override
   List<Object> get props => [];
 }
+
+        // FETCH ENROLLED CLASSES
+class StudentFetchEnrolledClasses extends StudentClassEvent {
+  final String token;
+
+  const StudentFetchEnrolledClasses(this.token);
+
+  @override
+  List<Object> get props => [token];
+}

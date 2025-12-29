@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:present_me_flutter/Student%20Screens/StudentJoinedClassScreen.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:present_me_flutter/src/bloc/studentClass/student_class_bloc.dart';
+import 'package:present_me_flutter/src/repositories/studentClass_repository.dart';
+import 'package:present_me_flutter/src/models/studentClass.dart';
+import 'package:shimmer/shimmer.dart';
+
 
 class joined_Class extends StatefulWidget {
   @override
@@ -7,24 +14,73 @@ class joined_Class extends StatefulWidget {
 }
 
 class _joined_ClassState extends State<joined_Class> {
+  final GetStorage _storage = GetStorage();
   final TextEditingController _codeController = TextEditingController();
+  String? _lastErrorShown;
 
   // Mock current user id (replace with your auth integration later)
   final String currentUserId = 'demo_user';
 
-  // Palette: [primary, secondary] per class theme
-  static const List<List<Color>> _classThemes = [
-    [Color(0xFF10B981), Color(0xFF059669)], // emerald
-    [Color(0xFF6366F1), Color(0xFF4F46E5)], // indigo
-    [Color(0xFF8B5CF6), Color(0xFF7C3AED)], // violet
-    [Color(0xFFF59E0B), Color(0xFFD97706)], // amber
-    [Color(0xFFEF4444), Color(0xFFDC2626)], // red
-    [Color(0xFF14B8A6), Color(0xFF0D9488)], // teal
-    [Color(0xFF06B6D4), Color(0xFF0891B2)], // cyan
-    [Color(0xFFA855F7), Color(0xFF9333EA)], // purple
-    [Color(0xFF3B82F6), Color(0xFF2563EB)], // blue
-    [Color(0xFFF97316), Color(0xFFEA580C)], // orange
+  // ================= TOKEN =================
+  String _getToken() {
+    return _storage.read('token')?.toString() ?? '';
+  }
+
+  static const Map<String, String> _dayMap = {
+    'Mon': 'Monday',
+    'Tue': 'Tuesday',
+    'Wed': 'Wednesday',
+    'Thu': 'Thursday',
+    'Fri': 'Friday',
+    'Sat': 'Saturday',
+    'Sun': 'Sunday',
+  };
+
+  String _shortFormFor(String fullDay) {
+    if (fullDay.isEmpty) return fullDay;
+    try {
+      final entry = _dayMap.entries.firstWhere(
+            (e) => e.value.toLowerCase() == fullDay.toLowerCase(),
+      );
+      return entry.key;
+    } catch (_) {
+      // fallback: return first 3 chars, capitalized first letter
+      final s = fullDay.trim();
+      if (s.length <= 3) return s;
+      return s.substring(0, 3);
+    }
+  }
+
+  // Palette: flattened list of colors — we'll pick two adjacent colors per card
+  static const List<Color> _classColors = [
+    Color(0xFF10B981), Color(0xFF059669), // emerald
+    Color(0xFF6366F1), Color(0xFF4F46E5), // indigo
+    Color(0xFF8B5CF6), Color(0xFF7C3AED), // violet
+    Color(0xFFF59E0B), Color(0xFFD97706), // amber
+    Color(0xFFEF4444), Color(0xFFDC2626), // red
+    Color(0xFF14B8A6), Color(0xFF0D9488), // teal
+    Color(0xFF06B6D4), Color(0xFF0891B2), // cyan
+    Color(0xFFA855F7), Color(0xFF9333EA), // purple
+    Color(0xFF3B82F6), Color(0xFF2563EB), // blue
+    Color(0xFFF97316), Color(0xFFEA580C), // orange
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Try to dispatch fetch only if a StudentClassBloc is already provided
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        final token = _getToken();
+        if (token.isNotEmpty) {
+          // If a studentPendingClass provider exists above, dispatch the event
+          context.read<StudentClassBloc>().add(StudentFetchEnrolledClasses(token));
+        }
+      } catch (e) {
+        // No studentPendingClass provided above this widget — we'll create one in build()
+      }
+    });
+  }
 
   // Local sample classes used purely for UI (no Firebase)
   final List<Map<String, dynamic>> _sampleClasses = [
@@ -454,13 +510,15 @@ class _joined_ClassState extends State<joined_Class> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // Build the main scaffold first
+    final scaffold = Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: _showJoinClassDialog,
         backgroundColor: const Color(0xFF2563EB),
         child: const Icon(Icons.add, color: Colors.white),
         tooltip: 'Join Class',
       ),
+      backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(
         top: false,
         child: Container(
@@ -471,223 +529,122 @@ class _joined_ClassState extends State<joined_Class> {
               end: Alignment.bottomCenter,
             ),
           ),
-          child: StreamBuilder<List<Map<String, dynamic>>>(
-            stream: _getJoinedClassesStream(),
-            builder: (context, snapshot) {
-              final classes = snapshot.data ?? [];
+          child: BlocBuilder<StudentClassBloc, StudentClassState>(
+             builder: (context, state) {
 
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: Color(0xFF06B6D4)));
-              }
-              if (snapshot.hasError) {
-                return const Center(child: Text('Error loading classes'));
+              // 🔄 Loading: show header + shimmer cards
+              if (state is StudentClassLoading) {
+                return ListView(
+                  padding: const EdgeInsets.only(top: 12, bottom: 24),
+                  children: [
+                    _buildHeader(0),
+                    const SizedBox(height: 8),
+                    _buildShimmerCard(),
+                    _buildShimmerCard(),
+                    _buildShimmerCard(),
+                    _buildShimmerCard(),
+                  ],
+                );
               }
 
-              // Tab bar
-              return Column(
-                children: [
-                  _buildHeader(classes.length),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                    decoration: BoxDecoration(
-                      color:  Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+              //  Error: show header + error message and retry
+              if (state is StudentClassError) {
+                if (_lastErrorShown != state.message) {
+                  _lastErrorShown = state.message;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.white),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(state.message)),
+                          ],
                         ),
-                      ],
+                        backgroundColor: const Color(0xFFEF4444),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  });
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.only(top: 12, bottom: 24),
+                  children: [
+                    _buildHeader(0),
+                    const SizedBox(height: 24),
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(state.message, style: const TextStyle(color: Color(0xFF6B7280))),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: () {
+                              final token = _getToken();
+                              if (token.isNotEmpty) context.read<StudentClassBloc>().add(StudentFetchEnrolledClasses(token));
+                            },
+                            child: const Text('Retry'),
+                          )
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: () => setState(() => _selectedTab = 0),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeInOut,
-                            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: _selectedTab == 0 ? Colors.white : Colors.transparent,
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: _selectedTab == 0
-                                  ? [
-                                      BoxShadow(
-                                        color: const Color(0xFF2563EB).withOpacity(0.10),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : [],
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  'Active',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF2563EB),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    '${_filterActiveClasses(classes).length}',
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => setState(() => _selectedTab = 1),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeInOut,
-                            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: _selectedTab == 1 ? Colors.white : Colors.transparent,
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: _selectedTab == 1
-                                  ? [
-                                      BoxShadow(
-                                        color: const Color(0xFF2563EB).withOpacity(0.10),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : [],
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  'Inactive',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF2563EB),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    '${_filterInactiveClasses(classes).length}',
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: Builder(
-                      builder: (context) {
-                        if (classes.isEmpty) {
-                          return _buildEmptyState();
-                        }
-                        final showClasses = _selectedTab == 0
-                            ? _filterActiveClasses(classes)
-                            : _filterInactiveClasses(classes);
-                        if (showClasses.isEmpty) {
-                          return Center(
-                            child: Text(
-                              _selectedTab == 0
-                                  ? 'No Active Classes'
-                                  : 'No Inactive Classes',
-                              style: const TextStyle(fontSize: 16, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
-                            ),
-                          );
-                        }
-                        return ListView.builder(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          itemCount: showClasses.length,
-                          itemBuilder: (context, index) {
-                            final c = showClasses[index];
-                            final theme = _classThemes[index % _classThemes.length];
-                            return Stack(
-                              children: [
-                                _buildClassCard(
-                                  context,
-                                  name: c['name'] ?? 'Class',
-                                  code: c['code'] ?? '--',
-                                  dayBadges: List<String>.from(c['days'] ?? []),
-                                  timeLabel: _formatTime(c['startTime'], c['endTime']),
-                                  roomLabel: c['room']?.isNotEmpty == true ? 'Room ${c['room']}' : 'No room',
-                                  primary: theme[0],
-                                  secondary: theme[1],
-                                ),
-                                Positioned(
-                                  top: 10,
-                                  right: 18,
-                                  child: PopupMenuButton<String>(
-                                    icon: const Icon(Icons.more_vert, color: Color(0xFF6B7280)),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    onSelected: (value) {
-                                      if (value == 'move') {
-                                        if (_selectedTab == 0) {
-                                          _moveToInactive(c['code']);
-                                        } else {
-                                          _moveToActive(c['code']);
-                                        }
-                                      }
-                                    },
-                                    itemBuilder: (context) => [
-                                      PopupMenuItem<String>(
-                                        value: 'move',
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              _selectedTab == 0 ? Icons.remove_circle_outline : Icons.check_circle_rounded,
-                                              color: _selectedTab == 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-                                              size: 18,
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Text(_selectedTab == 0 ? 'Move to Inactive' : 'Move to Active',
-                                              style: TextStyle(
-                                                color: _selectedTab == 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
+                  ],
+                );
+              }
+
+              //  Data Loaded: header + class cards in a single ListView
+              if (state is StudentClassLoaded) {
+                if (state.classes.isEmpty) {
+                  // still show header even if empty
+                  return ListView(
+                    padding: const EdgeInsets.only( bottom: 24),
+                    children: [
+                      _buildHeader(0),
+                      const SizedBox(height: 24),
+                      _buildEmptyState(),
+                    ],
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 24,),
+                  itemCount: state.classes.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) return _buildHeader(state.classes.length);
+                    final cls = state.classes[index - 1];
+                    return _buildClassCard(cls);
+                  },
+                );
+              }
+
+              return const SizedBox.shrink();
+             },
+           )
+         ),
+       ),
     );
+
+    // If a StudentClassBloc is available above, return the scaffold directly.
+    // Otherwise provide a local StudentClassBloc wired to your repository and
+    // trigger initial fetch there.
+    try {
+      // This will throw if no StudentClassBloc is provided in the ancestor tree
+      BlocProvider.of<StudentClassBloc>(context);
+      return scaffold;
+    } catch (_) {
+      // Provide a local StudentClassBloc that uses your repository
+      return BlocProvider(
+        create: (ctx) {
+          final bloc = StudentClassBloc(repository: StudentClassRepository());
+          final token = _getToken();
+          if (token.isNotEmpty) bloc.add(StudentFetchEnrolledClasses(token));
+          return bloc;
+        },
+        child: scaffold,
+      );
+    }
   }
 
   Widget _buildHeader(int activeCount) {
@@ -700,7 +657,10 @@ class _joined_ClassState extends State<joined_Class> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -800,16 +760,11 @@ class _joined_ClassState extends State<joined_Class> {
     );
   }
 
-  Widget _buildClassCard(
-    BuildContext context, {
-    required String name,
-    required String code,
-    required List<String> dayBadges,
-    required String timeLabel,
-    required String roomLabel,
-    required Color primary,
-    required Color secondary,
-  }) {
+  Widget _buildClassCard(StudentClassModel cls) {
+    // determine theme from classCode for consistent colors across cards
+    final Color primary = _classColors[(cls.classCode.hashCode) % _classColors.length];
+    final Color secondary = _classColors[(cls.classCode.hashCode + 1) % _classColors.length];
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -838,7 +793,7 @@ class _joined_ClassState extends State<joined_Class> {
                   topRight: Radius.circular(20),
                 ),
                 gradient: LinearGradient(
-                  colors: [_soften(primary, 0.30), _soften(secondary, 0.30)],
+                  colors: [_soften(primary, 0.28), _soften(secondary, 0.28)],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),
@@ -857,15 +812,11 @@ class _joined_ClassState extends State<joined_Class> {
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [_tint(primary, 0.95), _tint(primary, 0.90)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        color: _tint(primary, 0.9),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: primary.withOpacity(0.18)),
                       ),
-                      child: Icon(Icons.menu_book_outlined, color: secondary),
+                      child: Icon(Icons.menu_book_outlined, color: primary),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -873,7 +824,7 @@ class _joined_ClassState extends State<joined_Class> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            name,
+                            cls.className,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -884,9 +835,9 @@ class _joined_ClassState extends State<joined_Class> {
                           Wrap(
                             spacing: 6,
                             runSpacing: 6,
-                            children: dayBadges.isNotEmpty
-                                ? dayBadges.map((d) => _buildBadge(d)).toList()
-                                : [_buildBadge('No days set')],
+                            children: cls.classDays.isNotEmpty
+                                ? cls.classDays.map((d) => _buildBadge(_shortFormFor(d))).toList()
+                                : [_buildBadge('No days')],
                           ),
                         ],
                       ),
@@ -898,17 +849,20 @@ class _joined_ClassState extends State<joined_Class> {
                   children: [
                     const Icon(Icons.schedule, size: 16, color: Colors.black45),
                     const SizedBox(width: 6),
-                    Text(timeLabel, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                    Text('${cls.startTime} -', style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                    const SizedBox(width: 6),
+                    Text(cls.endTime, style: const TextStyle(color: Colors.black54, fontSize: 13)),
                     const SizedBox(width: 16),
                     const Icon(Icons.room_outlined, size: 16, color: Colors.black45),
                     const SizedBox(width: 6),
-                    Text(roomLabel, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                    Text('Room:${cls.roomNo}', style: const TextStyle(color: Colors.black54, fontSize: 13)),
+
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildCodeBadge(code, primary),
+                    _buildCodeBadge(cls.classCode, primary),
                   ],
                 ),
               ],
@@ -968,5 +922,102 @@ class _joined_ClassState extends State<joined_Class> {
       return 'Time not set';
     }
     return '$startTime - $endTime';
+  }
+
+  Widget _buildShimmerCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey.shade200,
+        highlightColor: Colors.grey.shade100,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 16,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 40,
+                              height: 16,
+                              color: Colors.white,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 14,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 16),
+                  Container(
+                    width: 60,
+                    height: 14,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    width: 100,
+                    height: 14,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

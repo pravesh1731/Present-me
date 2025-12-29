@@ -268,7 +268,7 @@ class _teacher_ProfileState extends State<teacher_Profile> {
         ),
       );
 
-      // Notify bloc to refresh internal state
+      // Notify studentPendingClass to refresh internal state
       try {
         context.read<TeacherAuthBloc>().add(TeacherFetchProfileRequested());
       } catch (_) {}

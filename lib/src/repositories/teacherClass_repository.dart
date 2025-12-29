@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/class.dart';
 
 class TeacherClassRepository {
-  /// ✅ YOUR REAL BASE URL
+  // YOUR REAL BASE URL
   static const String baseUrl = 'https://presentme.in/api';
 
   // ================= HEADERS =================

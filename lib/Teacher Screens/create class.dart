@@ -71,7 +71,7 @@ class _CreateClassState extends State<CreateClass>
     if (fullDay.isEmpty) return fullDay;
     try {
       final entry = _dayMap.entries.firstWhere(
-        (e) => e.value.toLowerCase() == fullDay.toLowerCase(),
+            (e) => e.value.toLowerCase() == fullDay.toLowerCase(),
       );
       return entry.key;
     } catch (_) {
@@ -111,7 +111,7 @@ class _CreateClassState extends State<CreateClass>
       duration: const Duration(milliseconds: 900),
     )..repeat();
     final token = _getToken();
-    // initialize _activeCount from current bloc state in case data was already loaded
+    // initialize _activeCount from current studentPendingClass state in case data was already loaded
     try {
       final bloc = context.read<TeacherClassBloc>();
       final st = bloc.state;
@@ -119,7 +119,7 @@ class _CreateClassState extends State<CreateClass>
         _activeCount = st.classes.length;
       }
     } catch (_) {
-      // ignore if bloc not available yet
+      // ignore if studentPendingClass not available yet
     }
     if (token.isNotEmpty) {
       context.read<TeacherClassBloc>().add(TeacherFetchClasses(token));
@@ -142,7 +142,7 @@ class _CreateClassState extends State<CreateClass>
             final shimmerWidth = rect.width * 0.6;
             final offset =
                 (_shimmerController.value * (rect.width + shimmerWidth)) -
-                shimmerWidth;
+                    shimmerWidth;
             return LinearGradient(
               colors: [
                 Colors.grey.shade300,
@@ -302,7 +302,7 @@ class _CreateClassState extends State<CreateClass>
             end: Alignment.bottomCenter,
           ),
         ),
-        // listen to bloc state changes so we can update the active class count shown in the header
+        // listen to studentPendingClass state changes so we can update the active class count shown in the header
         child: BlocListener<TeacherClassBloc, TeacherClassState>(
           listener: (context, state) {
             if (state is TeacherClassLoaded) {
@@ -314,9 +314,9 @@ class _CreateClassState extends State<CreateClass>
               // If we were awaiting a save (create/update), show a toast (Fluttertoast)
               if (_awaitingSave && _lastAction != null) {
                 final successMessage =
-                    _lastAction == 'create'
-                        ? 'Class created successfully'
-                        : 'Class updated successfully';
+                _lastAction == 'create'
+                    ? 'Class created successfully'
+                    : 'Class updated successfully';
                 Fluttertoast.showToast(
                   msg: successMessage,
                   toastLength: Toast.LENGTH_SHORT,
@@ -359,9 +359,9 @@ class _CreateClassState extends State<CreateClass>
               // Attempt a single automatic retry to reload the classes (if token present)
               final token = _getToken();
               if (token.isNotEmpty) {
-                // schedule a microtask to avoid calling bloc while in the middle of processing the current event
+                // schedule a microtask to avoid calling studentPendingClass while in the middle of processing the current event
                 Future.microtask(
-                  () => context.read<TeacherClassBloc>().add(
+                      () => context.read<TeacherClassBloc>().add(
                     TeacherFetchClasses(token),
                   ),
                 );
@@ -379,7 +379,7 @@ class _CreateClassState extends State<CreateClass>
                   if (state is TeacherClassLoading) {
                     return SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (_, __) => _shimmer(_buildShimmerCard()),
+                            (_, __) => _shimmer(_buildShimmerCard()),
                         childCount: 3,
                       ),
                     );
@@ -395,7 +395,7 @@ class _CreateClassState extends State<CreateClass>
                   if (state is TeacherClassLoaded) {
                     return SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (_, i) => _buildModernClassCard(state.classes[i]),
+                            (_, i) => _buildModernClassCard(state.classes[i]),
                         childCount: state.classes.length,
                       ),
                     );
@@ -485,7 +485,7 @@ class _CreateClassState extends State<CreateClass>
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
                     color:
-                        _selectedTab == 0 ? Colors.white : Colors.transparent,
+                    _selectedTab == 0 ? Colors.white : Colors.transparent,
                     borderRadius: BorderRadius.circular(24),
                   ),
                   alignment: Alignment.center,
@@ -493,9 +493,9 @@ class _CreateClassState extends State<CreateClass>
                     'Active ($active)',
                     style: TextStyle(
                       color:
-                          _selectedTab == 0
-                              ? const Color(0xFF2563EB)
-                              : Colors.black54,
+                      _selectedTab == 0
+                          ? const Color(0xFF2563EB)
+                          : Colors.black54,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -509,7 +509,7 @@ class _CreateClassState extends State<CreateClass>
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
                     color:
-                        _selectedTab == 1 ? Colors.white : Colors.transparent,
+                    _selectedTab == 1 ? Colors.white : Colors.transparent,
                     borderRadius: BorderRadius.circular(24),
                   ),
                   alignment: Alignment.center,
@@ -517,9 +517,9 @@ class _CreateClassState extends State<CreateClass>
                     'Inactive (0)', // Inactive tab always shows 0
                     style: TextStyle(
                       color:
-                          _selectedTab == 1
-                              ? const Color(0xFF2563EB)
-                              : Colors.black54,
+                      _selectedTab == 1
+                          ? const Color(0xFF2563EB)
+                          : Colors.black54,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -537,9 +537,9 @@ class _CreateClassState extends State<CreateClass>
     final students = c.students.length;
     final int attendance = 94; // show a realistic value like your screenshot
     final badgeColor =
-        attendance >= 90
-            ? Colors.green
-            : (attendance >= 75 ? Colors.orange : Colors.red);
+    attendance >= 90
+        ? Colors.green
+        : (attendance >= 75 ? Colors.orange : Colors.red);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -667,29 +667,29 @@ class _CreateClassState extends State<CreateClass>
                                     context: context,
                                     builder:
                                         (_) => AlertDialog(
-                                          title: const Text('Move to Inactive'),
-                                          content: const Text(
-                                            'Are you sure you want to move this class to inactive?',
+                                      title: const Text('Move to Inactive'),
+                                      content: const Text(
+                                        'Are you sure you want to move this class to inactive?',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed:
+                                              () => Navigator.pop(
+                                            context,
+                                            false,
                                           ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed:
-                                                  () => Navigator.pop(
-                                                    context,
-                                                    false,
-                                                  ),
-                                              child: const Text('Cancel'),
-                                            ),
-                                            ElevatedButton(
-                                              onPressed:
-                                                  () => Navigator.pop(
-                                                    context,
-                                                    true,
-                                                  ),
-                                              child: const Text('Move'),
-                                            ),
-                                          ],
+                                          child: const Text('Cancel'),
                                         ),
+                                        ElevatedButton(
+                                          onPressed:
+                                              () => Navigator.pop(
+                                            context,
+                                            true,
+                                          ),
+                                          child: const Text('Move'),
+                                        ),
+                                      ],
+                                    ),
                                   );
                                   if (confirm == true) {
                                     // For now show a snackbar. Hook up real move logic in bloc if available.
@@ -737,52 +737,52 @@ class _CreateClassState extends State<CreateClass>
                               },
                               itemBuilder:
                                   (ctx) => [
-                                    PopupMenuItem(
-                                      value: 'edit',
-                                      child: Row(
-                                        children: const [
-                                          Icon(
-                                            Icons.edit,
-                                            size: 20,
-                                            color: Colors.black54,
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text('Edit Class'),
-                                        ],
+                                PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: const [
+                                      Icon(
+                                        Icons.edit,
+                                        size: 20,
+                                        color: Colors.black54,
                                       ),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'move',
-                                      child: Row(
-                                        children: const [
-                                          Icon(
-                                            Icons.swap_horiz,
-                                            size: 20,
-                                            color: Colors.black54,
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text('Move to Inactive'),
-                                        ],
+                                      SizedBox(width: 12),
+                                      Text('Edit Class'),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'move',
+                                  child: Row(
+                                    children: const [
+                                      Icon(
+                                        Icons.swap_horiz,
+                                        size: 20,
+                                        color: Colors.black54,
                                       ),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: const [
-                                          Icon(
-                                            Icons.delete,
-                                            size: 20,
-                                            color: Colors.red,
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text(
-                                            'Delete Class',
-                                            style: TextStyle(color: Colors.red),
-                                          ),
-                                        ],
+                                      SizedBox(width: 12),
+                                      Text('Move to Inactive'),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: const [
+                                      Icon(
+                                        Icons.delete,
+                                        size: 20,
+                                        color: Colors.red,
                                       ),
-                                    ),
-                                  ],
+                                      SizedBox(width: 12),
+                                      Text(
+                                        'Delete Class',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -929,14 +929,14 @@ class _CreateClassState extends State<CreateClass>
                       MaterialPageRoute(
                         builder:
                             (_) => classDetailsStudentList(
-                              classCode: c.classCode,
-                              roomNo: c.roomNo,
-                              className1: c.className,
-                              classDays: c.classDays,
-                              startTime: c.startTime,
-                              endTime: c.endTime,
-                              student: students,
-                            ),
+                          classCode: c.classCode,
+                          roomNo: c.roomNo,
+                          className1: c.className,
+                          classDays: c.classDays,
+                          startTime: c.startTime,
+                          endTime: c.endTime,
+                          student: students,
+                        ),
                       ),
                     );
                   },
@@ -977,68 +977,68 @@ class _CreateClassState extends State<CreateClass>
     final selectedDays = <String>{
       ...existing?.classDays.map(
             (d) =>
-                _dayMap.entries
-                    .firstWhere(
-                      (e) => e.value == d,
-                      orElse: () => const MapEntry('Mon', 'Monday'),
-                    )
-                    .key,
-          ) ??
+        _dayMap.entries
+            .firstWhere(
+              (e) => e.value == d,
+          orElse: () => const MapEntry('Mon', 'Monday'),
+        )
+            .key,
+      ) ??
           {},
     };
     showDialog(
       context: context,
       builder:
           (_) => _ClassDialog(
-            nameController: nameController,
-            roomController: roomController,
-            start: start,
-            end: end,
-            selectedDays: selectedDays,
-            dayMap: _dayMap,
-            onSave: (
-              String name,
-              String room,
-              TimeOfDay? s,
-              TimeOfDay? e,
-              Set<String> days,
+        nameController: nameController,
+        roomController: roomController,
+        start: start,
+        end: end,
+        selectedDays: selectedDays,
+        dayMap: _dayMap,
+        onSave: (
+            String name,
+            String room,
+            TimeOfDay? s,
+            TimeOfDay? e,
+            Set<String> days,
             ) {
-              final token = _getToken();
-              if (token.isEmpty) return;
-              if (existing == null) {
-                setState(() {
-                  _awaitingSave = true;
-                  _lastAction = 'create';
-                });
-                context.read<TeacherClassBloc>().add(
-                  TeacherCreateClass(
-                    token: token,
-                    className: name.trim(),
-                    roomNo: room.trim(),
-                    startTime: _formatTime24(s),
-                    endTime: _formatTime24(e),
-                    classDays: days.map((d) => _dayMap[d]!).toList(),
-                  ),
-                );
-              } else {
-                setState(() {
-                  _awaitingSave = true;
-                  _lastAction = 'update';
-                });
-                context.read<TeacherClassBloc>().add(
-                  TeacherUpdateClass(
-                    token: token,
-                    classCode: existing.classCode,
-                    className: name.trim(),
-                    roomNo: room.trim(),
-                    startTime: _formatTime24(s),
-                    endTime: _formatTime24(e),
-                    classDays: days.map((d) => _dayMap[d]!).toList(),
-                  ),
-                );
-              }
-            },
-          ),
+          final token = _getToken();
+          if (token.isEmpty) return;
+          if (existing == null) {
+            setState(() {
+              _awaitingSave = true;
+              _lastAction = 'create';
+            });
+            context.read<TeacherClassBloc>().add(
+              TeacherCreateClass(
+                token: token,
+                className: name.trim(),
+                roomNo: room.trim(),
+                startTime: _formatTime24(s),
+                endTime: _formatTime24(e),
+                classDays: days.map((d) => _dayMap[d]!).toList(),
+              ),
+            );
+          } else {
+            setState(() {
+              _awaitingSave = true;
+              _lastAction = 'update';
+            });
+            context.read<TeacherClassBloc>().add(
+              TeacherUpdateClass(
+                token: token,
+                classCode: existing.classCode,
+                className: name.trim(),
+                roomNo: room.trim(),
+                startTime: _formatTime24(s),
+                endTime: _formatTime24(e),
+                classDays: days.map((d) => _dayMap[d]!).toList(),
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 
@@ -1218,14 +1218,14 @@ class _CreateClassState extends State<CreateClass>
                                         ),
                                         const TextSpan(
                                           text:
-                                              '" will permanently remove.\n\n',
+                                          '" will permanently remove.\n\n',
                                           style: TextStyle(
                                             color: Color(0xFFEF4444),
                                           ),
                                         ),
                                         const TextSpan(
                                           text:
-                                              '• All class attendance records\n',
+                                          '• All class attendance records\n',
                                           style: TextStyle(
                                             color: Color(0xFFEF4444),
                                           ),
@@ -1611,31 +1611,31 @@ class _ClassDialogState extends State<_ClassDialog> {
                     spacing: 8,
                     runSpacing: 6,
                     children:
-                        widget.dayMap.keys
-                            .map(
-                              (d) => ChoiceChip(
-                                label: Text(d),
-                                selected: selectedDays.contains(d),
-                                onSelected:
-                                    (v) => setState(() {
-                                      v
-                                          ? selectedDays.add(d)
-                                          : selectedDays.remove(d);
-                                      if (_daysError != null &&
-                                          selectedDays.isNotEmpty)
-                                        _daysError = null;
-                                    }),
-                                backgroundColor: const Color(0xFFF3F4F6),
-                                selectedColor: const Color(
-                                  0xFF06B6D4,
-                                ).withOpacity(0.5),
-                                labelStyle: const TextStyle(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            )
-                            .toList(),
+                    widget.dayMap.keys
+                        .map(
+                          (d) => ChoiceChip(
+                        label: Text(d),
+                        selected: selectedDays.contains(d),
+                        onSelected:
+                            (v) => setState(() {
+                          v
+                              ? selectedDays.add(d)
+                              : selectedDays.remove(d);
+                          if (_daysError != null &&
+                              selectedDays.isNotEmpty)
+                            _daysError = null;
+                        }),
+                        backgroundColor: const Color(0xFFF3F4F6),
+                        selectedColor: const Color(
+                          0xFF06B6D4,
+                        ).withOpacity(0.5),
+                        labelStyle: const TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    )
+                        .toList(),
                   ),
                   if (_daysError != null)
                     Padding(
@@ -1673,32 +1673,32 @@ class _ClassDialogState extends State<_ClassDialog> {
                             // validate
                             setState(() {
                               _nameError =
-                                  (widget.nameController.text.trim().isEmpty)
-                                      ? 'Please enter class name'
-                                      : null;
+                              (widget.nameController.text.trim().isEmpty)
+                                  ? 'Please enter class name'
+                                  : null;
                               _roomError =
-                                  (widget.roomController.text.trim().isEmpty)
-                                      ? 'Please enter room number'
-                                      : null;
+                              (widget.roomController.text.trim().isEmpty)
+                                  ? 'Please enter room number'
+                                  : null;
                               if (start == null || end == null) {
                                 _timeError = 'Please select start and end time';
                               } else if (_minutes(start!) >= _minutes(end!)) {
                                 _timeError =
-                                    'Start time must be before end time';
+                                'Start time must be before end time';
                               } else {
                                 _timeError = null;
                               }
                               _daysError =
-                                  (selectedDays.isEmpty)
-                                      ? 'Please select at least one day'
-                                      : null;
+                              (selectedDays.isEmpty)
+                                  ? 'Please select at least one day'
+                                  : null;
                             });
 
                             final hasError =
                                 _nameError != null ||
-                                _roomError != null ||
-                                _timeError != null ||
-                                _daysError != null;
+                                    _roomError != null ||
+                                    _timeError != null ||
+                                    _daysError != null;
                             if (!hasError) {
                               widget.onSave(
                                 widget.nameController.text.trim(),

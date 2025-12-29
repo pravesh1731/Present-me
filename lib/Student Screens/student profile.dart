@@ -237,7 +237,7 @@ class _student_ProfileState extends State<student_Profile> {
 
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully'), backgroundColor: Colors.green));
 
-      // Notify bloc to refresh internal state
+      // Notify studentPendingClass to refresh internal state
       try {
         context.read<AuthBloc>().add(FetchProfileRequested());
       } catch (_) {}

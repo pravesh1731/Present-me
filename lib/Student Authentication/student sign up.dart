@@ -896,7 +896,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
                               ),
                               GestureDetector(
                                 onTap: () {
-                                  Navigator.push(
+                                  Navigator.pushReplacement(
                                     context,
                                     PageRouteBuilder(
                                       transitionDuration:

@@ -535,7 +535,7 @@ class _joined_ClassState extends State<joined_Class> {
               // 🔄 Loading: show header + shimmer cards
               if (state is StudentClassLoading) {
                 return ListView(
-                  padding: const EdgeInsets.only(top: 12, bottom: 24),
+                  padding: const EdgeInsets.only( bottom: 24),
                   children: [
                     _buildHeader(0),
                     const SizedBox(height: 8),
@@ -622,6 +622,7 @@ class _joined_ClassState extends State<joined_Class> {
               return const SizedBox.shrink();
              },
            )
+
          ),
        ),
     );
@@ -917,12 +918,6 @@ class _joined_ClassState extends State<joined_Class> {
     return Color.lerp(color, Colors.white, amount) ?? color;
   }
 
-  String _formatTime(String? startTime, String? endTime) {
-    if (startTime == null || startTime.isEmpty || endTime == null || endTime.isEmpty) {
-      return 'Time not set';
-    }
-    return '$startTime - $endTime';
-  }
 
   Widget _buildShimmerCard() {
     return Container(

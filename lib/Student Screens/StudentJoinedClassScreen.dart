@@ -1,35 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:present_me_flutter/src/bloc/studentPendingClass/student_pending_class_bloc.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:present_me_flutter/src/models/studentPendingClass.dart';
+import 'package:shimmer/shimmer.dart';
 
 class StudentJoinedClassScreen extends StatefulWidget {
   const StudentJoinedClassScreen({Key? key}) : super(key: key);
 
   @override
-  State<StudentJoinedClassScreen> createState() => _StudentJoinedClassScreenState();
+  State<StudentJoinedClassScreen> createState() =>
+      _StudentJoinedClassScreenState();
 }
 
 class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
-  bool _isLoading = false; // simulate loading if needed
+  final GetStorage _storage = GetStorage();
+  String? _lastErrorShown;
 
-  final List<Map<String, dynamic>> _requests = [
-    {
-      'name': 'Mathematics',
-      'teacher': 'Mrs. Smith',
-      'room': 'Room 301',
-      'timeAgo': '2 hours ago',
-      'status': 'Pending',
-      'colorIndex': 0,
-      'message': "Your request is waiting for teacher approval. You'll be notified once it's reviewed.",
-    },
-    {
-      'name': 'Physics',
-      'teacher': 'Mr. Johnson',
-      'room': 'Room 205',
-      'timeAgo': '5 hours ago',
-      'status': 'Pending',
-      'colorIndex': 2,
-      'message': "Your request is waiting for teacher approval. You'll be notified once it's reviewed.",
-    },
-  ];
+  String _getToken() {
+    return _storage.read('token')?.toString() ?? '';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final bloc = context.read<StudentPendingClassBloc>();
+
+      // 👇 FETCH ONLY IF NOT ALREADY LOADED
+      if (bloc.state is! StudentPendingClassLoaded) {
+        final token = _getToken();
+        if (token.isNotEmpty) {
+          bloc.add(StudentFetchPendingClasses(token));
+        }
+      }
+    });
+  }
+
+
 
   static const List<List<Color>> _themes = [
     [Color(0xFF3B82F6), Color(0xFF2563EB)], // blue
@@ -38,17 +47,6 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
     [Color(0xFF06B6D4), Color(0xFF0891B2)], // cyan
     [Color(0xFF10B981), Color(0xFF059669)], // emerald
   ];
-
-  void _onCancelRequest(int index) {
-    // simple local removal to simulate cancel
-    setState(() {
-      _requests.removeAt(index);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Request cancelled'),
-      behavior: SnackBarBehavior.floating,
-    ));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,108 +62,197 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
               end: Alignment.bottomCenter,
             ),
           ),
-          child: Column(
-            children: [
-              _buildHeader(context),
+          child: BlocBuilder<StudentPendingClassBloc, StudentPendingClassState>(
+            builder: (context, state) {
+              if (state is StudentPendingClassLoading) {
+                return ListView(
+                  padding: const EdgeInsets.only( bottom: 24),
+                  children: [
+                    _buildHeader(context),
+                    const SizedBox(height: 8),
+                    _buildShimmerCard(),
+                    _buildShimmerCard(),
+                    _buildShimmerCard(),
+                    _buildShimmerCard(),
+                  ],
+                );
+              }
 
-              const SizedBox(height: 12),
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _requests.isEmpty
-                        ? _buildNoClasses()
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            itemCount: _requests.length + 1,
-                            itemBuilder: (context, idx) {
-                              if (idx == 0) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12.0),
-                                  child: Text(
-                                    'Awaiting Teacher Approval',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade800,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                );
-                              }
-                              final index = idx - 1;
-                              final r = _requests[index];
-                              final theme = _themes[r['colorIndex'] % _themes.length];
-                              return _buildRequestCard(index, r, theme);
-                            },
+              if (state is StudentPendingClassError) {
+                if (_lastErrorShown != state.message) {
+                  _lastErrorShown = state.message;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(state.message)),
+                          ],
+                        ),
+                        backgroundColor: const Color(0xFFEF4444),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    );
+                  });
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.only(top: 12, bottom: 24),
+                  children: [
+                    const SizedBox(height: 24),
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            state.message,
+                            style: const TextStyle(color: Color(0xFF6B7280)),
                           ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: () {
+                              final token = _getToken();
+                              if (token.isNotEmpty)
+                                context.read<StudentPendingClassBloc>().add(
+                                  StudentFetchPendingClasses(token),
+                                );
+                            },
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 34, 18, 22),
-      margin: const EdgeInsets.only(bottom: 6),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).maybePop(),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                // Colors.white.withOpacity(0.12) -> preserve alpha via fromRGBO
-                color: const Color.fromRGBO(255, 255, 255, 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                SizedBox(height: 2),
-                Text(
-                  'Pending Requests',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
+              if (state is StudentPendingClassLoaded) {
+                // Create a single scrollable list: header then one card per class
+                final List<Widget> listChildren = [];
+                listChildren.add(_buildHeader(context));
+                listChildren.add(const SizedBox(height: 12));
+
+                if (state.classes.isEmpty) {
+                  listChildren.add(Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                    child: _buildNoClasses(),
+                  ));
+                } else {
+                  for (var i = 0; i < state.classes.length; i++) {
+                    final cls = state.classes[i];
+                    final theme = _themes[i % _themes.length];
+                    listChildren.add(Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: _buildRequestCard(theme, cls),
+                    ));
+                  }
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  children: listChildren,
+                );
+              }
+
+
+
+              // Fallback return — ensure a Widget is always returned from the builder
+              return ListView(
+                padding: const EdgeInsets.only(top: 12, bottom: 24),
+                children: [
+                  _buildHeader(context),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: Text(
+                      'No pending classes',
+                      style: TextStyle(color: Colors.grey.shade700),
+                    ),
                   ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Classes awaiting approval',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-              ],
-            ),
-          ),
+                ],
+              );
 
-        ],
+
+            },
+          )
+        ),
       ),
     );
   }
 
 
 
-  Widget _buildRequestCard(int index, Map<String, dynamic> r, List<Color> theme) {
+    Widget _buildHeader(BuildContext context) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(18, 34, 18, 22),
+
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(28),
+            bottomRight: Radius.circular(28),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.of(context).maybePop(),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  // Colors.white.withOpacity(0.12) -> preserve alpha via fromRGBO
+                  color: const Color.fromRGBO(255, 255, 255, 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  SizedBox(height: 2),
+                  Text(
+                    'Pending Requests',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'Classes awaiting approval',
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+  Widget _buildRequestCard(
+      List<Color> theme,
+      StudentPendingClassModel cls,) {
     final primary = theme[0];
     final secondary = theme[1];
     return Container(
@@ -197,11 +284,15 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
                           width: 46,
                           height: 46,
                           decoration: BoxDecoration(
-                            // primary.withOpacity(0.12) -> construct with fromRGBO
-                            color: Color.fromRGBO(primary.red, primary.green, primary.blue, 0.12),
+                            // use withAlpha to avoid deprecated channel access
+                            color: primary.withAlpha((0.12 * 255).round()),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(Icons.menu_book_outlined, color: primary, size: 26),
+                          child: Icon(
+                            Icons.menu_book_outlined,
+                            color: primary,
+                            size: 26,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -213,27 +304,42 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      r['name'] ?? '',
-                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                                      cls.className,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF0F172A),
+                                      ),
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: Colors.orangeAccent.withOpacity(.2),
+                                      color: Colors.orangeAccent.withAlpha((0.2 * 255).round()),
                                       borderRadius: BorderRadius.circular(999),
                                     ),
                                     child: Text(
-                                      r['status'] ?? 'Pending',
-                                      style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w700, fontSize: 12),
+                                       'Pending',
+                                      style: const TextStyle(
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                r['teacher'] ?? '',
-                                style: TextStyle(color: Colors.grey.shade700, fontSize: 13, fontWeight: FontWeight.w600),
+                                cls.teacherName,
+                                style: TextStyle(
+                                  color: Color(0xFF0F172A),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
@@ -245,17 +351,37 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.circle, size: 8, color: Color(0xFF9CA3AF)),
+                            const Icon(
+                              Icons.circle,
+                              size: 8,
+                              color: Color(0xFF9CA3AF),
+                            ),
                             const SizedBox(width: 8),
-                            Text(r['room'] ?? '', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+                            Text(
+                              cls.roomNo ,
+                              style: const TextStyle(
+                                color: Color(0xFF6B7280),
+                                fontSize: 13,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(width: 18),
                         Row(
                           children: [
-                            const Icon(Icons.access_time, size: 14, color: Color(0xFF9CA3AF)),
+                            const Icon(
+                              Icons.access_time,
+                              size: 14,
+                              color: Color(0xFF9CA3AF),
+                            ),
                             const SizedBox(width: 8),
-                            Text(r['timeAgo'] ?? '', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+                            Text(
+                              cls.classCode,
+                              style: const TextStyle(
+                                color: Color(0xFF6B7280),
+                                fontSize: 13,
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -275,14 +401,20 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
                         children: [
                           Container(
                             // padding: const EdgeInsets.all(8),
-
-                            child: Icon(Icons.info_outline, color: Colors.orange, size: 18),
+                            child: Icon(
+                              Icons.info_outline,
+                              color: Colors.orange,
+                              size: 18,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              r['message'] ?? '',
-                              style: TextStyle(color: Colors.orange[900], fontSize: 13),
+                           'Your request is waiting for teacher approval. You will be notified once it is reviewed.',
+                            style: TextStyle(
+                              color: Colors.orange[900],
+                              fontSize: 13,
+                            ),
                             ),
                           ),
                         ],
@@ -293,15 +425,27 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () => _onCancelRequest(index),
-                        icon: const Icon(Icons.close, size: 18,color: Colors.white),
+                        onPressed: (){},
+                        icon: const Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Colors.white,
+                        ),
                         label: const Padding(
                           padding: EdgeInsets.symmetric(vertical: 12.0),
-                          child: Text('Cancel Request', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+                          child: Text(
+                            'Cancel Request',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFC1E1E),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           elevation: 0,
                         ),
                       ),
@@ -313,7 +457,8 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
           ),
         ),
       ),
-    );
+      );
+
   }
 
   Widget _buildNoClasses() {
@@ -326,17 +471,145 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
           Container(
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF06B6D4), Color(0xFF2563EB)]),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
+              ),
               borderRadius: BorderRadius.circular(999),
             ),
             child: const Icon(Icons.class_, color: Colors.white, size: 48),
           ),
           const SizedBox(height: 20),
-          const Text('No classes', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+          const Text(
+            'No classes',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF111827),
+            ),
+          ),
           const SizedBox(height: 8),
-          const Text('You have not requested to join any classes yet.', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF6B7280))),
+          const Text(
+            'You have not requested to join any classes yet.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xFF6B7280)),
+          ),
         ],
       ),
     );
   }
+}
+
+class bodyHeader extends StatelessWidget {
+  const bodyHeader({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'Awaiting Teacher Approval',
+      style: TextStyle(
+        color: Colors.grey.shade800,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
+Widget _buildShimmerCard() {
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withAlpha((0.03 * 255).round()),
+          blurRadius: 14,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    ),
+    child: Shimmer.fromColors(
+      baseColor: Colors.grey.shade200,
+      highlightColor: Colors.grey.shade100,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 16,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 16,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 40,
+                            height: 16,
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(
+                  width: 80,
+                  height: 14,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 16),
+                Container(
+                  width: 60,
+                  height: 14,
+                  color: Colors.white,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  width: 100,
+                  height: 14,
+                  color: Colors.white,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

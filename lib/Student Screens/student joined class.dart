@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:present_me_flutter/Student%20Screens/StudentJoinedClassScreen.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/src/bloc/studentClass/student_class_bloc.dart';
+import 'package:present_me_flutter/src/bloc/studentPendingClass/student_pending_class_bloc.dart';
 import 'package:present_me_flutter/src/repositories/studentClass_repository.dart';
 import 'package:present_me_flutter/src/models/studentClass.dart';
 import 'package:shimmer/shimmer.dart';
@@ -17,6 +19,10 @@ class _joined_ClassState extends State<joined_Class> {
   final GetStorage _storage = GetStorage();
   final TextEditingController _codeController = TextEditingController();
   String? _lastErrorShown;
+  String? _lastAction;
+
+  // Cache last loaded classes to avoid replacing UI on transient action/error states
+  List<StudentClassModel> _cachedClasses = [];
 
   // Mock current user id (replace with your auth integration later)
   final String currentUserId = 'demo_user';
@@ -82,121 +88,6 @@ class _joined_ClassState extends State<joined_Class> {
     });
   }
 
-  // Local sample classes used purely for UI (no Firebase)
-  final List<Map<String, dynamic>> _sampleClasses = [
-    {
-      'name': 'Mathematics',
-      'code': '123456',
-      'room': 'A1',
-      'startTime': '09:00',
-      'endTime': '10:00',
-      'days': ['Mon', 'Tue', 'Wed'],
-    },
-    {
-      'name': 'Physics',
-      'code': '654321',
-      'room': 'B2',
-      'startTime': '11:00',
-      'endTime': '12:00',
-      'days': ['Thu', 'Fri'],
-    },
-  ];
-
-  void _joinClass(String code) async {
-    // This method previously interacted with Firestore. For UI-only mode we
-    // validate and show the same snackbars/dialog behaviors but do not call
-    // any backend. Integrate your API where indicated later.
-    try {
-      // Simulate checks that used to exist in Firestore
-      if (code.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.warning_rounded, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Please enter class code'),
-              ],
-            ),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-        return;
-      }
-
-      // If the code length is wrong
-      if (code.length != 6) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.warning_rounded, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Class code must be exactly 6 digits'),
-              ],
-            ),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-        return;
-      }
-
-      if (!RegExp(r'^[0-9]{6}$').hasMatch(code)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.warning_rounded, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Class code must contain only digits'),
-              ],
-            ),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-        return;
-      }
-
-      // Simulate successful request
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle_rounded, color: Colors.white),
-              SizedBox(width: 12),
-              Text("Request sent. Wait for teacher approval."),
-            ],
-          ),
-          backgroundColor: const Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-
-      Navigator.of(context).pop();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(child: Text("Error: $e")),
-            ],
-          ),
-          backgroundColor: const Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    }
-  }
 
   void _showJoinClassDialog() {
     showDialog(
@@ -326,7 +217,6 @@ class _joined_ClassState extends State<joined_Class> {
                         const SizedBox(height: 10),
                         TextField(
                           controller: _codeController,
-                          keyboardType: TextInputType.number,
                           maxLength: 6,
                           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: 2),
                           decoration: InputDecoration(
@@ -349,15 +239,7 @@ class _joined_ClassState extends State<joined_Class> {
                             ),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           ),
-                          onChanged: (value) {
-                            // Only allow digits
-                            if (value.isNotEmpty && !RegExp(r'^[0-9]+$').hasMatch(value)) {
-                              _codeController.text = value.replaceAll(RegExp(r'[^0-9]'), '');
-                              _codeController.selection = TextSelection.fromPosition(
-                                TextPosition(offset: _codeController.text.length),
-                              );
-                            }
-                          },
+
                         ),
                         const SizedBox(height: 24),
                         // Join Button
@@ -383,64 +265,18 @@ class _joined_ClassState extends State<joined_Class> {
                             child: InkWell(
                               borderRadius: BorderRadius.circular(16),
                               onTap: () {
-                                final code = _codeController.text.trim();
+                                final token = _getToken();
+                                if (token.isEmpty) return;
 
-                                if (code.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Row(
-                                        children: [
-                                          Icon(Icons.warning_rounded, color: Colors.white),
-                                          SizedBox(width: 12),
-                                          Text('Please enter class code'),
-                                        ],
-                                      ),
-                                      backgroundColor: const Color(0xFFEF4444),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                if (code.length != 6) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Row(
-                                        children: [
-                                          Icon(Icons.warning_rounded, color: Colors.white),
-                                          SizedBox(width: 12),
-                                          Text('Class code must be exactly 6 digits'),
-                                        ],
-                                      ),
-                                      backgroundColor: const Color(0xFFEF4444),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                if (!RegExp(r'^[0-9]{6}$').hasMatch(code)) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Row(
-                                        children: [
-                                          Icon(Icons.warning_rounded, color: Colors.white),
-                                          SizedBox(width: 12),
-                                          Text('Class code must contain only digits'),
-                                        ],
-                                      ),
-                                      backgroundColor: const Color(0xFFEF4444),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                _joinClass(code);
-                                _codeController.clear();
+                                // mark that the user triggered a join action so the UI can treat
+                                // any resulting error as transient and avoid replacing the list
+                                _lastAction = 'join';
+                                context.read<StudentClassBloc>().add(
+                                  StudentJoinClass(
+                                    token: token,
+                                    classCode: _codeController.text.trim(),
+                                  ),
+                                );
                               },
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -476,37 +312,6 @@ class _joined_ClassState extends State<joined_Class> {
     );
   }
 
-  // Tab controller for Active/Inactive
-  int _selectedTab = 0; // 0: Active, 1: Inactive
-
-  // Store inactive class codes locally (simulate moving to inactive)
-  List<String> _inactiveClassCodes = [];
-
-  // Return a stream of sample classes for UI rendering. Replace this with
-  // your API stream when integrating a backend.
-  Stream<List<Map<String, dynamic>>> _getJoinedClassesStream() {
-    return Stream.value(List<Map<String, dynamic>>.from(_sampleClasses));
-  }
-
-  List<Map<String, dynamic>> _filterActiveClasses(List<Map<String, dynamic>> classes) {
-    return classes.where((c) => !_inactiveClassCodes.contains(c['code'])).toList();
-  }
-  List<Map<String, dynamic>> _filterInactiveClasses(List<Map<String, dynamic>> classes) {
-    return classes.where((c) => _inactiveClassCodes.contains(c['code'])).toList();
-  }
-
-  void _moveToInactive(String code) {
-    setState(() {
-      if (!_inactiveClassCodes.contains(code)) {
-        _inactiveClassCodes.add(code);
-      }
-    });
-  }
-  void _moveToActive(String code) {
-    setState(() {
-      _inactiveClassCodes.remove(code);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -532,70 +337,11 @@ class _joined_ClassState extends State<joined_Class> {
           child: BlocBuilder<StudentClassBloc, StudentClassState>(
              builder: (context, state) {
 
-              // 🔄 Loading: show header + shimmer cards
-              if (state is StudentClassLoading) {
-                return ListView(
-                  padding: const EdgeInsets.only( bottom: 24),
-                  children: [
-                    _buildHeader(0),
-                    const SizedBox(height: 8),
-                    _buildShimmerCard(),
-                    _buildShimmerCard(),
-                    _buildShimmerCard(),
-                    _buildShimmerCard(),
-                  ],
-                );
-              }
-
-              //  Error: show header + error message and retry
-              if (state is StudentClassError) {
-                if (_lastErrorShown != state.message) {
-                  _lastErrorShown = state.message;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Row(
-                          children: [
-                            const Icon(Icons.error_outline, color: Colors.white),
-                            const SizedBox(width: 12),
-                            Expanded(child: Text(state.message)),
-                          ],
-                        ),
-                        backgroundColor: const Color(0xFFEF4444),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    );
-                  });
-                }
-
-                return ListView(
-                  padding: const EdgeInsets.only(top: 12, bottom: 24),
-                  children: [
-                    _buildHeader(0),
-                    const SizedBox(height: 24),
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(state.message, style: const TextStyle(color: Color(0xFF6B7280))),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: () {
-                              final token = _getToken();
-                              if (token.isNotEmpty) context.read<StudentClassBloc>().add(StudentFetchEnrolledClasses(token));
-                            },
-                            child: const Text('Retry'),
-                          )
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              }
-
-              //  Data Loaded: header + class cards in a single ListView
+              // If we've got a loaded state, update cache and render it
               if (state is StudentClassLoaded) {
+                // update cache (no setState since we're already building)
+                _cachedClasses = List<StudentClassModel>.from(state.classes);
+
                 if (state.classes.isEmpty) {
                   // still show header even if empty
                   return ListView(
@@ -619,6 +365,115 @@ class _joined_ClassState extends State<joined_Class> {
                 );
               }
 
+              // 🔄 Loading: if we have cached data, show it while loading; otherwise show shimmer
+              if (state is StudentClassLoading) {
+                if (_cachedClasses.isNotEmpty) {
+                  return ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 24,),
+                    itemCount: _cachedClasses.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) return _buildHeader(_cachedClasses.length);
+                      final cls = _cachedClasses[index - 1];
+                      return _buildClassCard(cls);
+                    },
+                  );
+                }
+
+                // no cache -> show initial loading shimmer
+                return ListView(
+                  padding: const EdgeInsets.only( bottom: 24),
+                  children: [
+                    _buildHeader(0),
+                    const SizedBox(height: 8),
+                    _buildShimmerCard(),
+                    _buildShimmerCard(),
+                    _buildShimmerCard(),
+                    _buildShimmerCard(),
+                  ],
+                );
+              }
+
+              //  Error: show only a snackbar (handled by listener) and keep showing cached data if any
+              if (state is StudentClassError) {
+                // We intentionally DON'T show the SnackBar here. The BlocListener
+                // attached to the scaffold handles showing messages from actions.
+                // Keep showing cached UI if available.
+                if (_cachedClasses.isNotEmpty) {
+                  return ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 24,),
+                    itemCount: _cachedClasses.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) return _buildHeader(_cachedClasses.length);
+                      final cls = _cachedClasses[index - 1];
+                      return _buildClassCard(cls);
+                    },
+                  );
+                }
+
+                // no cached data -> show error panel with retry
+                return ListView(
+                  padding: const EdgeInsets.only( bottom: 24),
+                  children: [
+                    _buildHeader(0),
+                    const SizedBox(height: 24),
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(state.message, style: const TextStyle(color: Color(0xFF6B7280))),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: () {
+                              final token = _getToken();
+                              if (token.isNotEmpty) context.read<StudentClassBloc>().add(StudentFetchEnrolledClasses(token));
+                            },
+                            child: const Text('Retry'),
+                          )
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              //  Action success or other transient states: show cached UI if available and rely on listener for SnackBar
+              if (state is StudentClassActionSuccess) {
+                if (_cachedClasses.isNotEmpty) {
+                  return ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 24,),
+                    itemCount: _cachedClasses.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) return _buildHeader(_cachedClasses.length);
+                      final cls = _cachedClasses[index - 1];
+                      return _buildClassCard(cls);
+                    },
+                  );
+                }
+
+                // no cache -> show empty state but keep dialog closed (listener does that)
+                return ListView(
+                  padding: const EdgeInsets.only( bottom: 24),
+                  children: [
+                    _buildHeader(0),
+                    const SizedBox(height: 24),
+                    _buildEmptyState(),
+                  ],
+                );
+              }
+
+              // Default: if we have cached data show it, otherwise empty box
+              if (_cachedClasses.isNotEmpty) {
+                return ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 24,),
+                  itemCount: _cachedClasses.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) return _buildHeader(_cachedClasses.length);
+                    final cls = _cachedClasses[index - 1];
+                    return _buildClassCard(cls);
+                  },
+                );
+              }
+
               return const SizedBox.shrink();
              },
            )
@@ -627,25 +482,64 @@ class _joined_ClassState extends State<joined_Class> {
        ),
     );
 
-    // If a StudentClassBloc is available above, return the scaffold directly.
-    // Otherwise provide a local StudentClassBloc wired to your repository and
-    // trigger initial fetch there.
+    Widget content;
+
     try {
-      // This will throw if no StudentClassBloc is provided in the ancestor tree
       BlocProvider.of<StudentClassBloc>(context);
-      return scaffold;
+      content = scaffold;
     } catch (_) {
-      // Provide a local StudentClassBloc that uses your repository
-      return BlocProvider(
+      content = BlocProvider(
         create: (ctx) {
           final bloc = StudentClassBloc(repository: StudentClassRepository());
           final token = _getToken();
-          if (token.isNotEmpty) bloc.add(StudentFetchEnrolledClasses(token));
+          if (token.isNotEmpty) {
+            bloc.add(StudentFetchEnrolledClasses(token));
+          }
           return bloc;
         },
         child: scaffold,
       );
     }
+
+    return BlocListener<StudentClassBloc, StudentClassState>(
+      listener: (context, state) {
+
+        // ✅ JOIN CLASS SUCCESS
+        if (state is StudentClassActionSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+
+          _codeController.clear();
+
+          // close join dialog if open
+          Navigator.of(context, rootNavigator: true).pop();
+
+          // clear last action marker after handling
+          if (_lastAction == 'join') _lastAction = null;
+        }
+
+        // ❌ ERROR
+        if (state is StudentClassError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+
+          // clear last action marker after handling
+          if (_lastAction == 'join') _lastAction = null;
+        }
+      },
+      child: content, // 👈 VERY IMPORTANT
+    );
+
   }
 
   Widget _buildHeader(int activeCount) {

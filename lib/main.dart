@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/splash%20screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:present_me_flutter/src/bloc/studentClass/student_class_bloc.dart';
 import 'package:present_me_flutter/src/bloc/studentPendingClass/student_pending_class_bloc.dart';
 import 'package:present_me_flutter/src/bloc/teacherClass/teacher_class_bloc.dart';
+import 'package:present_me_flutter/src/repositories/studentClass_repository.dart';
 import 'package:present_me_flutter/src/repositories/studentPendingClass_repository.dart';
 import 'package:present_me_flutter/src/repositories/teacherClass_repository.dart';
 import 'src/repositories/studentAuth_repository.dart';
@@ -26,6 +28,7 @@ void main() async {
   final teacherRepository = TeacherAuthRepository();
   final teacherClassRepository = TeacherClassRepository();
   final studentPendingClassRepository = StudentPendingClassRepository();
+  final studentClassRepository = StudentClassRepository();
 
   runApp(
     ProviderScope(
@@ -35,6 +38,7 @@ void main() async {
           RepositoryProvider.value(value: teacherRepository),
           RepositoryProvider.value(value: teacherClassRepository),
           RepositoryProvider.value(value: studentPendingClassRepository),
+          RepositoryProvider.value(value: studentClassRepository),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -54,6 +58,11 @@ void main() async {
             BlocProvider(
               create: (_) => StudentPendingClassBloc(
                 repository: studentPendingClassRepository,
+              ),
+            ),
+            BlocProvider(
+              create: (_) => StudentClassBloc(
+                repository: studentClassRepository,
               ),
             ),
           ],

@@ -16,3 +16,20 @@ class StudentFetchEnrolledClasses extends StudentClassEvent {
   @override
   List<Object> get props => [token];
 }
+
+
+// ================= JOIN =================
+class StudentJoinClass extends StudentClassEvent {
+  final String token;
+  final String classCode;
+
+
+  const StudentJoinClass({
+    required this.token,
+    required this.classCode,
+  });
+
+  @override
+  List<Object> get props => [token, classCode];
+
+}

@@ -39,6 +39,32 @@ class StudentClassRepository {
     }
   }
 
+  // ================= JOIN CLASS =================
+  /// ✅ Sends ONLY required fields
+  Future<String> joinClass({
+    required String classCode,
+    required String token,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/students/joinRequests'),
+      headers: _headers(token),
+      body: json.encode({
+        "classCode": classCode,
+      }),
+    );
+
+    final data = json.decode(response.body);
+
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? data['error'] ?? 'Failed to join class');
+    }
+
+    // ✅ RETURN MESSAGE FROM API
+    return data['message'] ?? 'Join request sent';
+  }
+
+
+
 
 }
 

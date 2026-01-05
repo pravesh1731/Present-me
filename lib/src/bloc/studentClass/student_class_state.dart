@@ -26,3 +26,18 @@ final class StudentClassError extends StudentClassState {
   @override
   List<Object> get props => [message];
 }
+
+
+class StudentClassActionSuccess extends StudentClassState {
+  final String message;
+
+  const StudentClassActionSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+
+
+
+

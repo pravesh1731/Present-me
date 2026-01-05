@@ -26,3 +26,5 @@ final class TeacherClassError extends TeacherClassState {
   @override
   List<Object?> get props => [message];
 }
+
+

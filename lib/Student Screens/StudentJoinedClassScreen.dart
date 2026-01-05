@@ -26,14 +26,15 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final bloc = context.read<StudentPendingClassBloc>();
-
-      // 👇 FETCH ONLY IF NOT ALREADY LOADED
-      if (bloc.state is! StudentPendingClassLoaded) {
+      try {
+        final bloc = context.read<StudentPendingClassBloc>();
         final token = _getToken();
         if (token.isNotEmpty) {
+          // Always refresh when the screen opens so newly joined requests appear
           bloc.add(StudentFetchPendingClasses(token));
         }
+      } catch (_) {
+        // No StudentPendingClassBloc found in the tree; caller should provide it.
       }
     });
   }

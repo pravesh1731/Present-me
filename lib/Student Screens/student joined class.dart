@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:present_me_flutter/Student%20Screens/StudentJoinedClassScreen.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/src/bloc/studentClass/student_class_bloc.dart';
-import 'package:present_me_flutter/src/bloc/studentPendingClass/student_pending_class_bloc.dart';
 import 'package:present_me_flutter/src/repositories/studentClass_repository.dart';
 import 'package:present_me_flutter/src/models/studentClass.dart';
 import 'package:shimmer/shimmer.dart';
@@ -18,7 +18,6 @@ class joined_Class extends StatefulWidget {
 class _joined_ClassState extends State<joined_Class> {
   final GetStorage _storage = GetStorage();
   final TextEditingController _codeController = TextEditingController();
-  String? _lastErrorShown;
   String? _lastAction;
 
   // Cache last loaded classes to avoid replacing UI on transient action/error states
@@ -525,13 +524,13 @@ class _joined_ClassState extends State<joined_Class> {
 
         // ❌ ERROR
         if (state is StudentClassError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
+          Fluttertoast.showToast(
+            msg: state.message,
+            gravity: ToastGravity.TOP,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
           );
+
 
           // clear last action marker after handling
           if (_lastAction == 'join') _lastAction = null;

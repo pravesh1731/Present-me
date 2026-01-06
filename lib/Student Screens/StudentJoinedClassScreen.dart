@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:present_me_flutter/src/bloc/studentPendingClass/student_pending_class_bloc.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/src/models/studentPendingClass.dart';
@@ -51,7 +52,33 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return  BlocListener<StudentPendingClassBloc, StudentPendingClassState>(
+        listener: (context, state) {
+          if (state is StudentPendingClassActionSuccess) {
+            Fluttertoast.showToast(
+              msg: state.message,
+              gravity: ToastGravity.TOP,
+              backgroundColor: Colors.green,
+              textColor: Colors.white,
+            );
+
+          }
+          if (state is StudentPendingClassError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 12,
+                  left: 16,
+                  right: 16,
+                ),
+              ),
+            );
+          }
+        },
+      child : Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(
         top: false,
@@ -184,6 +211,7 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
             },
           )
         ),
+      ),
       ),
     );
   }
@@ -426,7 +454,17 @@ class _StudentJoinedClassScreenState extends State<StudentJoinedClassScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: (){},
+                        onPressed: (){
+                          final token = _getToken();
+                          if (token.isEmpty) return;
+
+                          context.read<StudentPendingClassBloc>().add(
+                            StudentLeaveClass(
+                              token: token,
+                              classCode: cls.classCode,
+                            ),
+                          );
+                        },
                         icon: const Icon(
                           Icons.close,
                           size: 18,

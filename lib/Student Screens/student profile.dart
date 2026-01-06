@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:present_me_flutter/src/bloc/studentClass/student_class_bloc.dart';
 import '../src/bloc/student_auth/auth_bloc.dart';
 import '../src/bloc/student_auth/auth_event.dart';
 import '../src/bloc/student_auth/auth_state.dart';
@@ -100,16 +101,24 @@ class _student_ProfileState extends State<student_Profile> {
 
       // Populate local controllers if storage present
       if (storedStudentMap != null) {
-        final fullName = ((storedStudentMap['firstName'] ?? '') + ' ' + (storedStudentMap['lastName'] ?? '')).trim();
+        final fullName =
+            ((storedStudentMap['firstName'] ?? '') +
+                    ' ' +
+                    (storedStudentMap['lastName'] ?? ''))
+                .trim();
         nameController.text = fullName;
         emailController.text = storedStudentMap['emailId']?.toString() ?? '';
         phoneController.text = storedStudentMap['phone']?.toString() ?? '';
         rollController.text = storedStudentMap['rollNo']?.toString() ?? '';
-        semesterController.text = storedStudentMap['semester']?.toString() ?? '';
+        semesterController.text =
+            storedStudentMap['semester']?.toString() ?? '';
         branchController.text = storedStudentMap['branch']?.toString() ?? '';
         yearController.text = storedStudentMap['year']?.toString() ?? '';
         sectionController.text = storedStudentMap['section']?.toString() ?? '';
-        profilePicUrl = storedStudentMap['profilePicUrl']?.toString() ?? storedStudentMap['photoUrl']?.toString() ?? storedStudentMap['avatarUrl']?.toString();
+        profilePicUrl =
+            storedStudentMap['profilePicUrl']?.toString() ??
+            storedStudentMap['photoUrl']?.toString() ??
+            storedStudentMap['avatarUrl']?.toString();
         final createdAt = storedStudentMap['createdAt']?.toString() ?? '';
         if (createdAt.isNotEmpty) {
           try {
@@ -135,12 +144,15 @@ class _student_ProfileState extends State<student_Profile> {
 
   void _populateFromUserMap(Map<String, dynamic> user) {
     try {
-      final firstName = (user['firstName'] ?? user['name']?.split(' ')?.first ?? '').toString();
+      final firstName =
+          (user['firstName'] ?? user['name']?.split(' ')?.first ?? '')
+              .toString();
       final lastName = (user['lastName'] ?? '').toString();
       final fullName = (firstName + ' ' + lastName).trim();
 
       nameController.text = fullName;
-      emailController.text = (user['emailId'] ?? user['email'] ?? '').toString();
+      emailController.text =
+          (user['emailId'] ?? user['email'] ?? '').toString();
       phoneController.text = (user['phone'] ?? '').toString();
       rollController.text = (user['rollNo'] ?? '').toString();
       semesterController.text = (user['semester'] ?? '').toString();
@@ -149,7 +161,8 @@ class _student_ProfileState extends State<student_Profile> {
       sectionController.text = (user['section'] ?? '').toString();
       profilePicUrl = (user['profilePicUrl'] ?? '').toString();
 
-      final createdAt = (user['createdAt'] ?? user['created_at'] ?? '').toString();
+      final createdAt =
+          (user['createdAt'] ?? user['created_at'] ?? '').toString();
       if (createdAt.isNotEmpty) {
         try {
           final dt = DateTime.parse(createdAt);
@@ -169,7 +182,6 @@ class _student_ProfileState extends State<student_Profile> {
     }
   }
 
-
   /// Save changes: patch profile on backend and update local state
   Future<void> saveChanges() async {
     // Build payload from form fields
@@ -179,11 +191,16 @@ class _student_ProfileState extends State<student_Profile> {
       'lastName': '',
       'phone': phoneController.text.trim(),
       'rollNo': rollController.text.trim(),
-      if (profilePicUrl != null && profilePicUrl!.trim().isNotEmpty) 'profilePicUrl': profilePicUrl,
-      if (semesterController.text.trim().isNotEmpty) 'semester': semesterController.text.trim(),
-      if (branchController.text.trim().isNotEmpty) 'branch': branchController.text.trim(),
-      if (yearController.text.trim().isNotEmpty) 'year': yearController.text.trim(),
-      if (sectionController.text.trim().isNotEmpty) 'section': sectionController.text.trim(),
+      if (profilePicUrl != null && profilePicUrl!.trim().isNotEmpty)
+        'profilePicUrl': profilePicUrl,
+      if (semesterController.text.trim().isNotEmpty)
+        'semester': semesterController.text.trim(),
+      if (branchController.text.trim().isNotEmpty)
+        'branch': branchController.text.trim(),
+      if (yearController.text.trim().isNotEmpty)
+        'year': yearController.text.trim(),
+      if (sectionController.text.trim().isNotEmpty)
+        'section': sectionController.text.trim(),
     };
 
     final fullName = nameController.text.trim();
@@ -196,13 +213,18 @@ class _student_ProfileState extends State<student_Profile> {
     // If there is no token, persist locally and update UI only
     if (token == null || token.isEmpty) {
       final stored = box.read('student');
-      final current = (stored is Map<String, dynamic>) ? Map<String, dynamic>.from(stored) : <String, dynamic>{};
+      final current =
+          (stored is Map<String, dynamic>)
+              ? Map<String, dynamic>.from(stored)
+              : <String, dynamic>{};
       current.addAll(payload);
       try {
         box.write('student', current);
       } catch (_) {}
       _populateFromUserMap(current);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated locally (no token)')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated locally (no token)')),
+      );
       return;
     }
 
@@ -214,7 +236,9 @@ class _student_ProfileState extends State<student_Profile> {
         final file = _pendingPickedImage!;
         final uploaded = await repo.uploadProfilePic(file);
         try {
-          final Map<String, dynamic> uploadedMap = Map<String, dynamic>.from(uploaded);
+          final Map<String, dynamic> uploadedMap = Map<String, dynamic>.from(
+            uploaded,
+          );
           if (uploadedMap['profilePicUrl'] != null) {
             profilePicUrl = uploadedMap['profilePicUrl'].toString();
           } else if (uploadedMap['photoUrl'] != null) {
@@ -235,7 +259,12 @@ class _student_ProfileState extends State<student_Profile> {
         _populateFromUserMap(updated);
       } catch (_) {}
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully'), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
 
       // Notify studentPendingClass to refresh internal state
       try {
@@ -243,7 +272,12 @@ class _student_ProfileState extends State<student_Profile> {
       } catch (_) {}
     } catch (e, st) {
       debugPrint('saveChanges -> patchProfile failed: $e\n$st');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update profile: $e'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       setState(() => isLoading = false);
     }
@@ -254,299 +288,356 @@ class _student_ProfileState extends State<student_Profile> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(28),
-              topRight: Radius.circular(28),
-            ),
-          ),
-          child: Column(
-            children: [
-              // header
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setModalState) => Container(
+                  height: MediaQuery.of(context).size.height * 0.85,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(28),
+                      topRight: Radius.circular(28),
+                    ),
                   ),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(28),
-                    topRight: Radius.circular(28),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.edit_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Edit Profile',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              // content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      // profile image with upload button
-                      Center(
-                        child: Stack(
-                          children: [
-                            Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF06B6D4),
-                                    Color(0xFF2563EB),
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0x4D06B6D4),
-                                    blurRadius: 20,
-                                    offset: Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: CircleAvatar(
-                                radius: 58,
-                                backgroundColor: Colors.white,
-                                child: CircleAvatar(
-                                  radius: 55,
-                                  backgroundColor: const Color(0xFF06B6D4),
-                                  backgroundImage: _validNetworkImage(),
-                                  child: _validNetworkImage() == null
-                                      ? const Icon(
-                                          Icons.person,
-                                          size: 50,
-                                          color: Colors.white,
-                                        )
-                                      : null,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: () async {
-                                  setModalState(() => isUploading = true);
-                                  try {
-                                    final XFile? picked = await _picker.pickImage(
-                                      source: ImageSource.gallery,
-                                      imageQuality: 80,
-                                    );
-                                    if (picked == null) {
-                                      setModalState(() => isUploading = false);
-                                      return;
-                                    }
-
-                                    final file = File(picked.path);
-                                    final repo = RepositoryProvider.of<AuthRepository>(context);
-
-                                    // upload the image immediately
-                                    final uploaded = await repo.uploadProfilePic(file);
-
-                                    try {
-                                      final Map<String, dynamic> uploadedMap = Map<String, dynamic>.from(uploaded);
-                                      if (uploadedMap['profilePicUrl'] != null) {
-                                        profilePicUrl = uploadedMap['profilePicUrl'].toString();
-                                      } else if (uploadedMap['photoUrl'] != null) {
-                                        profilePicUrl = uploadedMap['photoUrl'].toString();
-                                      }
-                                      _populateFromUserMap(uploadedMap);
-                                      // Refresh bloc's internal state
-                                      context.read<AuthBloc>().add(FetchProfileRequested());
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile picture updated'), backgroundColor: Colors.green));
-                                    } catch (e) {
-                                      debugPrint('upload result handling error: $e');
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload completed')));
-                                    }
-                                  } catch (e) {
-                                    debugPrint('upload error: $e');
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
-                                  } finally {
-                                    setModalState(() => isUploading = false);
-                                    setState(() {});
-                                  }
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF06B6D4),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 3,
-                                    ),
-                                  ),
-                                  child: isUploading
-                                      ? const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : const Icon(
-                                          Icons.camera_alt,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      _buildModalTextField(
-                        'Full Name',
-                        nameController,
-                        Icons.person_outline,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildModalTextField(
-                        'Email',
-                        emailController,
-                        Icons.email_outlined,
-                        enabled: false,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildModalTextField(
-                        'Phone Number',
-                        phoneController,
-                        Icons.phone_outlined,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildModalTextField(
-                        'Roll Number',
-                        rollController,
-                        Icons.badge_outlined,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildModalTextField(
-                        'Semester',
-                        semesterController,
-                        Icons.school_outlined,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildModalTextField(
-                        'Branch',
-                        branchController,
-                        Icons.account_tree_outlined,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildModalTextField(
-                        'Year',
-                        yearController,
-                        Icons.calendar_today_outlined,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildModalTextField(
-                        'Section',
-                        sectionController,
-                        Icons.group_outlined,
-                      ),
-                      const SizedBox(height: 32),
-
-                      // save
+                      // header
                       Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFF06B6D4),
-                              Color(0xFF2563EB),
-                            ],
+                        padding: const EdgeInsets.all(20),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                           ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0x6606B6D4),
-                              blurRadius: 16,
-                              offset: Offset(0, 8),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(28),
+                            topRight: Radius.circular(28),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.edit_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Edit Profile',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                              ),
+                              onPressed: () => Navigator.pop(context),
                             ),
                           ],
                         ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: () async {
-                              await saveChanges();
-                              Navigator.pop(context);
-                            },
-                            child: const Center(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.save_rounded,
-                                    color: Colors.white,
-                                    size: 24,
+                      ),
+
+                      // content
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            children: [
+                              // profile image with upload button
+                              Center(
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      width: 120,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFF06B6D4),
+                                            Color(0xFF2563EB),
+                                          ],
+                                          begin: Alignment.centerLeft,
+                                          end: Alignment.centerRight,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0x4D06B6D4),
+                                            blurRadius: 20,
+                                            offset: Offset(0, 8),
+                                          ),
+                                        ],
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 58,
+                                        backgroundColor: Colors.white,
+                                        child: CircleAvatar(
+                                          radius: 55,
+                                          backgroundColor: const Color(
+                                            0xFF06B6D4,
+                                          ),
+                                          backgroundImage: _validNetworkImage(),
+                                          child:
+                                              _validNetworkImage() == null
+                                                  ? const Icon(
+                                                    Icons.person,
+                                                    size: 50,
+                                                    color: Colors.white,
+                                                  )
+                                                  : null,
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: GestureDetector(
+                                        onTap: () async {
+                                          setModalState(
+                                            () => isUploading = true,
+                                          );
+                                          try {
+                                            final XFile? picked = await _picker
+                                                .pickImage(
+                                                  source: ImageSource.gallery,
+                                                  imageQuality: 80,
+                                                );
+                                            if (picked == null) {
+                                              setModalState(
+                                                () => isUploading = false,
+                                              );
+                                              return;
+                                            }
+
+                                            final file = File(picked.path);
+                                            final repo = RepositoryProvider.of<
+                                              AuthRepository
+                                            >(context);
+
+                                            // upload the image immediately
+                                            final uploaded = await repo
+                                                .uploadProfilePic(file);
+
+                                            try {
+                                              final Map<String, dynamic>
+                                              uploadedMap =
+                                                  Map<String, dynamic>.from(
+                                                    uploaded,
+                                                  );
+                                              if (uploadedMap['profilePicUrl'] !=
+                                                  null) {
+                                                profilePicUrl =
+                                                    uploadedMap['profilePicUrl']
+                                                        .toString();
+                                              } else if (uploadedMap['photoUrl'] !=
+                                                  null) {
+                                                profilePicUrl =
+                                                    uploadedMap['photoUrl']
+                                                        .toString();
+                                              }
+                                              _populateFromUserMap(uploadedMap);
+                                              // Refresh bloc's internal state
+                                              context.read<AuthBloc>().add(
+                                                FetchProfileRequested(),
+                                              );
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Profile picture updated',
+                                                  ),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
+                                            } catch (e) {
+                                              debugPrint(
+                                                'upload result handling error: $e',
+                                              );
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Upload completed',
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            debugPrint('upload error: $e');
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Upload failed: $e',
+                                                ),
+                                              ),
+                                            );
+                                          } finally {
+                                            setModalState(
+                                              () => isUploading = false,
+                                            );
+                                            setState(() {});
+                                          }
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF06B6D4),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 3,
+                                            ),
+                                          ),
+                                          child:
+                                              isUploading
+                                                  ? const SizedBox(
+                                                    width: 18,
+                                                    height: 18,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          color: Colors.white,
+                                                          strokeWidth: 2,
+                                                        ),
+                                                  )
+                                                  : const Icon(
+                                                    Icons.camera_alt,
+                                                    color: Colors.white,
+                                                    size: 20,
+                                                  ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 32),
+
+                              _buildModalTextField(
+                                'Full Name',
+                                nameController,
+                                Icons.person_outline,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildModalTextField(
+                                'Email',
+                                emailController,
+                                Icons.email_outlined,
+                                enabled: false,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildModalTextField(
+                                'Phone Number',
+                                phoneController,
+                                Icons.phone_outlined,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildModalTextField(
+                                'Roll Number',
+                                rollController,
+                                Icons.badge_outlined,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildModalTextField(
+                                'Semester',
+                                semesterController,
+                                Icons.school_outlined,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildModalTextField(
+                                'Branch',
+                                branchController,
+                                Icons.account_tree_outlined,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildModalTextField(
+                                'Year',
+                                yearController,
+                                Icons.calendar_today_outlined,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildModalTextField(
+                                'Section',
+                                sectionController,
+                                Icons.group_outlined,
+                              ),
+                              const SizedBox(height: 32),
+
+                              // save
+                              Container(
+                                width: double.infinity,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF06B6D4),
+                                      Color(0xFF2563EB),
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
                                   ),
-                                  SizedBox(width: 12),
-                                  Text(
-                                    'Save Changes',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0x6606B6D4),
+                                      blurRadius: 16,
+                                      offset: Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(16),
+                                    onTap: () async {
+                                      await saveChanges();
+                                      Navigator.pop(context);
+                                    },
+                                    child: const Center(
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.save_rounded,
+                                            color: Colors.white,
+                                            size: 24,
+                                          ),
+                                          SizedBox(width: 12),
+                                          Text(
+                                            'Save Changes',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
           ),
-        ),
-      ),
     );
   }
 
@@ -717,15 +808,15 @@ class _student_ProfileState extends State<student_Profile> {
                               child: CircleAvatar(
                                 radius: 55,
                                 backgroundColor: const Color(0xFF06B6D4),
-                                backgroundImage:
-                                    _validNetworkImage(),
-                                child: _validNetworkImage() == null
-                                    ? const Icon(
-                                      Icons.person,
-                                      size: 50,
-                                      color: Colors.white,
-                                    )
-                                    : null,
+                                backgroundImage: _validNetworkImage(),
+                                child:
+                                    _validNetworkImage() == null
+                                        ? const Icon(
+                                          Icons.person,
+                                          size: 50,
+                                          color: Colors.white,
+                                        )
+                                        : null,
                               ),
                             ),
                           ),
@@ -834,11 +925,20 @@ class _student_ProfileState extends State<student_Profile> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: _buildStatCard(
-                              icon: Icons.class_outlined,
-                              value: classesCount.toString(),
-                              label: 'Classes',
-                              color: const Color(0xFF10B981),
+                            child: BlocBuilder<StudentClassBloc, StudentClassState>(
+                              builder: (context, state) {
+                                int classCount = 0;
+
+                                if (state is StudentClassLoaded) {
+                                  classCount = state.classes.length;
+                                }
+                                return _buildStatCard(
+                                  icon: Icons.class_outlined,
+                                  value: classCount.toString(),
+                                  label: 'Classes',
+                                  color: const Color(0xFF10B981),
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(width: 16),

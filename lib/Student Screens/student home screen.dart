@@ -4,6 +4,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:present_me_flutter/Student%20Screens/student%20Sidebar.dart';
+import 'package:present_me_flutter/src/bloc/studentClass/student_class_bloc.dart';
 
 import 'student joined class.dart';
 import 'student mark attendance.dart';
@@ -240,11 +241,20 @@ class _studentHomeState extends State<studentHome> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _buildStatCard(
+                        child: BlocBuilder<StudentClassBloc, StudentClassState>(
+                            builder: (context, state) {
+                              int classCount = 0;
+
+                              if (state is StudentClassLoaded) {
+                                classCount = state.classes.length;
+                              }
+                        return _buildStatCard(
                           icon: Icons.class_outlined,
                           label: 'Classes',
-                          value: '6',
+                          value: classCount.toString(),
                           color: const Color(0xFF3B82F6),
+                        );
+                            },
                         ),
                       ),
                       const SizedBox(width: 12),

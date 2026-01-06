@@ -16,3 +16,17 @@ class StudentFetchPendingClasses extends StudentPendingClassEvent {
   @override
   List<Object> get props => [token];
 }
+
+
+class StudentLeaveClass extends StudentPendingClassEvent {
+  final String token;
+  final String classCode;
+
+  const StudentLeaveClass({
+    required this.token,
+    required this.classCode,
+  });
+
+  @override
+  List<Object> get props => [token, classCode];
+}

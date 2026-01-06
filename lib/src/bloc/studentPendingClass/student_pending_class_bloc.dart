@@ -12,6 +12,8 @@ class StudentPendingClassBloc extends Bloc<StudentPendingClassEvent, StudentPend
   StudentPendingClassBloc({required this.repository})
       : super(StudentPendingClassInitial()) {
     on<StudentFetchPendingClasses>(_onFetchPendingClasses);
+    on<StudentLeaveClass>(_onLeaveClass);
+
   }
 
   // ================= GET =================
@@ -27,4 +29,31 @@ class StudentPendingClassBloc extends Bloc<StudentPendingClassEvent, StudentPend
       emit(StudentPendingClassError(e.toString()));
     }
   }
+
+  // ================= LEAVE THE CLASS =================
+  Future<void> _onLeaveClass(
+      StudentLeaveClass event,
+      Emitter<StudentPendingClassState> emit,
+      ) async {
+    try {
+      final message = await repository.leaveClass(
+        token: event.token,
+        classCode: event.classCode,
+      );
+
+      emit(StudentPendingClassActionSuccess(message));
+
+      //  Refresh classes after leaving
+      emit(StudentPendingClassLoading());
+      final classes = await repository.getPendingClasses(event.token);
+      emit(StudentPendingClassLoaded(classes));
+    } catch (e) {
+      emit(
+        StudentPendingClassError(
+          e.toString(),
+        ),
+      );
+    }
+  }
+
 }

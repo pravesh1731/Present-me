@@ -14,31 +14,59 @@ class StudentPendingClassRepository {
     'Authorization': 'Bearer $token',
   };
 
-  // ================= GET ENROLLED CLASSES =================
+  // ================= GET PENDING CLASSES =================
   Future<List<StudentPendingClassModel>> getPendingClasses(String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/students/ViewJoinRequests'),
       headers: _headers(token),
     );
 
-    if (response.statusCode == 200) {
-      final decoded = json.decode(response.body);
-      final List list = decoded['data'] ?? [];
+    final decoded = json.decode(response.body);
 
+    //  SUCCESS
+    if (response.statusCode == 200) {
+      final List list = decoded['data'] ?? [];
       return list
           .map((e) => StudentPendingClassModel.fromJson(e))
           .toList();
+    }
+
+    //  NO DATA (NOT AN ERROR)
+    if (response.statusCode == 404 &&
+        decoded['message'] == 'No join requests found') {
+      return []; // 👈 IMPORTANT
+    }
+
+    //  REAL ERROR
+    throw Exception(decoded['message'] ?? 'Failed to fetch classes');
+  }
+
+
+
+  Future<String> leaveClass({
+    required String token,
+    required String classCode,
+  }) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/students/leaveClass'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'classCode': classCode,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return data['message']; //  API MESSAGE
     } else {
-      try {
-        final decoded = json.decode(response.body);
-        throw Exception(decoded['message'] ?? 'Failed to fetch classes');
-      } catch (_) {
-        throw Exception(
-          'Failed to fetch classes (status ${response.statusCode})',
-        );
-      }
+      throw Exception(data['message'] ?? 'Failed to leave class');
     }
   }
+
 
 
 }

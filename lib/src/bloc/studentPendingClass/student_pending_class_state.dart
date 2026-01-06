@@ -19,6 +19,16 @@ final class StudentPendingClassLoaded extends StudentPendingClassState  {
   List<Object> get props => [classes];
 }
 
+class StudentPendingClassActionSuccess extends StudentPendingClassState {
+  final String message;
+
+  const StudentPendingClassActionSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+
 final class StudentPendingClassError extends StudentPendingClassState  {
   final String message;
   const StudentPendingClassError(this.message);

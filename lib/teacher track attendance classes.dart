@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-import 'Teacher Screens/classDetailsStudentList.dart';
+import 'package:present_me_flutter/views/Teacher%20Screens/classDetailsStudentList.dart';
 
 class TeacherTrackAttendanceClass extends StatelessWidget {
   final FirebaseAuth _auth = FirebaseAuth.instance;

@@ -3,19 +3,19 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:present_me_flutter/repositories/studentAuth_repository.dart';
+import 'package:present_me_flutter/repositories/studentClass_repository.dart';
+import 'package:present_me_flutter/repositories/studentPendingClass_repository.dart';
+import 'package:present_me_flutter/repositories/teacherAuth_repository.dart';
+import 'package:present_me_flutter/repositories/teacherClass_repository.dart';
 import 'package:present_me_flutter/splash%20screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:present_me_flutter/src/bloc/studentClass/student_class_bloc.dart';
-import 'package:present_me_flutter/src/bloc/studentPendingClass/student_pending_class_bloc.dart';
-import 'package:present_me_flutter/src/bloc/teacherClass/teacher_class_bloc.dart';
-import 'package:present_me_flutter/src/repositories/studentClass_repository.dart';
-import 'package:present_me_flutter/src/repositories/studentPendingClass_repository.dart';
-import 'package:present_me_flutter/src/repositories/teacherClass_repository.dart';
-import 'src/repositories/studentAuth_repository.dart';
-import 'src/repositories/teacherAuth_repository.dart';
-import 'src/bloc/student_auth/auth_bloc.dart';
-import 'src/bloc/student_auth/auth_event.dart';
-import 'src/bloc/teacher_auth/teacher_auth_bloc.dart';
+import 'package:present_me_flutter/viewmodels/student_auth/auth_bloc.dart';
+import 'package:present_me_flutter/viewmodels/student_auth/auth_event.dart';
+import 'package:present_me_flutter/viewmodels/student_class/student_class_bloc.dart';
+import 'package:present_me_flutter/viewmodels/student_pending_class/student_pending_class_bloc.dart';
+import 'package:present_me_flutter/viewmodels/teacher_auth/teacher_auth_bloc.dart';
+import 'package:present_me_flutter/viewmodels/teacher_class/teacher_class_bloc.dart';
 
 
 
@@ -31,6 +31,7 @@ void main() async {
   final studentClassRepository = StudentClassRepository();
 
   runApp(
+
     ProviderScope(
       child: MultiRepositoryProvider(
         providers: [

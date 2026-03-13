@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:present_me_flutter/Teacher%20Screens/student%20request%20list.dart';
+import 'package:present_me_flutter/views/Teacher%20Screens/student%20request%20list.dart';
 
 class studentListReq extends StatefulWidget {
   final String classCode;
@@ -163,7 +163,7 @@ class _studentListReqState extends State<studentListReq> {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              StudentRequestList(classCode: widget.classCode),
+                              StudentRequestList(classCode: widget.classCode, className: '',),
                         ),
                       );
                     },

@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:present_me_flutter/IntroScreen/introScreen.dart';
-import 'package:present_me_flutter/onBoarding/onBoardingScreen.dart';
-import 'package:present_me_flutter/Student Screens/student home screen.dart';
-import 'package:present_me_flutter/Teacher Screens/teacher home screen.dart';
+import 'package:present_me_flutter/views/IntroScreen/introScreen.dart';
+import 'package:present_me_flutter/views/Student%20Screens/student%20home%20screen.dart';
+import 'package:present_me_flutter/views/Teacher%20Screens/teacher%20home%20screen.dart';
+import 'package:present_me_flutter/views/onBoarding/onBoardingScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class splashScreen extends StatefulWidget {
@@ -77,7 +77,7 @@ class _splashScreenState extends State<splashScreen> {
     if (!hasSeenOnboarding) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const onBoardingScreen()),
+        MaterialPageRoute(builder: (_) => const OnBoardingScreen()),
       );
     } else {
       Navigator.pushReplacement(

@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:present_me_flutter/components/common/Button/token.dart';
 import 'dart:async';
 
 import 'package:present_me_flutter/core/widgets/header.dart';
-
-List<Map<String, dynamic>> forClass(String classCode) {
-  return [
-    {'name': 'John Smith', 'roll': '1', 'uid': 'st_1', 'photoUrl': ''},
-    {'name': 'Emma Johnson', 'roll': '2', 'uid': 'st_2', 'photoUrl': ''},
-    {'name': 'Michael Brown', 'roll': '3', 'uid': 'st_3', 'photoUrl': ''},
-    {'name': 'Sophia Davis', 'roll': '4', 'uid': 'st_4', 'photoUrl': ''},
-  ];
-}
+import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_bloc.dart';
+import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_event.dart';
+import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_state.dart';
 
 class ManualAttendanceMain extends StatefulWidget {
   final String className;
@@ -41,9 +37,7 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
     return DateFormat('EEEE, MMMM d, yyyy').format(DateTime.now());
   }
 
-  Color get _accentStart => const Color(0xFF4F46E5);
   Color get _accentEnd => const Color(0xFF2563EB);
-  Color get _pageBgTop => const Color(0xFFF3F7FF);
   Color get _pageBgBottom => const Color(0xFFF7FAFF);
 
   Future<void> finalizeAttendance(List<Map<String, dynamic>> students) async {
@@ -61,6 +55,19 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
 
     setState(() {
       isAttendanceFinalized = true;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final token = getToken();
+      if (token.isNotEmpty) {
+        context.read<ApproveStudentListBloc>().add(
+          ApproveStudentFetchList(token, widget.classCode),
+        );
+      }
     });
   }
 
@@ -101,16 +108,6 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
   }
 
   @override
-  void initState() {
-    super.initState();
-
-    // Trigger initial load for StreamBuilders.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshController.add(null);
-    });
-  }
-
-  @override
   void dispose() {
     _refreshController.close();
     super.dispose();
@@ -146,132 +143,155 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
               ),
             ],
           ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: forClass(widget.classCode).length,
-              itemBuilder: (context, index) {
-                final student = forClass(widget.classCode)[index];
+          BlocBuilder<ApproveStudentListBloc, ApproveStudentListState>(
+            builder: (context, state) {
+              if (state is ApproveStudentListLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is ApproveStudentListLoaded) {
+                final students = state.students;
+                return Expanded(
+                  child: ListView.builder(
+                    itemCount: students.length,
+                    itemBuilder: (context, index) {
+                      final student = students[index];
 
-                final name = student['name'] ?? 'Unknown';
-                final roll = student['roll'] ?? '';
-                final email = student['email'] ?? '';
-
-                return Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.92),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x14000000),
-                          blurRadius: 14,
-                          offset: Offset(0, 8),
-                        )
-                      ],
-                    ),
-                    child: Row(
-                        children: [
-
-                          /// AVATAR
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [Color(0xFF6366F1), Color(0xFFA855F7)],
-                              ),
+                      return Container(
+                        margin: const EdgeInsets.only(left: 10, right: 10, bottom: 4),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.92),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x14000000),
+                              blurRadius: 14,
+                              offset: Offset(0, 8),
                             ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              name[0].toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 18,
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            /// AVATAR
+                            Container(
+                              width: 52,
+                              height: 52,
+
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient( colors: [ Color(0xFF6366F1), Color(0xFFA855F7), ], ),
                               ),
-                            ),
-                          ),
+                              child: ClipOval(
+                                child: student.profilePicUrl.isNotEmpty
+                                    ? Image.network(
+                                  student.profilePicUrl,
+                                  fit: BoxFit.cover,
 
-                          const SizedBox(width: 14),
+                                )
+                                    :
 
-                          /// STUDENT INFO
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  name,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF111827),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                Center(
+                                  child: Text(
 
-                                const SizedBox(height: 4),
-
-                                Text(
-                                  roll.isEmpty ? '—' : 'ST${roll.padLeft(3, '0')}',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF6B7280),
-                                  ),
-                                ),
-
-                                if (email.isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    email,
+                                    student.firstName.toUpperCase()[0] +
+                                        student.lastName.toUpperCase()[0],
                                     style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF6B7280),
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 14),
+
+                            /// STUDENT INFO
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    student.firstName + ' ' + student.lastName,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF111827),
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
+
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    student.rollNo.isEmpty
+                                        ? '_'
+                                        : '${student.rollNo}',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF6B7280),
+                                    ),
+                                  ),
+
+                                  if (student.emailId.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      student.emailId,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF6B7280),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
-                          ),
 
-                          const SizedBox(width: 10),
+                            const SizedBox(width: 10),
 
-                          /// PRESENT BUTTON
-                          IconAction(
-                            enabled: !isAttendanceFinalized,
-                            bg: const Color(0xFFDDFBE7),
-                            fg: const Color(0xFF16A34A),
-                            icon: Icons.check,
-                            onTap: (){},
-                          ),
+                            /// PRESENT BUTTON
+                            IconAction(
+                              enabled: !isAttendanceFinalized,
+                              bg: const Color(0xFFDDFBE7),
+                              fg: const Color(0xFF16A34A),
+                              icon: Icons.check,
+                              onTap: () {},
+                            ),
 
-                          const SizedBox(width: 10),
+                            const SizedBox(width: 10),
 
-                          /// ABSENT BUTTON
-                          IconAction(
-                            enabled: !isAttendanceFinalized,
-                            bg: const Color(0xFFFCE1E1),
-                            fg: const Color(0xFFDC2626),
-                            icon: Icons.close,
-                            onTap: (){},
-                          ),
-                        ]
-                    )
+                            /// ABSENT BUTTON
+                            IconAction(
+                              enabled: !isAttendanceFinalized,
+                              bg: const Color(0xFFFCE1E1),
+                              fg: const Color(0xFFDC2626),
+                              icon: Icons.close,
+                              onTap: () {},
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 );
-              },
-            ),
+              }
+              if (state is ApproveStudentListError) {
+                return Center(child: Text(state.message));
+              }
+
+              return const SizedBox(); // REQUIRED fallback
+            },
           ),
         ],
       ),
     );
   }
 }
-
-
 
 class IconAction extends StatelessWidget {
   final bool enabled;

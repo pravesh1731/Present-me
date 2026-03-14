@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:present_me_flutter/components/common/Button/token.dart';
 import 'package:present_me_flutter/core/constants/constants.dart';
 import 'package:http/http.dart' as http;
 
@@ -15,14 +16,10 @@ class StudentRequestList extends StatefulWidget {
 }
 
 class _StudentRequestListState extends State<StudentRequestList> {
-  final GetStorage _storage = GetStorage();
 
   List<_StudentJoinRequest> results = [];
   bool isLoading = true;
 
-  String _getToken() {
-    return _storage.read('token')?.toString() ?? '';
-  }
 
   Map<String, String> _headers(String token) => {
     'Content-Type': 'application/json',
@@ -38,7 +35,6 @@ class _StudentRequestListState extends State<StudentRequestList> {
     if (res.statusCode == 200) {
 
       final body = jsonDecode(res.body);
-      print(body);
 
       final List data = body['students'] ?? [];
 
@@ -57,6 +53,36 @@ class _StudentRequestListState extends State<StudentRequestList> {
     }
   }
 
+  Future<String> approveRejectRequest({
+    required String classCode,
+    required String studentId,
+    required String action,
+    required String token,
+  }) async {
+
+    final response = await http.patch(
+      Uri.parse('$baseUrl/teachers/handle-student-request'),
+      headers: _headers(token),
+      body: json.encode({
+        "classCode": classCode,
+        "studentId": studentId,
+        "action": action,
+      }),
+    );
+    print(response.body);
+
+    final data = json.decode(response.body);
+
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        data['message'] ?? data['error'] ?? 'Failed to process request',
+      );
+    }
+
+    return data['message'] ?? 'Request processed successfully';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -65,7 +91,7 @@ class _StudentRequestListState extends State<StudentRequestList> {
 
   Future<void> _loadRequests() async {
     try {
-      String token = _getToken();
+      String token = getToken();
       final result = await getPendingStudentRequests(token);
 
       setState(() {
@@ -79,29 +105,6 @@ class _StudentRequestListState extends State<StudentRequestList> {
         isLoading = false;
       });
     }
-  }
-
-
-
-
-
-
-  void _accept(_StudentJoinRequest student) {
-    setState(() {
-      results.removeWhere((e) => e.studentId == student.studentId);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Request accepted')),
-    );
-  }
-
-  void _reject(_StudentJoinRequest student) {
-    setState(() {
-      results.removeWhere((e) => e.studentId == student.studentId);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Request rejected')),
-    );
   }
 
   @override
@@ -213,7 +216,31 @@ class _StudentRequestListState extends State<StudentRequestList> {
                               children: [
                                 Expanded(
                                   child: ElevatedButton.icon(
-                                    onPressed: () => _accept(student),
+                                    onPressed: () async {
+
+                                      try {
+                                        final token = getToken();
+                                        final message = await approveRejectRequest(
+                                          classCode: widget.classCode,
+                                          studentId: student.studentId,
+                                          action: "approve",
+                                          token: token,
+                                        );
+                                        setState(() {
+                                          results.removeAt(index);   // removes student from UI list
+                                        });
+
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(message)),
+                                        );
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(e.toString())),
+                                        );
+
+                                      }
+
+                                    },
                                     icon: const Icon(Icons.check, size: 18),
                                     label: const Text('Accept', style: TextStyle(fontSize: 15)),
                                     style: ElevatedButton.styleFrom(
@@ -228,7 +255,36 @@ class _StudentRequestListState extends State<StudentRequestList> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: ElevatedButton.icon(
-                                    onPressed: () => _reject(student),
+                                    onPressed: () async {
+
+                                      try {
+
+                                        final token = getToken();
+
+                                        final message = await approveRejectRequest(
+                                          classCode: widget.classCode,
+                                          studentId: student.studentId,
+                                          action: "reject",
+                                          token: token,
+                                        );
+
+                                        setState(() {
+                                          results.removeAt(index);   // removes student from UI list
+                                        });
+
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(message)),
+                                        );
+
+                                      } catch (e) {
+
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(e.toString())),
+                                        );
+
+                                      }
+
+                                    },
                                     icon: const Icon(Icons.close, size: 18),
                                     label: const Text('Reject', style: TextStyle(fontSize: 15)),
                                     style: ElevatedButton.styleFrom(

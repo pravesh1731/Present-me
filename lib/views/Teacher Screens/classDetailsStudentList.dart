@@ -1,13 +1,15 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:present_me_flutter/models/join_student_list.dart';
+import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_bloc.dart';
+import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_event.dart';
+import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_state.dart';
 import 'package:present_me_flutter/views/Teacher%20Screens/student%20request%20list.dart';
 import 'package:present_me_flutter/views/Teacher%20Screens/track%20attendance%20of%20specificStudent%20for%20Teacher.dart';
 import 'dart:math';
 import 'package:get_storage/get_storage.dart';
+import 'package:shimmer/shimmer.dart';
 
-import '../../core/constants/constants.dart';
 
 class classDetailsStudentList extends StatefulWidget {
 
@@ -19,9 +21,6 @@ class classDetailsStudentList extends StatefulWidget {
     final String endTime;
     final int student;
 
-
-
-
     classDetailsStudentList({
       required this.classCode,
       required this.roomNo,
@@ -30,8 +29,6 @@ class classDetailsStudentList extends StatefulWidget {
       required this.startTime,
       required this.endTime,
       required this.student,
-
-
     });
 
   @override
@@ -43,72 +40,29 @@ class _classDetailsStudentListState extends State<classDetailsStudentList> {
 
   final GetStorage _storage = GetStorage();
 
-  List<_JoinStudent> results = [];
+  List<JoinStudentList> results = [];
   bool isLoading = true;
 
   String _getToken() {
     return _storage.read('token')?.toString() ?? '';
   }
 
-  Map<String, String> _headers(String token) => {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $token',
-  };
-
-  Future<List<_JoinStudent>> getJoinStudent(String token) async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/teachers/class/${widget.classCode}/joinedStudentsList'),
-      headers: _headers(token),
-    );
-
-    if (res.statusCode == 200) {
-
-      final body = jsonDecode(res.body);
 
 
-      final List data = body['students'] ?? [];
-
-
-
-      return data.map((e) => _JoinStudent(
-        studentId: e['studentId'],
-        firstName: e['firstName'],
-        emailId: e['emailId'],
-        rollNo: e['rollNo'],
-        profilePicUrl: e['profilePicUrl'] ?? '',
-        lastName: e['lastName'] ?? '',
-      )).toList();
-
-    } else {
-      throw Exception(jsonDecode(res.body)['message']);
-    }
-  }
 
   @override
   void initState() {
     super.initState();
-    _loadRequests();
-  }
-
-  Future<void> _loadRequests() async {
-    try {
-      String token = _getToken();
-      final result = await getJoinStudent(token);
-
-      setState(() {
-        results = result;
-        isLoading = false;
-      });
-
-    } catch (e) {
-      print(e);
-      setState(() {
-        isLoading = false;
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final token = _getToken();
+      if(token.isNotEmpty){
+        context.read<ApproveStudentListBloc> ().add(
+            ApproveStudentFetchList(token, widget.classCode)
+        );
+      }
     }
+    );
   }
-
-
 
     String _shortDay(String day) {
       const map = {
@@ -256,53 +210,32 @@ class _classDetailsStudentListState extends State<classDetailsStudentList> {
         ),
       );
 
-      // Widget shimmerClassInfo() => Padding(
-      //   padding: const EdgeInsets.symmetric(horizontal: 18),
-      //   child: Column(
-      //     crossAxisAlignment: CrossAxisAlignment.start,
-      //     children: [
-      //       const Text('Class Information', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-      //       const SizedBox(height: 10),
-      //       Shimmer.fromColors(
-      //         baseColor: Colors.grey.shade300,
-      //         highlightColor: Colors.grey.shade100,
-      //         child: Container(
-      //           width: double.infinity,
-      //           height: 90,
-      //           decoration: BoxDecoration(
-      //             color: Colors.white,
-      //             borderRadius: BorderRadius.circular(18),
-      //           ),
-      //         ),
-      //       ),
-      //     ],
-      //   ),
-      // );
 
-      // Widget shimmerStudentList() => Padding(
-      //   padding: const EdgeInsets.symmetric(horizontal: 18),
-      //   child: Column(
-      //     crossAxisAlignment: CrossAxisAlignment.start,
-      //     children: [
-      //       const Text('Enrolled Students (--)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
-      //       const SizedBox(height: 10),
-      //       Column(
-      //         children: List.generate(4, (i) => Shimmer.fromColors(
-      //           baseColor: Colors.grey.shade300,
-      //           highlightColor: Colors.grey.shade100,
-      //           child: Container(
-      //             margin: const EdgeInsets.symmetric(vertical: 6),
-      //             height: 56,
-      //             decoration: BoxDecoration(
-      //               color: Colors.white,
-      //               borderRadius: BorderRadius.circular(16),
-      //             ),
-      //           ),
-      //         )),
-      //       ),
-      //     ],
-      //   ),
-      // );
+
+      Widget shimmerStudentList() => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Enrolled Students (--)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
+            const SizedBox(height: 10),
+            Column(
+              children: List.generate(4, (i) => Shimmer.fromColors(
+                baseColor: Colors.grey.shade300,
+                highlightColor: Colors.grey.shade100,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              )),
+            ),
+          ],
+        ),
+      );
 
       return Scaffold(
         backgroundColor: const Color(0xFFEFF6FF),
@@ -390,60 +323,51 @@ class _classDetailsStudentListState extends State<classDetailsStudentList> {
                               ),
                             ),
                           const SizedBox(height: 18),
-                          // FutureBuilder<List<Map<String, dynamic>>>(
-                          //   future: loadingClass ? null : _fetchStudents(studentsUIDs),
-                          //   builder: (context, studentSnapshot) {
-                          //     final loadingStudents = loadingClass || studentSnapshot.connectionState == ConnectionState.waiting;
-                          //     final students = studentSnapshot.data ?? [];
-                          //     if (loadingStudents) return shimmerStudentList();
-                          //
-                          //     return
-                           Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 18),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Enrolled Students (${results.length})',
-                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87),
-                                    ),
-
-                                    if (isLoading)
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 24.0),
-                                        child: Center(child: CircularProgressIndicator()),
-                                      )
-                                    else if (results.isEmpty)
-                                      const Center(
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(vertical: 8.0),
-                                          child: Text('No students found in this class', style: TextStyle(fontSize: 16, color: Colors.black54)),
-                                        ),
-                                      )
-                                    else
-                                      ListView.builder(
-                                        shrinkWrap: true,
-                                        physics: const NeverScrollableScrollPhysics(),
-                                        itemCount: results.length,
-                                        itemBuilder: (context, index) {
-                                          final student = results[index];
-                                          // TODO: Replace with real attendance percentage from API when available.
-                                          const percent = 0.0;
-                                          return _buildStudentRow(
-                                            student,
-                                            percent,
-                                            widget.className1,
-                                            widget.classCode,
-                                            context,
-                                          );
-                                        },
-                                      ),
-                                  ],
-                                ),
 
 
-                          ),
-                        const SizedBox(height: 24),
+                          BlocBuilder<ApproveStudentListBloc, ApproveStudentListState>(
+                               builder: (context ,state){
+                             if(state is ApproveStudentListLoading){
+                               return shimmerStudentList();
+                             };
+                             if(state is ApproveStudentListLoaded){
+                               return Padding(
+                                 padding: const EdgeInsets.symmetric(horizontal: 18),
+                                 child: Column(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Text(
+                                       'Enrolled Students (${state.students.length})',
+                                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87),
+                                     ),
+                                       ListView.builder(
+                                         shrinkWrap: true,
+                                         physics: const NeverScrollableScrollPhysics(),
+                                         itemCount: state.students.length,
+                                         itemBuilder: (context, index) {
+                                           final student = state.students[index];
+                                           // TODO: Replace with real attendance percentage from API when available.
+                                           const percent = 0.0;
+                                           return _buildStudentRow(
+                                             student,
+                                             percent,
+                                             widget.className1,
+                                             widget.classCode,
+                                             context,
+                                           );
+                                         },
+                                       ),
+                                   ],
+                                 ),
+                                );
+                             }
+                             if(state is ApproveStudentListError){
+                               return Center(child: Text(state.message));
+                             };
+                             return const SizedBox(height: 24,);
+                           },
+                           ),
+                        // const SizedBox(height: 24),
                       ],
                     ),
                   ),
@@ -486,7 +410,7 @@ class _classDetailsStudentListState extends State<classDetailsStudentList> {
 
 
   Widget _buildStudentRow(
-      _JoinStudent student,
+      JoinStudentList student,
       double percent,
       String className,
       String classCode,
@@ -571,21 +495,3 @@ class _classDetailsStudentListState extends State<classDetailsStudentList> {
 }
 
 
-class _JoinStudent {
-  final String studentId;
-  final String firstName;
-  final String lastName;
-  final String emailId;
-  final String rollNo;
-  final String profilePicUrl;
-
-  const _JoinStudent({
-    required this.studentId,
-    required this.firstName,
-    required this.lastName,
-    required this.emailId,
-    required this.rollNo,
-    required this.profilePicUrl,
-
-  });
-}

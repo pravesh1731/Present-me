@@ -1,11 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-
-
 import '../../models/class.dart';
 import '../../repositories/teacherClass_repository.dart';
-
-
 part 'teacher_class_event.dart';
 part 'teacher_class_state.dart';
 

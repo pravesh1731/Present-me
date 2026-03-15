@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:present_me_flutter/core/widgets/header.dart';
 
 class SmartAttendanceStudentPage extends StatefulWidget {
   final String className;
@@ -292,53 +293,47 @@ class _SmartAttendanceStudentPageState extends State<SmartAttendanceStudentPage>
             authButtonText != "Authentication error");
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Smart Attendance', style: TextStyle(fontSize: 24, color: Colors.white)),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Center(
-          child: SizedBox(
-            height: 220,
-            child: Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.blueAccent, width: 1),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text("Class Name: ${widget.className}", style: const TextStyle(fontSize: 18)),
-                    Text("Class Code: ${widget.classCode}", style: const TextStyle(fontSize: 16)),
-                    const SizedBox(height: 20),
-                    Text(statusMessage, style: const TextStyle(fontSize: 16)),
-                    const SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed: isButtonEnabled ? _authenticateAndMarkAttendance : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isButtonEnabled ? Colors.blue : Colors.grey,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        textStyle: const TextStyle(fontSize: 18),
-                      ),
-                      child: Text(attendanceMarked ? "Attendance Marked" : authButtonText),
+
+      body: Column(
+        children: [
+          Header(heading: 'Smart Attendance', subheading: 'WiFi/Hotspot based attendance'),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: SizedBox(
+                height: 220,
+                child: Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.blueAccent, width: 1),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text("Class Name: ${widget.className}", style: const TextStyle(fontSize: 18)),
+                        Text("Class Code: ${widget.classCode}", style: const TextStyle(fontSize: 16)),
+                        const SizedBox(height: 20),
+                        Text(statusMessage, style: const TextStyle(fontSize: 16)),
+                        const SizedBox(height: 40),
+                        ElevatedButton(
+                          onPressed: isButtonEnabled ? _authenticateAndMarkAttendance : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isButtonEnabled ? Colors.blue : Colors.grey,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            textStyle: const TextStyle(fontSize: 18),
+                          ),
+                          child: Text(attendanceMarked ? "Attendance Marked" : authButtonText),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

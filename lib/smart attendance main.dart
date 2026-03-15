@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:present_me_flutter/components/common/Button/button.dart';
+import 'package:present_me_flutter/core/widgets/header.dart';
 
 class SmartAttendanceTeacherPage extends StatefulWidget {
   final String className;
@@ -218,30 +219,20 @@ class _SmartAttendanceTeacherPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Smart Attendance', style: TextStyle(fontSize: 24)),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xff0BCCEB), Color(0xff0A80F5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildClassInfoSection(),
-            _buildPresentStudentCount(),
-            _buildStudentGrid(),
-            _buildAttendanceButton(),
-          ],
-        ),
+
+      body: Column(
+        children: [
+          Header(heading: "Smart Attendance", subheading: "WiFi/Hotspot Based Attendance"),
+          _buildClassInfoSection(),
+          _buildPresentStudentCount(),
+          _buildStudentGrid(),
+          _buildAttendanceButton(),
+
+        ],
       ),
     );
   }
+
 
   Widget _buildClassInfoSection() {
     return Container(

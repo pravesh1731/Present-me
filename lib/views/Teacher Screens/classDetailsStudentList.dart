@@ -428,7 +428,7 @@ class _classDetailsStudentListState extends State<classDetailsStudentList> {
               studentEmail: student.emailId,
               rollNo: student.rollNo,
               profileImage: student.profilePicUrl,
-              studentUID: student.studentId,
+              studentId: student.studentId,
             ),
           ),
         );

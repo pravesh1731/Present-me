@@ -7,11 +7,13 @@ import 'package:present_me_flutter/repositories/approveStudent_list.dart';
 import 'package:present_me_flutter/repositories/studentAuth_repository.dart';
 import 'package:present_me_flutter/repositories/studentClass_repository.dart';
 import 'package:present_me_flutter/repositories/studentPendingClass_repository.dart';
+import 'package:present_me_flutter/repositories/student_attendance.dart';
 import 'package:present_me_flutter/repositories/teacherAuth_repository.dart';
 import 'package:present_me_flutter/repositories/teacherClass_repository.dart';
 import 'package:present_me_flutter/splash%20screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_bloc.dart';
+import 'package:present_me_flutter/viewmodels/student_attendance/student_attendance_bloc.dart';
 import 'package:present_me_flutter/viewmodels/student_auth/auth_bloc.dart';
 import 'package:present_me_flutter/viewmodels/student_auth/auth_event.dart';
 import 'package:present_me_flutter/viewmodels/student_class/student_class_bloc.dart';
@@ -32,6 +34,7 @@ void main() async {
   final studentPendingClassRepository = StudentPendingClassRepository();
   final studentClassRepository = StudentClassRepository();
   final approveStudentListRepository = ApproveStudentRepository();
+  final studentAttendanceRepository = StudentAttendanceRepository();
 
   runApp(
 
@@ -43,7 +46,8 @@ void main() async {
           RepositoryProvider.value(value: teacherClassRepository),
           RepositoryProvider.value(value: studentPendingClassRepository),
           RepositoryProvider.value(value: studentClassRepository),
-          RepositoryProvider.value(value: approveStudentListRepository)
+          RepositoryProvider.value(value: approveStudentListRepository),
+          RepositoryProvider.value(value: studentAttendanceRepository)
         ],
         child: MultiBlocProvider(
           providers: [
@@ -73,6 +77,11 @@ void main() async {
             BlocProvider(
               create: (_) => ApproveStudentListBloc(
                 repository: approveStudentListRepository,
+              ),
+            ),
+            BlocProvider(
+              create: (_) => StudentAttendanceBloc(
+                repository: studentAttendanceRepository,
               ),
             ),
           ],

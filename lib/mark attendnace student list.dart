@@ -73,7 +73,7 @@ class track_Student_Attendance_List extends StatelessWidget {
                           studentName: currentUser?.displayName ?? '',
                           studentEmail: currentUser?.email ?? '',
                           rollNo: '', // Add roll number if available
-                          studentUID: currentUser?.uid ?? '',
+                          studentId: currentUser?.uid ?? '',
                           profileImage: currentUser?.photoURL ?? '',
                         ),
                       ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:present_me_flutter/records.dart';
 import 'package:present_me_flutter/teachers%20class%20Notice.dart';
 import 'package:present_me_flutter/teacher%20track%20attendance%20classes.dart';
 import '../../viewmodels/teacher_auth/teacher_auth_bloc.dart';
@@ -123,7 +122,7 @@ class _TeacherSidebar extends StatelessWidget {
                       _MenuItem(
                         icon: Icons.fact_check_outlined,
                         label: 'Records',
-                        onTap: () => _pushSlide(context, record()),
+                        onTap: () => _placeholder(context, 'Records coming soon'),
                       ),
                       _MenuItem(
                         icon: Icons.download_outlined,

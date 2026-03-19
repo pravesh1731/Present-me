@@ -5,7 +5,7 @@ import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent
 
 
 class ApproveStudentListBloc extends Bloc<ApproveStudentListEvent, ApproveStudentListState> {
-  final ApproveStudentRepository repository;
+  final  repository;
 
   ApproveStudentListBloc({required this.repository})
       : super(ApproveStudentListInitial()) {

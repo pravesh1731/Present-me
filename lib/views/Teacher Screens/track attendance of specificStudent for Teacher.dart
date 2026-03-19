@@ -48,6 +48,7 @@ class _TrackStudentAttendanceDetailsState
   @override
   void initState() {
     super.initState();
+    isInitialized = false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final token = getToken();
       if (token.isNotEmpty) {
@@ -59,6 +60,26 @@ class _TrackStudentAttendanceDetailsState
         );
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant TrackStudentAttendanceDetails oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.studentId != widget.studentId) {
+      isInitialized = false;
+      localAttendance.clear();
+
+      final token = getToken();
+      if (token.isNotEmpty) {
+        context.read<StudentAttendanceBloc>().add(
+          FetchStudentAttendance(
+            classCode: widget.classCode,
+            studentId: widget.studentId,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> updateAttendance({
@@ -129,12 +150,17 @@ class _TrackStudentAttendanceDetailsState
                   setState(() {
                     localAttendance[index] =
                         localAttendance[index].copyWith(status: newStatus);
-
                     localAttendance.sort((a, b) =>
                         DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
-
                     localAttendance = List.from(localAttendance);
                   });
+
+                  context.read<StudentAttendanceBloc>().add(
+                    FetchStudentAttendance(
+                      classCode: widget.classCode,
+                      studentId: widget.studentId,
+                    ),
+                  );
 
                   ScaffoldMessenger.of(parentContext).showSnackBar(
                     SnackBar(content: Text("Marked as $actionText")),

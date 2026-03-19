@@ -331,6 +331,7 @@ class _classDetailsStudentListState extends State<classDetailsStudentList> {
                                return shimmerStudentList();
                              };
                              if(state is ApproveStudentListLoaded){
+
                                return Padding(
                                  padding: const EdgeInsets.symmetric(horizontal: 18),
                                  child: Column(

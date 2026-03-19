@@ -112,7 +112,7 @@ class _TrackStudentAttendanceDetailsState
             ),
             ElevatedButton(
               onPressed: () async {
-                final parentContext = this.context; // ✅ SAVE SAFE CONTEXT
+                final parentContext = this.context;
 
                 Navigator.pop(context); // close dialog
 
@@ -124,13 +124,12 @@ class _TrackStudentAttendanceDetailsState
                     status: newStatus,
                   );
 
-                  if (!mounted) return; // ✅ VERY IMPORTANT
+                  if (!mounted) return;
 
                   setState(() {
                     localAttendance[index] =
                         localAttendance[index].copyWith(status: newStatus);
 
-                    /// ✅ KEEP LATEST ON TOP
                     localAttendance.sort((a, b) =>
                         DateTime.parse(b.date).compareTo(DateTime.parse(a.date)));
 
@@ -156,12 +155,6 @@ class _TrackStudentAttendanceDetailsState
     );
   }
 
-  String getStatus(double percentage) {
-    if (percentage >= 95) return "Excellent";
-    if (percentage >= 90) return "Good";
-    if (percentage >= 75) return "Average";
-    return "Poor";
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -268,8 +261,8 @@ class _TrackStudentAttendanceDetailsState
                       const SizedBox(height: 10),
                       _shimmerBox(height: 150),
                       const SizedBox(height: 10),
-                      _shimmerBox(height: 250),
-                      const SizedBox(height: 10),
+                      _shimmerBox(height: 150),
+                      const SizedBox(height: 80),
                       _shimmerBox(height: 50),
                       const SizedBox(height: 10),
                       _shimmerBox(height: 50),
@@ -294,14 +287,12 @@ class _TrackStudentAttendanceDetailsState
                     isInitialized = true;
                   }
 
-                  final attendance = localAttendance;
 
+                  final attendance = localAttendance;
                   final presentCount = attendance.presentCount;
                   final absentCount = attendance.absentCount;
                   final totalCount = attendance.length;
                   final double attendancePercentage = attendance.percentage;
-
-                  String statusLabel = getStatus(attendancePercentage);
 
                   return Column(
                     children: [
@@ -368,6 +359,7 @@ class _TrackStudentAttendanceDetailsState
                         margin: const EdgeInsets.symmetric(horizontal: 18),
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
+
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -378,15 +370,35 @@ class _TrackStudentAttendanceDetailsState
                             const SizedBox(height: 4),
 
                             SizedBox(
-                              height: 180,
+                              height: 100,
                               child: PieChart(
                                 dataMap: {
-                                  "Present": presentCount.toDouble(),
-                                  "Absent": absentCount.toDouble(),
+                                  "Present": attendance.presentCount.toDouble(),
+                                  "Absent": attendance.absentCount.toDouble(),
                                 },
-                                colorList: [Colors.green, Colors.red],
-                                chartRadius:
-                                    MediaQuery.of(context).size.width / 2.5,
+                                chartType: ChartType.ring,
+                                colorList: [
+                                  Colors.green.shade400,
+                                  Colors.redAccent
+                                ],
+                                chartValuesOptions: ChartValuesOptions(
+
+                                  showChartValueBackground: false,
+                                  chartValueStyle: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 0,
+                                  ),
+                                ),
+                                ringStrokeWidth: 16,
+                                centerText: "${ ((attendance.presentCount /
+                                    (attendance.presentCount + attendance.absentCount)) * 100)
+                                    .toStringAsFixed(0)}%",
+                                centerTextStyle: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
                               ),
                             ),
                           ],
@@ -394,7 +406,6 @@ class _TrackStudentAttendanceDetailsState
                       ),
 
                       const SizedBox(height: 14),
-
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 18),
                         child: Row(
@@ -442,14 +453,17 @@ class _TrackStudentAttendanceDetailsState
                             child: Container(
                               margin: const EdgeInsets.symmetric(
                                 horizontal: 16,
-                                vertical: 6,
+                                vertical: 4,
                               ),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color:
-                                    item.status == 1
-                                        ? const Color(0xFFE6F9EF)
-                                        : const Color(0xFFFFEBEB),
+                                color: item.status == 1 ? Colors.green.shade50 : Colors.red.shade50,
+                                border: Border(
+                                  left: BorderSide(
+                                    color: item.status == 1 ? Colors.green : Colors.red,
+                                    width: 4,
+                                  ),
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(

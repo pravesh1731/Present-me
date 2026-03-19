@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:present_me_flutter/views/Student%20Screens/student%20attendance%20Details.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../models/studentClass.dart';
@@ -365,7 +366,7 @@ class _joined_ClassState extends State<joined_Class> {
                 );
               }
 
-              // 🔄 Loading: if we have cached data, show it while loading; otherwise show shimmer
+              //  Loading: if we have cached data, show it while loading; otherwise show shimmer
               if (state is StudentClassLoading) {
                 if (_cachedClasses.isNotEmpty) {
                   return ListView.builder(
@@ -451,14 +452,15 @@ class _joined_ClassState extends State<joined_Class> {
                 }
 
                 // no cache -> show empty state but keep dialog closed (listener does that)
-                return ListView(
-                  padding: const EdgeInsets.only( bottom: 24),
-                  children: [
-                    _buildHeader(0),
-                    const SizedBox(height: 24),
-                    _buildEmptyState(),
-                  ],
-                );
+                return
+                  ListView(
+                    padding: const EdgeInsets.only( bottom: 24),
+                    children: [
+                      _buildHeader(0),
+                      const SizedBox(height: 24),
+                      _buildEmptyState(),
+                    ],
+                  );
               }
 
               // Default: if we have cached data show it, otherwise empty box
@@ -660,110 +662,141 @@ class _joined_ClassState extends State<joined_Class> {
     final Color primary = _classColors[(cls.classCode.hashCode) % _classColors.length];
     final Color secondary = _classColors[(cls.classCode.hashCode + 1) % _classColors.length];
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Top accent bar
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 5,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+    return GestureDetector(
+
+          onTap: (){
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentAttendanceDetails(
+                  classCode: cls.classCode,
+                  teacherName: cls.teacherName,
+                  className: cls.className,
+
+
                 ),
-                gradient: LinearGradient(
-                  colors: [_soften(primary, 0.28), _soften(secondary, 0.28)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+              ),
+            );
+          },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Top accent bar
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 5,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  gradient: LinearGradient(
+                    colors: [_soften(primary, 0.28), _soften(secondary, 0.28)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: _tint(primary, 0.9),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: primary.withOpacity(0.18)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: _tint(primary, 0.9),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: primary.withOpacity(0.18)),
+                        ),
+                        child: Icon(Icons.menu_book_outlined, color: primary),
                       ),
-                      child: Icon(Icons.menu_book_outlined, color: primary),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            cls.className,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: cls.classDays.isNotEmpty
-                                ? cls.classDays.map((d) => _buildBadge(_shortFormFor(d))).toList()
-                                : [_buildBadge('No days')],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(Icons.schedule, size: 16, color: Colors.black45),
-                    const SizedBox(width: 6),
-                    Text('${cls.startTime} -', style: const TextStyle(color: Colors.black54, fontSize: 13)),
-                    const SizedBox(width: 6),
-                    Text(cls.endTime, style: const TextStyle(color: Colors.black54, fontSize: 13)),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.room_outlined, size: 16, color: Colors.black45),
-                    const SizedBox(width: 6),
-                    Text('Room:${cls.roomNo}', style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  cls.className,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                SizedBox(width: 10,),
 
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _buildCodeBadge(cls.classCode, primary),
-                  ],
-                ),
-              ],
-            ),
-          )
-        ],
+                                Text(
+                                  "(Prof. ${cls.teacherName}) ",
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w300,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: cls.classDays.isNotEmpty
+                                  ? cls.classDays.map((d) => _buildBadge(_shortFormFor(d))).toList()
+                                  : [_buildBadge('No days')],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.schedule, size: 16, color: Colors.black45),
+                      const SizedBox(width: 6),
+                      Text('${cls.startTime} -', style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                      const SizedBox(width: 6),
+                      Text(cls.endTime, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                      const SizedBox(width: 16),
+                      const Icon(Icons.room_outlined, size: 16, color: Colors.black45),
+                      const SizedBox(width: 6),
+                      Text('Room:${cls.roomNo}', style: const TextStyle(color: Colors.black54, fontSize: 13)),
+
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildCodeBadge(cls.classCode, primary),
+                    ],
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

@@ -308,7 +308,12 @@ class _ManualAttendanceMainState extends State<ManualAttendanceMain> {
 
               if (state is ApproveStudentListLoaded) {
 
-                final students = state.students;
+                final students = List.from(state.students)
+                  ..sort((a, b) {
+                    final aNum = int.tryParse(a.rollNo.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+                    final bNum = int.tryParse(b.rollNo.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+                    return aNum.compareTo(bNum);
+                  });
 
                 return Expanded(
                   child: Column(

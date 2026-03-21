@@ -1,8 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'package:present_me_flutter/components/common/Button/token.dart';
 import 'package:present_me_flutter/core/widgets/header.dart';
+import '../../core/constants/constants.dart';
 
 class SmartAttendanceTeacherPage extends StatefulWidget {
   final String className;
@@ -29,14 +32,14 @@ class _SmartAttendanceTeacherPageState
   static const Color _disconnectedOrange = Color(0xFFFF6A00);
   static const Color _disconnectedRed = Color(0xFFFF2D55);
 
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  final FirebaseAuth auth = FirebaseAuth.instance;
   final TextEditingController ssidController = TextEditingController();
 
   bool attendanceEnabled = false;
   bool hotspotEnabled = false;
   bool isLoading = false;
+  bool isPageLoading = true;
   List<StudentAttendance> studentList = [];
+  Timer? _pollingTimer;
 
   @override
   void initState() {
@@ -44,19 +47,94 @@ class _SmartAttendanceTeacherPageState
     _initPage();
   }
 
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    ssidController.dispose();
+    super.dispose();
+  }
+
   Future<void> _initPage() async {
-    await fetchHotspotSSID();
     await checkHotspotStatus();
-    listenAttendanceUpdates();
+    await _checkExistingSession();
+    _startPollingPresentStudents();
+    if (mounted) setState(() => isPageLoading = false);
+  }
+
+  Future<void> _checkExistingSession() async {
+    try {
+      final token = getToken();
+      final res = await http.get(
+        Uri.parse('$baseUrl/teachers/session-status/${widget.classCode}'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (mounted) {
+          setState(() {
+            attendanceEnabled = data['enabled'] ?? false;
+            if (data['wifiSSID'] != null &&
+                (data['wifiSSID'] as String).isNotEmpty) {
+              ssidController.text = data['wifiSSID'];
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to check session: $e');
+    }
+  }
+
+  void _startPollingPresentStudents() {
+    _fetchPresentStudents();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) _fetchPresentStudents();
+    });
+  }
+
+  Future<void> _fetchPresentStudents() async {
+    try {
+      final token = getToken();
+      final today = DateTime.now();
+      final dateKey =
+          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+      final res = await http.get(
+        Uri.parse(
+            '$baseUrl/teachers/present-students/${widget.classCode}?date=$dateKey'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final List students = data['students'] ?? [];
+        if (mounted) {
+          setState(() {
+            studentList = students
+                .map((s) => StudentAttendance(
+              name: s['name'] ?? s['firstName'] ?? 'Unknown',
+              rollNo: s['rollNo'] ?? 'N/A',
+              photoUrl: s['profilePicUrl'] ?? '',
+              status: 'Present',
+            ))
+                .toList()
+              ..sort((a, b) => a.rollNo.compareTo(b.rollNo));
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch present students: $e');
+    }
   }
 
   Future<void> checkHotspotStatus() async {
     try {
       final bool result = await platform.invokeMethod('isHotspotEnabled');
-      setState(() => hotspotEnabled = result);
+      if (mounted) setState(() => hotspotEnabled = result);
     } on PlatformException catch (e) {
       debugPrint('Failed to get hotspot status: ${e.message}');
-      setState(() => hotspotEnabled = false);
+      if (mounted) setState(() => hotspotEnabled = false);
     }
   }
 
@@ -67,15 +145,6 @@ class _SmartAttendanceTeacherPageState
       await checkHotspotStatus();
     } on PlatformException catch (e) {
       debugPrint('Failed to open hotspot settings: ${e.message}');
-    }
-  }
-
-  Future<void> fetchHotspotSSID() async {
-    final user = auth.currentUser;
-    if (user == null) return;
-    final doc = await firestore.collection('teachers').doc(user.uid).get();
-    if (doc.exists) {
-      ssidController.text = doc.data()?['hotspot'] ?? '';
     }
   }
 
@@ -93,129 +162,94 @@ class _SmartAttendanceTeacherPageState
       return;
     }
 
-    setState(() => isLoading = true);
-    final user = auth.currentUser;
-    if (user == null) return;
-
-    final sessionData = {
-      "enabled": true,
-      "timestamp": DateTime.now().millisecondsSinceEpoch,
-      "wifiSSID": ssidController.text.trim(),
-      "className": widget.className,
-      "classCode": widget.classCode,
-      "teacherId": user.uid,
-    };
+    if (mounted) setState(() => isLoading = true);
 
     try {
-      await firestore
-          .doc('attendanceSessions/${user.uid}_${widget.classCode}')
-          .set(sessionData);
-      _showSnackBar('Attendance Enabled');
-      setState(() => attendanceEnabled = true);
-    } catch (_) {
-      _showSnackBar('Failed to enable attendance');
+      final token = getToken();
+      final today = DateTime.now();
+      final dateKey =
+          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+      final res = await http.post(
+        Uri.parse('$baseUrl/teachers/enable-attendance'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'classCode': widget.classCode,
+          'className': widget.className,
+          'wifiSSID': ssidController.text.trim(),
+          'date': dateKey,
+        }),
+      );
+
+      if (res.statusCode == 200) {
+        _showSnackBar('Attendance Enabled ✓');
+        if (mounted) setState(() => attendanceEnabled = true);
+      } else {
+        final data = jsonDecode(res.body);
+        _showSnackBar(data['message'] ?? 'Failed to enable attendance');
+      }
+    } catch (e) {
+      _showSnackBar('Network error. Try again.');
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
   Future<void> disableAttendance() async {
-    final user = auth.currentUser;
-    if (user == null) return;
+    if (mounted) setState(() => isLoading = true);
+
     try {
-      await firestore
-          .doc('attendanceSessions/${user.uid}_${widget.classCode}')
-          .update({'enabled': false});
-      await markAbsentStudents();
-      setState(() => attendanceEnabled = false);
-    } catch (_) {
-      _showSnackBar('Failed to disable attendance');
-    }
-  }
+      final token = getToken();
+      final today = DateTime.now();
+      final dateKey =
+          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
-  Future<void> markAbsentStudents() async {
-    final attendanceRef =
-    firestore.collection('Attendance').doc(widget.classCode);
-    final classRef = firestore.collection('classes').doc(widget.classCode);
-    final todayDate = DateTime.now()
-        .toIso8601String()
-        .substring(0, 10)
-        .replaceAll('-', '');
+      final res = await http.post(
+        Uri.parse('$baseUrl/teachers/disable-attendance'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'classCode': widget.classCode,
+          'date': dateKey,
+        }),
+      );
 
-    await attendanceRef.collection('DateList').doc('AllDates').set(
-      {'dates': FieldValue.arrayUnion([todayDate])},
-      SetOptions(merge: true),
-    );
-
-    final classDoc = await classRef.get();
-    final students =
-    List<String>.from(classDoc.data()?['students'] ?? []);
-
-    final attendanceTodayRef = attendanceRef.collection(todayDate);
-    final presentSnapshot = await attendanceTodayRef.get();
-    final presentIds = presentSnapshot.docs.map((d) => d.id).toList();
-
-    final batch = firestore.batch();
-    for (var id in students) {
-      if (!presentIds.contains(id)) {
-        batch.set(attendanceTodayRef.doc(id), {'status': 'Absent'});
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        _showSnackBar(
+          'Session ended · ${data['presentCount']} present · ${data['absentCount']} absent',
+        );
+        if (mounted) {
+          setState(() {
+            attendanceEnabled = false;
+            studentList = [];
+          });
+        }
+      } else {
+        final data = jsonDecode(res.body);
+        _showSnackBar(data['message'] ?? 'Failed to disable attendance');
       }
+    } catch (e) {
+      _showSnackBar('Network error. Try again.');
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-    await batch.commit();
-
-    _showSnackBar(
-      presentIds.length == students.length
-          ? 'All students are present today.'
-          : 'Marked ${students.length - presentIds.length} student(s) as absent.',
-    );
-  }
-
-  void listenAttendanceUpdates() {
-    final todayDate = DateTime.now()
-        .toIso8601String()
-        .substring(0, 10)
-        .replaceAll('-', '');
-    final attendanceRef = firestore
-        .collection('Attendance')
-        .doc(widget.classCode)
-        .collection(todayDate);
-
-    attendanceRef
-        .where('status', isEqualTo: 'Present')
-        .snapshots()
-        .listen((snapshot) async {
-      final studentIds = snapshot.docs.map((doc) => doc.id).toList();
-      if (studentIds.isEmpty) {
-        setState(() => studentList.clear());
-        return;
-      }
-
-      final usersSnapshot = await firestore
-          .collection('students')
-          .where(FieldPath.documentId, whereIn: studentIds)
-          .get();
-
-      final students = usersSnapshot.docs
-          .map((doc) => StudentAttendance(
-        name: doc['name'] ?? 'Unknown',
-        rollNo: doc['roll'] ?? 'N/A',
-        photoUrl: doc['photoUrl'] ?? '',
-        status: 'Present',
-      ))
-          .toList()
-        ..sort((a, b) => a.rollNo.compareTo(b.rollNo));
-
-      setState(() => studentList = students);
-    });
   }
 
   Future<bool?> _showHotspotDialog() {
     return showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Hotspot Not Enabled'),
         content: const Text(
-            'To enable attendance, please turn on your device\'s hotspot.'),
+            'To enable attendance, please turn on your device hotspot.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -242,7 +276,7 @@ class _SmartAttendanceTeacherPageState
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: _buildAttendanceButton(), // ← no extra padding inside
+          child: _buildAttendanceButton(),
         ),
       ),
       body: Column(
@@ -253,14 +287,21 @@ class _SmartAttendanceTeacherPageState
             subheading: "WiFi/Hotspot Based Attendance",
           ),
           Expanded(
-            child: SingleChildScrollView(
+            child: isPageLoading
+                ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF00A76F),
+              ),
+            )
+                : SingleChildScrollView(
               padding: const EdgeInsets.only(bottom: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHotspotStatusCard(),
                   const Padding(
-                    padding: EdgeInsets.only(left: 18.0, top: 4, bottom: 4),
+                    padding:
+                    EdgeInsets.only(left: 18.0, top: 8, bottom: 4),
                     child: Text(
                       "Class Details",
                       style: TextStyle(
@@ -273,6 +314,7 @@ class _SmartAttendanceTeacherPageState
                   _buildPresentStudentCount(),
                   const SizedBox(height: 8),
                   _buildStudentGrid(),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -316,11 +358,8 @@ class _SmartAttendanceTeacherPageState
                 color: Colors.white.withOpacity(0.22),
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Icon(
-                Icons.wifi_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
+              child: const Icon(Icons.wifi_rounded,
+                  color: Colors.white, size: 24),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -404,55 +443,94 @@ class _SmartAttendanceTeacherPageState
                 Column(
                   children: [
                     const Text("Class Name",
-                        style:
-                        TextStyle(fontSize: 12, color: Colors.grey)),
+                        style: TextStyle(fontSize: 12, color: Colors.grey)),
                     Text(widget.className,
-                        style: const TextStyle(fontSize: 16)),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 Column(
                   children: [
                     const Text("Class Code",
-                        style:
-                        TextStyle(fontSize: 12, color: Colors.grey)),
+                        style: TextStyle(fontSize: 12, color: Colors.grey)),
                     Text(widget.classCode,
-                        style: const TextStyle(fontSize: 16)),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Total Students",
-                    style: TextStyle(fontSize: 12, color: Colors.grey)),
-                Row(
-                  children: [
-                    const Icon(Icons.people_outline,
-                        color: Colors.green, size: 18),
-                    const SizedBox(width: 8),
-                    Text('${widget.totalStudents} enrolled',
-                        style: const TextStyle(fontSize: 16)),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ],
             ),
             const SizedBox(height: 10),
+            const Text("Total Students",
+                style: TextStyle(fontSize: 12, color: Colors.grey)),
+            Row(
+              children: [
+                const Icon(Icons.people_outline,
+                    color: Colors.green, size: 18),
+                const SizedBox(width: 8),
+                Text('${widget.totalStudents} enrolled',
+                    style: const TextStyle(fontSize: 15)),
+              ],
+            ),
+            const SizedBox(height: 12),
             SizedBox(
-              height: 44,
+              height: 46,
               child: TextField(
                 controller: ssidController,
+                enabled: !attendanceEnabled,
                 decoration: InputDecoration(
-                  hintText: 'Hotspot Name',
+                  hintText: 'Enter Hotspot Name (SSID)',
+                  prefixIcon: const Icon(Icons.wifi,
+                      color: Color(0xFF00A76F), size: 20),
                   filled: true,
-                  fillColor: Colors.grey.shade100,
+                  fillColor: attendanceEnabled
+                      ? Colors.grey.shade100
+                      : Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF00A76F), width: 1.5),
                   ),
                 ),
               ),
             ),
+            if (attendanceEnabled) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border:
+                  Border.all(color: Colors.green.withOpacity(0.2)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle,
+                        color: Colors.green, size: 14),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Session active · SSID: "${ssidController.text}"',
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -461,20 +539,62 @@ class _SmartAttendanceTeacherPageState
 
   Widget _buildPresentStudentCount() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Text(
-        'Present Students: ${studentList.length}',
-        style:
-        const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      child: Row(
+        children: [
+          const Text(
+            'Present Students',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${studentList.length}',
+              style: const TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          const Spacer(),
+          if (attendanceEnabled)
+            GestureDetector(
+              onTap: _fetchPresentStudents,
+              child: const Icon(Icons.refresh,
+                  color: Color(0xFF00A76F), size: 20),
+            ),
+        ],
       ),
     );
   }
 
   Widget _buildStudentGrid() {
     if (studentList.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: Text('No Present Students')),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.people_outline,
+                  size: 48, color: Colors.grey.shade400),
+              const SizedBox(height: 8),
+              Text(
+                attendanceEnabled
+                    ? 'Waiting for students to connect...'
+                    : 'Enable attendance to see present students',
+                style: TextStyle(color: Colors.grey.shade500),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -494,8 +614,17 @@ class _SmartAttendanceTeacherPageState
           final student = studentList[index];
           return Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.blueAccent),
+              color: Colors.white,
+              border:
+              Border.all(color: Colors.green.withOpacity(0.3)),
               borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             padding: const EdgeInsets.all(8),
             child: Column(
@@ -511,19 +640,19 @@ class _SmartAttendanceTeacherPageState
                       'assets/placeholder_profile.png')
                   as ImageProvider,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   student.name,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w500),
+                      fontSize: 11, fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   student.rollNo,
                   style:
-                  TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  TextStyle(fontSize: 10, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -533,7 +662,6 @@ class _SmartAttendanceTeacherPageState
     );
   }
 
-  // ← clean button — no extra Padding wrapper inside
   Widget _buildAttendanceButton() {
     return SizedBox(
       width: double.infinity,
@@ -571,15 +699,28 @@ class _SmartAttendanceTeacherPageState
               strokeWidth: 2,
             ),
           )
-              : Text(
-            attendanceEnabled
-                ? 'Disable Attendance'
-                : 'Enable Attendance',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+              : Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                attendanceEnabled
+                    ? Icons.stop_circle_outlined
+                    : Icons.play_circle_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                attendanceEnabled
+                    ? 'Disable Attendance'
+                    : 'Enable Attendance',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
           ),
         ),
       ),

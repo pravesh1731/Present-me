@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/viewmodels/teacher_class/teacher_class_bloc.dart';
-import '../../smart attendance main.dart';
+import 'smart attendance main.dart';
 
 class SmartAttendanceClasses extends StatefulWidget {
   const SmartAttendanceClasses({super.key});
@@ -180,6 +180,7 @@ class _SmartAttendanceClassesState extends State<SmartAttendanceClasses> {
                                     builder: (_) => SmartAttendanceTeacherPage(
                                       className: classItem.className ?? "",
                                       classCode: classItem.classCode ?? "",
+                                      totalStudents:  classItem.students.length,
                                     ),
                                   ),
                                 );
@@ -229,7 +230,7 @@ class _SmartAttendanceClassesState extends State<SmartAttendanceClasses> {
                                     children: [
                                       Text("Code: ${classItem.classCode ?? ""}"),
                                       const SizedBox(height: 4),
-                                      Text("$students students"),
+                                      Text("${classItem.students.length} students"),
                                     ],
                                   ),
 

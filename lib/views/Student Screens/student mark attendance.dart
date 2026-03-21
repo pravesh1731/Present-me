@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:present_me_flutter/mark%20attendnace%20student%20list.dart';
-import 'package:present_me_flutter/mark%20smart%20attendance%20student.dart';
+import 'package:present_me_flutter/views/Student%20Screens/mark%20smart%20attendance%20student.dart';
 
 class mark_Attendance_Student extends StatelessWidget {
   @override

@@ -75,16 +75,13 @@ class _joined_ClassState extends State<joined_Class> {
   @override
   void initState() {
     super.initState();
-    // Try to dispatch fetch only if a StudentClassBloc is already provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
         final token = _getToken();
         if (token.isNotEmpty) {
-          // If a student_pending_class provider exists above, dispatch the event
           context.read<StudentClassBloc>().add(StudentFetchEnrolledClasses(token));
         }
       } catch (e) {
-        // No student_pending_class provided above this widget — we'll create one in build()
       }
     });
   }
@@ -338,9 +335,7 @@ class _joined_ClassState extends State<joined_Class> {
           child: BlocBuilder<StudentClassBloc, StudentClassState>(
              builder: (context, state) {
 
-              // If we've got a loaded state, update cache and render it
               if (state is StudentClassLoaded) {
-                // update cache (no setState since we're already building)
                 _cachedClasses = List<StudentClassModel>.from(state.classes);
 
                 if (state.classes.isEmpty) {

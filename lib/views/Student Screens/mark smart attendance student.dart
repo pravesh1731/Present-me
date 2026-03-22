@@ -7,9 +7,6 @@ import 'package:present_me_flutter/viewmodels/student_class/student_class_bloc.d
 import 'package:shimmer/shimmer.dart';
 import '../../models/studentClass.dart';
 
-/*
-ishi page ka UI completer krna hai aur smart attendanece main.dart sai sath mark smart attendance main.dart ko sync krna hai
-*/
 
 class mark_Smart_Attendance extends StatefulWidget {
   const mark_Smart_Attendance({super.key});

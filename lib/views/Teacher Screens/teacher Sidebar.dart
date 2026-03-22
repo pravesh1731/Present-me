@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:present_me_flutter/teachers%20class%20Notice.dart';
-import 'package:present_me_flutter/teacher%20track%20attendance%20classes.dart';
+import '../../teachers Notice classes.dart';
 import '../../viewmodels/teacher_auth/teacher_auth_bloc.dart';
 import '../Help & Support Page/help_support_page.dart';
 import '../IntroScreen/introScreen.dart';
@@ -146,10 +145,7 @@ class _TeacherSidebar extends StatelessWidget {
                         icon: Icons.schedule_outlined,
                         label: 'Schedule',
                         onTap:
-                            () => _pushSlide(
-                              context,
-                              TeacherTrackAttendanceClass(),
-                            ),
+                            () {}
                       ),
                       _MenuItem(
                         icon: Icons.notifications_none_outlined,
@@ -157,7 +153,7 @@ class _TeacherSidebar extends StatelessWidget {
                         onTap:
                             () => _pushSlide(
                               context,
-                              const Teachers_Notice_Class(),
+                              const TeacherNoticeClass(),
                             ),
                       ),
                       _MenuItem(

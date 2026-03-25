@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:present_me_flutter/components/common/Button/token.dart';
 import 'package:present_me_flutter/core/widgets/header.dart';
-import '../../core/constants/constants.dart';
+import '../../../../core/constants/constants.dart';
 
 class TeacherNoticePage extends StatefulWidget {
   final String classCode;

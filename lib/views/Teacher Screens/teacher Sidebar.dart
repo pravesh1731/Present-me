@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../teachers Notice classes.dart';
+import '../Notice/teachers Notice classes.dart';
 import '../../viewmodels/teacher_auth/teacher_auth_bloc.dart';
 import '../Help & Support Page/help_support_page.dart';
 import '../IntroScreen/introScreen.dart';

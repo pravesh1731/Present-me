@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/mark%20attendnace%20student%20list.dart';
+import 'package:flutter/services.dart';
 import 'package:present_me_flutter/views/Student%20Screens/mark%20smart%20attendance%20student.dart';
 
 class mark_Attendance_Student extends StatelessWidget {
@@ -217,21 +217,7 @@ class mark_Attendance_Student extends StatelessWidget {
                           end: Alignment.bottomRight,
                         ),
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            PageRouteBuilder(
-                              transitionDuration: const Duration(milliseconds: 500),
-                              pageBuilder: (_, __, ___) => track_Student_Attendance_List(),
-                              transitionsBuilder: (_, animation, __, child) {
-                                const begin = Offset(1.0, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOutBack;
-                                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                                var offsetAnimation = animation.drive(tween);
-                                return SlideTransition(position: offsetAnimation, child: child);
-                              },
-                            ),
-                          );
+
                         },
                       ),
 

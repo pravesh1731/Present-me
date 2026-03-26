@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:present_me_flutter/components/common/Button/token.dart';
+import '../../models/class.dart';
+import '../../models/studentClass.dart';
 import '../../viewmodels/teacher_auth/teacher_auth_bloc.dart';
 import '../../viewmodels/teacher_class/teacher_class_bloc.dart';
 import '../Teacher Authentication/teacher login screen.dart';
@@ -20,6 +23,7 @@ class teacherHome extends StatefulWidget {
 class _teacherHomeState extends State<teacherHome> {
   int _selectedIndex = 0;
   final box = GetStorage();
+  late var todayClassCount = 0;
 
   final String formattedDate = DateFormat(
     'EEEE, MMMM d, y',
@@ -28,6 +32,85 @@ class _teacherHomeState extends State<teacherHome> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        final token = getToken();
+        if (token.isNotEmpty) {
+          context.read<TeacherClassBloc>().add(TeacherFetchClasses(token));
+        }
+      } catch (e) {
+      }
+    });
+  }
+
+  String getTodayName() {
+    final now = DateTime.now();
+    const days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+    return days[now.weekday - 1];
+  }
+
+  List<ClassModel> filterTodayClasses(List<ClassModel> classes) {
+    final today = getTodayName();
+
+    return classes.where((c) {
+      return c.classDays.any(
+            (day) => day.toLowerCase() == today.toLowerCase(),
+      );
+    }).toList();
+  }
+
+  bool isClassActive(String start, String end) {
+    try {
+      final now = TimeOfDay.now();
+
+      TimeOfDay parse(String time) {
+        final parts = time.split(':');
+        return TimeOfDay(
+          hour: int.parse(parts[0]),
+          minute: int.parse(parts[1]),
+        );
+      }
+
+      final startTime = parse(start);
+      final endTime = parse(end);
+
+      bool afterStart = now.hour > startTime.hour ||
+          (now.hour == startTime.hour && now.minute >= startTime.minute);
+
+      bool beforeEnd = now.hour < endTime.hour ||
+          (now.hour == endTime.hour && now.minute <= endTime.minute);
+
+      return afterStart && beforeEnd;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  String formatTime(String time) {
+    try {
+      final parts = time.split(':');
+      int hour = int.parse(parts[0]);
+      int minute = int.parse(parts[1]);
+
+      final period = hour >= 12 ? 'PM' : 'AM';
+
+      hour = hour % 12;
+      if (hour == 0) hour = 12;
+
+      final minuteStr = minute.toString().padLeft(2, '0');
+
+      return '$hour:$minuteStr $period';
+    } catch (e) {
+      return time; // fallback if error
+    }
   }
 
   void _onItemTapped(int index) {
@@ -448,13 +531,11 @@ class _teacherHomeState extends State<teacherHome> {
 
             const SizedBox(height: 24),
 
-            // Today's Schedule
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            Column(
+              children: [
+                Container(
+                  padding: EdgeInsets.only(left: 16, right: 16),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
@@ -465,84 +546,68 @@ class _teacherHomeState extends State<teacherHome> {
                           color: Colors.black87,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.schedule,
-                              size: 14,
-                              color: Colors.grey.shade700,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '5 classes',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildScheduleCard(
-                          'Grade 10 - Mathematics',
-                          '9:00 AM - 10:00 AM',
-                          'Room 301',
-                          '35 students',
-                          true,
-                          const Color(0xFF10B981),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildScheduleCard(
-                          'Grade 11 - Advanced',
-                          '10:15 AM - 11:15 AM',
-                          'Room 302',
-                          '28 students',
-                          false,
-                          const Color(0xFF3B82F6),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildScheduleCard(
-                          'Grade 12 - Calculus',
-                          '11:30 AM - 12:30 PM',
-                          'Room 303',
-                          '30 students',
-                          false,
-                          const Color(0xFF8B5CF6),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
+
+            // Today's Schedule
+            BlocBuilder<TeacherClassBloc,TeacherClassState>(
+                builder: (context, state){
+                  if(state is TeacherClassLoading){
+                    return const Center(child: CircularProgressIndicator(),);
+                  }
+                  if(state is TeacherClassLoaded){
+                    final todayClasses = filterTodayClasses(state.classes);
+                    if(todayClasses.isEmpty){
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'No classes scheduled for today.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      );
+                    }
+
+                    todayClasses.sort((a,b) => a.startTime.compareTo(b.startTime));
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          // 🔷 Class List using YOUR CARD
+                          ...todayClasses.map((cls) {
+                            final isActive =
+                            isClassActive(cls.startTime, cls.endTime);
+
+                            return Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: _buildScheduleCard(
+                                cls.className, // title
+                                '${formatTime(cls.startTime)} - ${formatTime(cls.endTime)}', // time
+                                cls.roomNo,
+                                '${cls.students.length}',// teacher/room
+                                isActive,
+                                isActive
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF3B82F6),
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                    );
+                  }
+                  return SizedBox();
+
+                }
+                ),
 
             const SizedBox(height: 20),
 
@@ -939,12 +1004,17 @@ class _teacherHomeState extends State<teacherHome> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$time • $room',
+                  '$time',
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  students,
+                  'Room: $room',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$students students',
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],

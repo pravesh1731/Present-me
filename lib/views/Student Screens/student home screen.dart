@@ -5,8 +5,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:present_me_flutter/views/Student%20Screens/student%20Sidebar.dart';
 
+import '../../components/common/Button/token.dart';
+import '../../models/class.dart';
 import '../../models/student.dart';
 
+import '../../models/studentClass.dart';
 import '../../viewmodels/student_auth/auth_bloc.dart';
 import '../../viewmodels/student_auth/auth_state.dart';
 import '../../viewmodels/student_class/student_class_bloc.dart';
@@ -29,7 +32,85 @@ class _studentHomeState extends State<studentHome> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        final token = getToken();
+        if (token.isNotEmpty) {
+          context.read<StudentClassBloc>().add(StudentFetchEnrolledClasses(token));
+        }
+      } catch (e) {
+      }
+    });
+  }
 
+  String getTodayName() {
+    final now = DateTime.now();
+    const days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+    return days[now.weekday - 1];
+  }
+
+  List<StudentClassModel> filterTodayClasses(List<StudentClassModel> classes) {
+    final today = getTodayName();
+
+    return classes.where((c) {
+      return c.classDays.any(
+            (day) => day.toLowerCase() == today.toLowerCase(),
+      );
+    }).toList();
+  }
+
+  bool isClassActive(String start, String end) {
+    try {
+      final now = TimeOfDay.now();
+
+      TimeOfDay parse(String time) {
+        final parts = time.split(':');
+        return TimeOfDay(
+          hour: int.parse(parts[0]),
+          minute: int.parse(parts[1]),
+        );
+      }
+
+      final startTime = parse(start);
+      final endTime = parse(end);
+
+      bool afterStart = now.hour > startTime.hour ||
+          (now.hour == startTime.hour && now.minute >= startTime.minute);
+
+      bool beforeEnd = now.hour < endTime.hour ||
+          (now.hour == endTime.hour && now.minute <= endTime.minute);
+
+      return afterStart && beforeEnd;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  String formatTime(String time) {
+    try {
+      final parts = time.split(':');
+      int hour = int.parse(parts[0]);
+      int minute = int.parse(parts[1]);
+
+      final period = hour >= 12 ? 'PM' : 'AM';
+
+      hour = hour % 12;
+      if (hour == 0) hour = 12;
+
+      final minuteStr = minute.toString().padLeft(2, '0');
+
+      return '$hour:$minuteStr $period';
+    } catch (e) {
+      return time; // fallback if error
+    }
   }
 
   void _onItemTapped(int index) {
@@ -329,66 +410,84 @@ class _studentHomeState extends State<studentHome> {
             ),
 
             // Today's Classes
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
+        BlocBuilder<StudentClassBloc, StudentClassState>(
+          builder: (context, state) {
+            if (state is StudentClassLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (state is StudentClassLoaded) {
+              final todayClasses = filterTodayClasses(state.classes);
+
+              if (todayClasses.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(child: Text("No classes today")),
+                );
+              }
+
+              // ✅ Sort classes by time
+              todayClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Today's Classes",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
+                  // 🔷 Header
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Today's Classes",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1F2937),
+                          ),
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(20),
+                        Text(
+                          '${todayClasses.length} classes',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.schedule,
-                                size: 14, color: Colors.grey.shade700),
-                            const SizedBox(width: 4),
-                            Text(
-                              '4 classes',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+
                   const SizedBox(height: 16),
-                  _buildClassCard(
-                    'Mathematics',
-                    '9:00 AM - 10:00 AM',
-                    'Mrs. Smith',
-                    true,
-                    const Color(0xFF10B981),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildClassCard(
-                    'Physics',
-                    '10:30 AM - 11:30 AM',
-                    'Mr. Johnson',
-                    false,
-                    const Color(0xFF3B82F6),
-                  ),
+
+                  // 🔷 Class List using YOUR CARD
+                  ...todayClasses.map((cls) {
+                    final isActive =
+                    isClassActive(cls.startTime, cls.endTime);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(top:4 , left: 20, right: 20),
+                      child: _buildClassCard(
+                        cls.className, // title
+                        '${formatTime(cls.startTime)} - ${formatTime(cls.endTime)}', // time
+                        cls.teacherName, // teacher/room
+                        isActive,
+                        isActive
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF3B82F6),
+                      ),
+                    );
+                  }).toList(),
                 ],
-              ),
-            ),
+              );
+            }
+
+            if (state is StudentClassError) {
+              return Text(state.message);
+            }
+
+            return const SizedBox();
+          },
+        ),
 
             const SizedBox(height: 24),
             Padding(

@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:present_me_flutter/components/common/Button/token.dart';
+import 'package:present_me_flutter/core/constants/constants.dart';
 import '../../models/class.dart';
-import '../../models/studentClass.dart';
 import '../../viewmodels/teacher_auth/teacher_auth_bloc.dart';
 import '../../viewmodels/teacher_class/teacher_class_bloc.dart';
 import '../Teacher Authentication/teacher login screen.dart';
@@ -14,6 +14,7 @@ import 'TeacherAttendance.dart';
 import 'create class.dart';
 import 'teacher profile.dart';
 import 'teacher Sidebar.dart';
+import 'package:http/http.dart' as http;
 
 class teacherHome extends StatefulWidget {
   @override
@@ -23,14 +24,44 @@ class teacherHome extends StatefulWidget {
 class _teacherHomeState extends State<teacherHome> {
   int _selectedIndex = 0;
   final box = GetStorage();
-  late var todayClassCount = 0;
+  int totalStudents = 0;
+  bool isLoadingStudents = false;
 
   final String formattedDate = DateFormat(
     'EEEE, MMMM d, y',
   ).format(DateTime.now());
 
+
+  Future getTotalStudentCount() async {
+    try{
+      setState(() => isLoadingStudents = true);
+      final token = getToken();
+      final url =
+          "$baseUrl/teachers/total-students";
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data["success"] == true) {
+        setState(() {
+          totalStudents = data["totalStudents"];
+        });
+      } } catch (e) {
+      print("Error fetching students: $e");
+    } finally {
+      setState(() => isLoadingStudents = false);
+    }
+  }
+
   @override
   void initState() {
+    getTotalStudentCount();
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
@@ -444,7 +475,9 @@ class _teacherHomeState extends State<teacherHome> {
                         children: [
                           _buildStatCard(
                             'Students',
-                            '145',
+                             isLoadingStudents
+                                ? '...'
+                                : totalStudents.toString(),
                             Icons.people_outline,
                             Colors.blue,
                           ),

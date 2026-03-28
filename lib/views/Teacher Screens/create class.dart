@@ -349,13 +349,6 @@ class _CreateClassState extends State<CreateClass>
                 fontSize: 14,
               );
 
-              // // If an error occurred while awaiting save, show a contextual error snackbar as well
-              // if (_awaitingSave && _lastAction != null) {
-              //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to ${_lastAction == 'create' ? 'create' : 'update'} class')));
-              //   _awaitingSave = false;
-              //   _lastAction = null;
-              // }
-
               // Attempt a single automatic retry to reload the classes (if token present)
               final token = _getToken();
               if (token.isNotEmpty) {
@@ -838,7 +831,7 @@ class _CreateClassState extends State<CreateClass>
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '$students Stud.',
+                            '${c.students.length} Stud.',
                             style: const TextStyle(
                               fontSize: 13,
                               color: Colors.black54,
@@ -886,11 +879,12 @@ class _CreateClassState extends State<CreateClass>
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Text(
-                            '$attendance% Attendance',
+                            '${c.averageAttendance}% Attendance',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -935,7 +929,9 @@ class _CreateClassState extends State<CreateClass>
                               classDays: c.classDays,
                               startTime: c.startTime,
                               endTime: c.endTime,
-                              student: students,
+                              totalStudents: c.totalStudents,
+                              totalClasses: c.totalClasses,
+                              averageAttendance: c.averageAttendance,
                             ),
                       ),
                     );

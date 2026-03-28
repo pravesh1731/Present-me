@@ -10,6 +10,9 @@ class ClassModel extends Equatable {
   final List<String> students;
   final List<String> joinRequests;
   final DateTime createdAt;
+  final int totalClasses;        // ✅ added
+  final int totalStudents;       // ✅ added
+  final double averageAttendance; // ✅ added
 
   const ClassModel({
     required this.classCode,
@@ -21,9 +24,11 @@ class ClassModel extends Equatable {
     required this.students,
     required this.joinRequests,
     required this.createdAt,
+    this.totalClasses = 0,         // ✅ default 0
+    this.totalStudents = 0,        // ✅ default 0
+    this.averageAttendance = 0.0,  // ✅ default 0.0
   });
 
-  // normalize dynamic values (List, Map, String) to List<String>
   static List<String> _toStringList(dynamic value) {
     if (value == null) return [];
     if (value is List) return value.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
@@ -33,7 +38,6 @@ class ClassModel extends Equatable {
   }
 
   factory ClassModel.fromJson(Map<String, dynamic> json) {
-    // helpers to read fields from multiple possible keys
     String pickString(List<String> keys) {
       for (final k in keys) {
         if (json.containsKey(k) && json[k] != null) return json[k].toString();
@@ -51,8 +55,9 @@ class ClassModel extends Equatable {
       if (createdRaw == null) {
         createdAt = DateTime.now();
       } else if (createdRaw is int) {
-        // assume milliseconds since epoch if > 10^10, else seconds
-        createdAt = createdRaw > 10000000000 ? DateTime.fromMillisecondsSinceEpoch(createdRaw) : DateTime.fromMillisecondsSinceEpoch(createdRaw * 1000);
+        createdAt = createdRaw > 10000000000
+            ? DateTime.fromMillisecondsSinceEpoch(createdRaw)
+            : DateTime.fromMillisecondsSinceEpoch(createdRaw * 1000);
       } else if (createdRaw is double) {
         createdAt = DateTime.fromMillisecondsSinceEpoch(createdRaw.toInt());
       } else if (createdRaw is String) {
@@ -74,6 +79,10 @@ class ClassModel extends Equatable {
       students: _toStringList(json['students'] ?? json['members'] ?? json['participants']),
       joinRequests: _toStringList(json['joinRequests'] ?? json['requests'] ?? json['pendingRequests']),
       createdAt: createdAt,
+      // ✅ parse new fields with safe fallbacks
+      totalClasses: (json['totalClasses'] as num?)?.toInt() ?? 0,
+      totalStudents: (json['totalStudents'] as num?)?.toInt() ?? 0,
+      averageAttendance: (json['averageAttendance'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -88,6 +97,9 @@ class ClassModel extends Equatable {
       "students": students,
       "joinRequests": joinRequests,
       "createdAt": createdAt.toIso8601String(),
+      "totalClasses": totalClasses,
+      "totalStudents": totalStudents,
+      "averageAttendance": averageAttendance,
     };
   }
 
@@ -101,6 +113,9 @@ class ClassModel extends Equatable {
     List<String>? students,
     List<String>? joinRequests,
     DateTime? createdAt,
+    int? totalClasses,
+    int? totalStudents,
+    double? averageAttendance,
   }) {
     return ClassModel(
       classCode: classCode ?? this.classCode,
@@ -112,6 +127,9 @@ class ClassModel extends Equatable {
       students: students ?? this.students,
       joinRequests: joinRequests ?? this.joinRequests,
       createdAt: createdAt ?? this.createdAt,
+      totalClasses: totalClasses ?? this.totalClasses,
+      totalStudents: totalStudents ?? this.totalStudents,
+      averageAttendance: averageAttendance ?? this.averageAttendance,
     );
   }
 
@@ -126,5 +144,8 @@ class ClassModel extends Equatable {
     students,
     joinRequests,
     createdAt,
+    totalClasses,
+    totalStudents,
+    averageAttendance,
   ];
 }

@@ -10,6 +10,9 @@ import 'dart:math';
 import 'package:get_storage/get_storage.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../viewmodels/student_attendance/student_attendance_bloc.dart';
+import '../../viewmodels/student_attendance/student_attendance_event.dart';
+
 
 class classDetailsStudentList extends StatefulWidget {
 
@@ -19,7 +22,10 @@ class classDetailsStudentList extends StatefulWidget {
     final List classDays;
     final String startTime;
     final String endTime;
-    final int student;
+    final double averageAttendance;
+    final int totalClasses;
+    final int totalStudents;
+
 
     classDetailsStudentList({
       required this.classCode,
@@ -28,7 +34,9 @@ class classDetailsStudentList extends StatefulWidget {
       required this.classDays,
       required this.startTime,
       required this.endTime,
-      required this.student,
+      required this.averageAttendance,
+      required this.totalClasses,
+      required this.totalStudents,
     });
 
   @override
@@ -198,14 +206,14 @@ class _classDetailsStudentListState extends State<classDetailsStudentList> {
         );
       }
 
-      Widget summaryCards({int student = 0, int attendance = 94, int classes = 45}) => Padding(
+      Widget summaryCards({int student = 0, double averageAttendance = 0, int totalClasses = 0}) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _summaryCard(Icons.people_alt_rounded, '$student', 'Students', Colors.blue),
-            _summaryCard(Icons.check_circle_rounded, '$attendance%', 'Attendance', Color(0xFF10B981)),
-            _summaryCard(Icons.calendar_month_rounded, '$classes', 'Classes', Colors.purple),
+            _summaryCard(Icons.check_circle_rounded, '$averageAttendance%', 'Attendance', Color(0xFF10B981)),
+            _summaryCard(Icons.calendar_month_rounded, '$totalClasses', 'Classes', Colors.purple),
           ],
         ),
       );
@@ -252,9 +260,9 @@ class _classDetailsStudentListState extends State<classDetailsStudentList> {
                         children: [
                           const SizedBox(height: 18),
                           summaryCards(
-                            student:  widget.student,
-                            attendance: 94,
-                            classes: 20,
+                            student:  widget.totalStudents,
+                            averageAttendance: widget.averageAttendance,
+                            totalClasses: widget.totalClasses,
                           ),
                           const SizedBox(height: 18),
                           // if (loadingClass)
@@ -347,8 +355,7 @@ class _classDetailsStudentListState extends State<classDetailsStudentList> {
                                          itemCount: state.students.length,
                                          itemBuilder: (context, index) {
                                            final student = state.students[index];
-                                           // TODO: Replace with real attendance percentage from API when available.
-                                           const percent = 0.0;
+                                           final percent = student.attendance.percentage;
                                            return _buildStudentRow(
                                              student,
                                              percent,

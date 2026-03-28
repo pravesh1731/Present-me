@@ -11,7 +11,7 @@ class ApproveStudentRepository {
     'Authorization': 'Bearer $token',
   };
 
-  // ================= GET ENROLLED CLASSES =================
+  // ================= GET ENROLLED Student List =================
   Future<List<JoinStudentList>> getJoinStudent(String token, String classCode) async {
     final res = await http.get(
       Uri.parse('$baseUrl/teachers/class/${classCode}/joinedStudentsList'),

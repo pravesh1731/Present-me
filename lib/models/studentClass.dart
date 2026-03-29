@@ -9,6 +9,7 @@ class StudentClassModel extends Equatable {
   final String teacherId;
   final String teacherName;
   final String roomNo;
+  final bool isActive;
 
   const StudentClassModel({
     required this.classCode,
@@ -18,7 +19,8 @@ class StudentClassModel extends Equatable {
     required this.endTime,
     required this.teacherId,
     required this.teacherName,
-    required this.roomNo
+    required this.roomNo,
+    this.isActive = true,
   });
 
   // 🔹 JSON → Dart
@@ -32,6 +34,7 @@ class StudentClassModel extends Equatable {
       teacherId: json['teacherId'] ?? '',
       teacherName: json['teacherName'] ?? '',
       roomNo: json['roomNo'] ?? '',
+      isActive: json['isActive'] ?? true,
     );
   }
 
@@ -46,6 +49,7 @@ class StudentClassModel extends Equatable {
       'teacherId': teacherId,
       'teacherName': teacherName,
       'roomNo': roomNo,
+      'isActive': isActive,
     };
   }
 
@@ -59,5 +63,6 @@ class StudentClassModel extends Equatable {
     teacherId,
     teacherName,
     roomNo,
+    isActive,
   ];
 }

@@ -324,7 +324,7 @@ class _studentHomeState extends State<studentHome> {
                               int classCount = 0;
 
                               if (state is StudentClassLoaded) {
-                                classCount = state.classes.length;
+                                classCount = state.classes.where((c) => c.isActive).length;
                               }
                         return _buildStatCard(
                           icon: Icons.class_outlined,
@@ -413,7 +413,8 @@ class _studentHomeState extends State<studentHome> {
             }
 
             if (state is StudentClassLoaded) {
-              final todayClasses = filterTodayClasses(state.classes);
+              final classes = state.classes.where((c) => c.isActive).toList();
+              final todayClasses = filterTodayClasses(classes);
 
               if (todayClasses.isEmpty) {
                 return const Padding(

@@ -1,15 +1,13 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-
-
 import '../../models/studentClass.dart';
 import '../../repositories/studentClass_repository.dart';
-
 part 'student_class_event.dart';
 part 'student_class_state.dart';
 
 class StudentClassBloc extends Bloc<StudentClassEvent, StudentClassState> {
   final StudentClassRepository repository;
+  List<StudentClassModel> _lastLoadedClasses = [];
 
   StudentClassBloc({required this.repository})
       : super(StudentClassInitial()) {
@@ -25,6 +23,7 @@ class StudentClassBloc extends Bloc<StudentClassEvent, StudentClassState> {
     emit(StudentClassLoading());
     try {
       final classes = await repository.getEnrolledClasses(event.token);
+      _lastLoadedClasses = List.from(classes);
       emit(StudentClassLoaded(classes));
     } catch (e) {
       emit(StudentClassError(e.toString()));
@@ -36,18 +35,18 @@ class StudentClassBloc extends Bloc<StudentClassEvent, StudentClassState> {
       StudentJoinClass event,
       Emitter<StudentClassState> emit,
       ) async {
-    emit(StudentClassLoading());
     try {
-    final message = await repository.joinClass(
+      final message = await repository.joinClass(
         token: event.token,
         classCode: event.classCode,
       );
-
-    emit(StudentClassActionSuccess(message));
-
-
+      emit(StudentClassActionSuccess(message));
     } catch (e) {
-      emit(StudentClassError(e.toString().replaceFirst('Exception: ', '')));
+      // ✅ FIXED: emit JoinError instead of the main Error
+      emit(StudentClassJoinError(e.toString().replaceFirst('Exception: ', '')));
+      if (_lastLoadedClasses.isNotEmpty) {
+        emit(StudentClassLoaded(_lastLoadedClasses));
+      }
     }
   }
 }

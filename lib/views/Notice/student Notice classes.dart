@@ -422,7 +422,8 @@ class _StudentNoticeClassState extends State<StudentNoticeClass>
         }
 
         if (state is StudentClassLoaded) {
-          if (state.classes.isEmpty) {
+          final activeClasses = state.classes.where((c) => c.isActive).toList();
+          if (activeClasses.isEmpty) {
             return const Center(
               child: Text(
                 "You are not enrolled in any classes yet.",
@@ -443,14 +444,14 @@ class _StudentNoticeClassState extends State<StudentNoticeClass>
             color: const Color(0xFF00A76F),
             child: ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              itemCount: state.classes.length,
+              itemCount: activeClasses.length,
               itemBuilder: (context, index) {
-                final cls = state.classes[index];
+                final cls = activeClasses[index];
                 final unseen = _unseenCounts[cls.classCode] ?? 0;
                 return _buildClassCard(
                   cls,
                   unseen,
-                  onReturn: () => _fetchUnseenCounts(state.classes),
+                  onReturn: () => _fetchUnseenCounts(activeClasses),
                 );
               },
             ),

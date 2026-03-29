@@ -37,6 +37,16 @@ class StudentClassActionSuccess extends StudentClassState {
   List<Object> get props => [message];
 }
 
+final class StudentClassJoinLoading extends StudentClassState {}
+
+final class StudentClassJoinError extends StudentClassState {
+  final String message;
+  const StudentClassJoinError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
 
 
 

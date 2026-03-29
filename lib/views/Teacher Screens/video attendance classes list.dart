@@ -130,8 +130,9 @@ class _VideoAttendanceClassesState extends State<VideoAttendanceClasses> {
 
                 /// LOADED
                 if (state is TeacherClassLoaded) {
+                  final activeClasses = state.classes.where((c) => c.isActive).toList();
 
-                  if (state.classes.isEmpty) {
+                  if (activeClasses.isEmpty) {
                     return const Center(
                       child: Text(
                         "No classes found",
@@ -153,7 +154,7 @@ class _VideoAttendanceClassesState extends State<VideoAttendanceClasses> {
                           vertical: 10,
                         ),
                         child: Text(
-                          "Active Classes (${state.classes.length})",
+                          "Active Classes (${activeClasses.length})",
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
@@ -164,13 +165,12 @@ class _VideoAttendanceClassesState extends State<VideoAttendanceClasses> {
                       Expanded(
                         child: ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: state.classes.length,
+                          itemCount: activeClasses.length,
                           itemBuilder: (context, index) {
 
-                            final classItem = state.classes[index];
-
-                            final attendance = [94, 89, 91, 88][index % 4];
-                            final students = [35, 28, 30, 32][index % 4];
+                            final classItem = activeClasses[index];
+                            final attendance = classItem.averageAttendance.round();
+                            final students = classItem.totalStudents;
 
                             return InkWell(
 

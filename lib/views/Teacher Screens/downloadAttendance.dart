@@ -233,7 +233,8 @@ class _DownloadAttendancePageState extends State<DownloadAttendancePage> {
                 }
 
                 if (state is TeacherClassLoaded) {
-                  if (state.classes.isEmpty) {
+                  final activeClasses = state.classes.where((c) => c.isActive).toList();
+                  if (activeClasses.isEmpty) {
                     return const Center(
                       child: Text(
                         "No classes found",
@@ -247,9 +248,9 @@ class _DownloadAttendancePageState extends State<DownloadAttendancePage> {
 
                   return ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                    itemCount: state.classes.length,
+                    itemCount: activeClasses.length,
                     itemBuilder: (context, index) {
-                      final cls = state.classes[index];
+                      final cls = activeClasses[index];
                       const accent = Color(0xFF00A76F);
                       final iconBg = accent.withOpacity(0.14);
                       final range = _customRanges[index];
@@ -259,7 +260,7 @@ class _DownloadAttendancePageState extends State<DownloadAttendancePage> {
 
                       return Padding(
                         padding: EdgeInsets.only(
-                          bottom: index == state.classes.length - 1 ? 0 : 16,
+                          bottom: index == activeClasses.length - 1 ? 0 : 16,
                         ),
                         child: Container(
                           decoration: BoxDecoration(

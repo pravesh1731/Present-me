@@ -56,8 +56,6 @@ class _classDetailsStudentListState extends State<classDetailsStudentList> {
   }
 
 
-
-
   @override
   void initState() {
     super.initState();

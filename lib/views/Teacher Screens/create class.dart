@@ -17,16 +17,12 @@ class _CreateClassState extends State<CreateClass>
     with SingleTickerProviderStateMixin {
   final GetStorage _storage = GetStorage();
   int _selectedTab = 0;
-  int _activeCount = 0;
   late final AnimationController _shimmerController;
-  // Track whether we just requested a create/update so we can show a success snackbar
   bool _awaitingSave = false;
-  String? _lastAction; // 'create' or 'update'
+  String? _lastAction;
 
   // ================= TOKEN =================
-  String _getToken() {
-    return _storage.read('token')?.toString() ?? '';
-  }
+  String _getToken() => _storage.read('token')?.toString() ?? '';
 
   // ================= TIME FORMAT =================
   String _formatTime24(TimeOfDay? t) {
@@ -40,7 +36,6 @@ class _CreateClassState extends State<CreateClass>
     return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 
-  // convert 24-hour string 'HH:mm' to 'h:mm AM/PM'
   String _formatTo12(String s) {
     if (s.isEmpty) return '';
     try {
@@ -66,33 +61,29 @@ class _CreateClassState extends State<CreateClass>
     'Sun': 'Sunday',
   };
 
-  // convert full day name (e.g. "Monday") to short form key (e.g. "Mon")
   String _shortFormFor(String fullDay) {
     if (fullDay.isEmpty) return fullDay;
     try {
       final entry = _dayMap.entries.firstWhere(
-        (e) => e.value.toLowerCase() == fullDay.toLowerCase(),
+            (e) => e.value.toLowerCase() == fullDay.toLowerCase(),
       );
       return entry.key;
     } catch (_) {
-      // fallback: return first 3 chars, capitalized first letter
       final s = fullDay.trim();
       if (s.length <= 3) return s;
       return s.substring(0, 3);
     }
   }
 
-  // pick a stripe gradient per class so different classes get different colored stripes
   LinearGradient _stripeGradientFor(ClassModel c) {
     final List<List<Color>> palettes = [
-      [const Color(0xFF10B981), const Color(0xFF059669)], // green
-      [const Color(0xFF60A5FA), const Color(0xFF2563EB)], // blue
-      [const Color(0xFFF97316), const Color(0xFFF43F5E)], // orange->pink
-      [const Color(0xFF8B5CF6), const Color(0xFF6366F1)], // purple
-      [const Color(0xFFF59E0B), const Color(0xFFF97316)], // amber
-      [const Color(0xFF34D399), const Color(0xFF10B981)], // teal
+      [const Color(0xFF10B981), const Color(0xFF059669)],
+      [const Color(0xFF60A5FA), const Color(0xFF2563EB)],
+      [const Color(0xFFF97316), const Color(0xFFF43F5E)],
+      [const Color(0xFF8B5CF6), const Color(0xFF6366F1)],
+      [const Color(0xFFF59E0B), const Color(0xFFF97316)],
+      [const Color(0xFF34D399), const Color(0xFF10B981)],
     ];
-
     final keySource = (c.classCode.isNotEmpty ? c.classCode : c.className);
     final idx = keySource.hashCode.abs() % palettes.length;
     final cols = palettes[idx];
@@ -110,17 +101,8 @@ class _CreateClassState extends State<CreateClass>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat();
+
     final token = _getToken();
-    // initialize _activeCount from current student_pending_class state in case data was already loaded
-    try {
-      final bloc = context.read<TeacherClassBloc>();
-      final st = bloc.state;
-      if (st is TeacherClassLoaded) {
-        _activeCount = st.classes.length;
-      }
-    } catch (_) {
-      // ignore if student_pending_class not available yet
-    }
     if (token.isNotEmpty) {
       context.read<TeacherClassBloc>().add(TeacherFetchClasses(token));
     }
@@ -132,7 +114,7 @@ class _CreateClassState extends State<CreateClass>
     super.dispose();
   }
 
-  // Small shader-based shimmer helper
+  // ================= SHIMMER =================
   Widget _shimmer(Widget child) {
     return AnimatedBuilder(
       animation: _shimmerController,
@@ -142,7 +124,7 @@ class _CreateClassState extends State<CreateClass>
             final shimmerWidth = rect.width * 0.6;
             final offset =
                 (_shimmerController.value * (rect.width + shimmerWidth)) -
-                shimmerWidth;
+                    shimmerWidth;
             return LinearGradient(
               colors: [
                 Colors.grey.shade300,
@@ -161,7 +143,6 @@ class _CreateClassState extends State<CreateClass>
     );
   }
 
-  // A simple gray placeholder that mirrors the class card structure
   Widget _buildShimmerCard() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -211,11 +192,7 @@ class _CreateClassState extends State<CreateClass>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              height: 16,
-                              width: double.infinity,
-                              color: Colors.grey.shade300,
-                            ),
+                            Container(height: 16, width: double.infinity, color: Colors.grey.shade300),
                             const SizedBox(height: 8),
                             Container(
                               height: 20,
@@ -233,27 +210,15 @@ class _CreateClassState extends State<CreateClass>
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      Container(
-                        height: 12,
-                        width: 120,
-                        color: Colors.grey.shade300,
-                      ),
+                      Container(height: 12, width: 120, color: Colors.grey.shade300),
                       const SizedBox(width: 12),
-                      Container(
-                        height: 12,
-                        width: 80,
-                        color: Colors.grey.shade300,
-                      ),
+                      Container(height: 12, width: 80, color: Colors.grey.shade300),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Container(
-                        height: 12,
-                        width: 90,
-                        color: Colors.grey.shade300,
-                      ),
+                      Container(height: 12, width: 90, color: Colors.grey.shade300),
                       const SizedBox(width: 12),
                       Container(
                         height: 28,
@@ -302,21 +267,15 @@ class _CreateClassState extends State<CreateClass>
             end: Alignment.bottomCenter,
           ),
         ),
-        // listen to student_pending_class state changes so we can update the active class count shown in the header
         child: BlocListener<TeacherClassBloc, TeacherClassState>(
           listener: (context, state) {
             if (state is TeacherClassLoaded) {
-              // update active count to number of loaded classes
-              setState(() {
-                _activeCount = state.classes.length;
-              });
-
-              // If we were awaiting a save (create/update), show a toast (Fluttertoast)
               if (_awaitingSave && _lastAction != null) {
-                final successMessage =
-                    _lastAction == 'create'
-                        ? 'Class created successfully'
-                        : 'Class updated successfully';
+                final successMessage = _lastAction == 'create'
+                    ? 'Class created successfully'
+                    : _lastAction == 'update'
+                    ? 'Class updated successfully'
+                    : 'Class status updated';
                 Fluttertoast.showToast(
                   msg: successMessage,
                   toastLength: Toast.LENGTH_SHORT,
@@ -328,68 +287,102 @@ class _CreateClassState extends State<CreateClass>
                 _awaitingSave = false;
                 _lastAction = null;
               }
-            } else if (state is TeacherClassLoading) {
-              setState(() {
-                _activeCount = 0;
-              });
             } else if (state is TeacherClassError) {
-              // update minimal UI state
-              setState(() {
-                _activeCount = 0;
-              });
-
-              // Show the actual error message in a snackbar
-              final errMsg = state.message;
               Fluttertoast.showToast(
-                msg: errMsg,
+                msg: state.message,
                 toastLength: Toast.LENGTH_SHORT,
                 gravity: ToastGravity.TOP,
                 backgroundColor: Colors.redAccent,
                 textColor: Colors.white,
                 fontSize: 14,
               );
-
-              // Attempt a single automatic retry to reload the classes (if token present)
               final token = _getToken();
               if (token.isNotEmpty) {
-                // schedule a microtask to avoid calling student_pending_class while in the middle of processing the current event
                 Future.microtask(
-                  () => context.read<TeacherClassBloc>().add(
-                    TeacherFetchClasses(token),
-                  ),
+                      () => context.read<TeacherClassBloc>().add(TeacherFetchClasses(token)),
                 );
               }
             }
           },
           child: CustomScrollView(
             slivers: [
-              SliverToBoxAdapter(child: _buildModernHeader()),
+              // ── Header ──
+              SliverToBoxAdapter(
+                child: BlocBuilder<TeacherClassBloc, TeacherClassState>(
+                  builder: (context, state) {
+                    final activeCount = state is TeacherClassLoaded
+                        ? state.classes.where((c) => c.isActive).length
+                        : 0;
+                    return _buildModernHeader(activeCount);
+                  },
+                ),
+              ),
 
-              SliverToBoxAdapter(child: _buildModernTabs(_activeCount)),
+              // ── Tabs ──
+              SliverToBoxAdapter(
+                child: BlocBuilder<TeacherClassBloc, TeacherClassState>(
+                  builder: (context, state) {
+                    final active = state is TeacherClassLoaded
+                        ? state.classes.where((c) => c.isActive).length
+                        : 0;
+                    final inactive = state is TeacherClassLoaded
+                        ? state.classes.where((c) => !c.isActive).length
+                        : 0;
+                    return _buildModernTabs(active, inactive);
+                  },
+                ),
+              ),
 
+              // ── List ──
               BlocBuilder<TeacherClassBloc, TeacherClassState>(
                 builder: (context, state) {
                   if (state is TeacherClassLoading) {
                     return SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (_, __) => _shimmer(_buildShimmerCard()),
+                            (_, __) => _shimmer(_buildShimmerCard()),
                         childCount: 3,
                       ),
                     );
                   }
 
-                  if (state is TeacherClassLoaded && state.classes.isEmpty) {
-                    return const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(child: Text('No Classes')),
-                    );
-                  }
-
                   if (state is TeacherClassLoaded) {
+                    // ✅ Filter by selected tab
+                    final displayed = _selectedTab == 0
+                        ? state.classes.where((c) => c.isActive).toList()
+                        : state.classes.where((c) => !c.isActive).toList();
+
+                    if (displayed.isEmpty) {
+                      return SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _selectedTab == 0
+                                    ? Icons.class_outlined
+                                    : Icons.archive_outlined,
+                                size: 56,
+                                color: Colors.black12,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                _selectedTab == 0
+                                    ? 'No Active Classes\nTap + to create one'
+                                    : 'No Inactive Classes',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.black38, fontSize: 15),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
                     return SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (_, i) => _buildModernClassCard(state.classes[i]),
-                        childCount: state.classes.length,
+                            (_, i) => _buildModernClassCard(displayed[i]),
+                        childCount: displayed.length,
                       ),
                     );
                   }
@@ -412,13 +405,12 @@ class _CreateClassState extends State<CreateClass>
   }
 
   // ================= HEADER =================
-  Widget _buildModernHeader() {
-    // 'My Classes' header that matches the provided screenshot
+  Widget _buildModernHeader(int activeCount) {
     return Container(
       padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF06B6D4), Color(0xFF2563EB)], // green gradient
+          colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
@@ -442,15 +434,11 @@ class _CreateClassState extends State<CreateClass>
             children: [
               const Text(
                 'My Classes',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(
-                'Total classes $_activeCount',
+                'Total active classes $activeCount',
                 style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ],
@@ -461,7 +449,7 @@ class _CreateClassState extends State<CreateClass>
   }
 
   // ================= TABS =================
-  Widget _buildModernTabs(int active) {
+  Widget _buildModernTabs(int active, int inactive) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
       child: Container(
@@ -477,18 +465,14 @@ class _CreateClassState extends State<CreateClass>
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color:
-                        _selectedTab == 0 ? Colors.white : Colors.transparent,
+                    color: _selectedTab == 0 ? Colors.white : Colors.transparent,
                     borderRadius: BorderRadius.circular(24),
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     'Active ($active)',
                     style: TextStyle(
-                      color:
-                          _selectedTab == 0
-                              ? const Color(0xFF2563EB)
-                              : Colors.black54,
+                      color: _selectedTab == 0 ? const Color(0xFF2563EB) : Colors.black54,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -501,18 +485,14 @@ class _CreateClassState extends State<CreateClass>
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color:
-                        _selectedTab == 1 ? Colors.white : Colors.transparent,
+                    color: _selectedTab == 1 ? Colors.white : Colors.transparent,
                     borderRadius: BorderRadius.circular(24),
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    'Inactive (0)', // Inactive tab always shows 0
+                    'Inactive ($inactive)',
                     style: TextStyle(
-                      color:
-                          _selectedTab == 1
-                              ? const Color(0xFF2563EB)
-                              : Colors.black54,
+                      color: _selectedTab == 1 ? const Color(0xFF2563EB) : Colors.black54,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -527,12 +507,11 @@ class _CreateClassState extends State<CreateClass>
 
   // ================= CARD =================
   Widget _buildModernClassCard(ClassModel c) {
-    final students = c.students.length;
-    final int attendance = 94; // show a realistic value like your screenshot
-    final badgeColor =
-        attendance >= 90
-            ? Colors.green
-            : (attendance >= 75 ? Colors.orange : Colors.red);
+    // ✅ Use real averageAttendance from model
+    final double attendance = c.averageAttendance;
+    final Color badgeColor = attendance >= 90
+        ? Colors.green
+        : (attendance >= 75 ? Colors.orange : Colors.red);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -541,388 +520,303 @@ class _CreateClassState extends State<CreateClass>
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
+          // ✅ Slightly dimmed for inactive classes
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(10),
+              color: Colors.black.withAlpha(c.isActive ? 10 : 5),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // top colored stripe with rounded ends matching the outer card's top corner radius
-            Container(
-              height: 8,
-              decoration: BoxDecoration(
-                gradient: _stripeGradientFor(c),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+        child: Opacity(
+          opacity: c.isActive ? 1.0 : 0.6,  // ✅ dim inactive cards
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // top stripe
+              Container(
+                height: 8,
+                decoration: BoxDecoration(
+                  gradient: _stripeGradientFor(c),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: 16,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Row: icon, class name and edit icon
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE6FDF3),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.menu_book,
-                            color: Color(0xFF059669),
-                            size: 25,
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE6FDF3),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.menu_book, color: Color(0xFF059669), size: 25),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    c.className,
-                                    textAlign: TextAlign.left,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      c.className,
+                                      textAlign: TextAlign.left,
+                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-
-                                  SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade200,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      c.classDays
-                                          .map((d) => _shortFormFor(d))
-                                          .join(', '),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.black87,
-                                        fontWeight: FontWeight.w600,
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
+                                      child: Text(
+                                        c.classDays.map((d) => _shortFormFor(d)).join(', '),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // three-dots menu
+                              PopupMenuButton<String>(
+                                padding: EdgeInsets.zero,
+                                icon: const Icon(Icons.more_vert, size: 22, color: Colors.black54),
+                                color: Colors.white,
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                onSelected: (v) async {
+                                  if (v == 'edit') {
+                                    _showEditDialog(c);
+                                    return;
+                                  }
+
+                                  if (v == 'move') {
+                                    // ✅ Toggle active/inactive
+                                    final isCurrentlyActive = c.isActive;
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (_) => AlertDialog(
+                                        title: Text(isCurrentlyActive ? 'Move to Inactive' : 'Reactivate Class'),
+                                        content: Text(
+                                          isCurrentlyActive
+                                              ? 'Are you sure you want to move this class to inactive?'
+                                              : 'Are you sure you want to reactivate this class?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () => Navigator.pop(context, true),
+                                            child: Text(isCurrentlyActive ? 'Move' : 'Activate'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true) {
+                                      final token = _getToken();
+                                      if (token.isEmpty) return;
+                                      setState(() {
+                                        _awaitingSave = true;
+                                        _lastAction = 'toggle';
+                                      });
+                                      // ✅ Dispatch toggle event
+                                      context.read<TeacherClassBloc>().add(
+                                        TeacherToggleClassStatus(
+                                          token: token,
+                                          classCode: c.classCode,
+                                        ),
+                                      );
+                                    }
+                                    return;
+                                  }
+
+                                  if (v == 'delete') {
+                                    final confirm = await _showDeleteConfirmation(c);
+                                    if (confirm == true) {
+                                      final token = _getToken();
+                                      if (token.isEmpty) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Not authenticated')),
+                                        );
+                                        return;
+                                      }
+                                      context.read<TeacherClassBloc>().add(
+                                        TeacherDeleteClass(token: token, classCode: c.classCode),
+                                      );
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Deleting class...')),
+                                      );
+                                    }
+                                    return;
+                                  }
+                                },
+                                itemBuilder: (ctx) => [
+                                  PopupMenuItem(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: const [
+                                        Icon(Icons.edit, size: 20, color: Colors.black54),
+                                        SizedBox(width: 12),
+                                        Text('Edit Class'),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'move',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          c.isActive ? Icons.archive_outlined : Icons.unarchive_outlined,
+                                          size: 20,
+                                          color: Colors.black54,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        // ✅ Label changes based on current status
+                                        Text(c.isActive ? 'Move to Inactive' : 'Move to Active'),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: const [
+                                        Icon(Icons.delete, size: 20, color: Colors.red),
+                                        SizedBox(width: 12),
+                                        Text('Delete Class', style: TextStyle(color: Colors.red)),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-
-                            // three-dots menu styled like the provided screenshot (Edit / Move to Inactive / Delete)
-                            PopupMenuButton<String>(
-                              padding: EdgeInsets.zero,
-                              icon: const Icon(
-                                Icons.more_vert,
-                                size: 22,
-                                color: Colors.black54,
-                              ),
-                              color: Colors.white,
-                              elevation: 4,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              onSelected: (v) async {
-                                if (v == 'edit') {
-                                  _showEditDialog(c);
-                                  return;
-                                }
-
-                                if (v == 'move') {
-                                  final confirm = await showDialog<bool>(
-                                    context: context,
-                                    builder:
-                                        (_) => AlertDialog(
-                                          title: const Text('Move to Inactive'),
-                                          content: const Text(
-                                            'Are you sure you want to move this class to inactive?',
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed:
-                                                  () => Navigator.pop(
-                                                    context,
-                                                    false,
-                                                  ),
-                                              child: const Text('Cancel'),
-                                            ),
-                                            ElevatedButton(
-                                              onPressed:
-                                                  () => Navigator.pop(
-                                                    context,
-                                                    true,
-                                                  ),
-                                              child: const Text('Move'),
-                                            ),
-                                          ],
-                                        ),
-                                  );
-                                  if (confirm == true) {
-                                    // For now show a snackbar. Hook up real move logic in bloc if available.
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Class moved to inactive',
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return;
-                                }
-
-                                if (v == 'delete') {
-                                  final confirm = await _showDeleteConfirmation(
-                                    c,
-                                  );
-                                  if (confirm == true) {
-                                    final token = _getToken();
-                                    if (token.isEmpty) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Not authenticated'),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                    context.read<TeacherClassBloc>().add(
-                                      TeacherDeleteClass(
-                                        token: token,
-                                        classCode: c.classCode,
-                                      ),
-                                    );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Deleting class...'),
-                                      ),
-                                    );
-                                  }
-                                  return;
-                                }
-                              },
-                              itemBuilder:
-                                  (ctx) => [
-                                    PopupMenuItem(
-                                      value: 'edit',
-                                      child: Row(
-                                        children: const [
-                                          Icon(
-                                            Icons.edit,
-                                            size: 20,
-                                            color: Colors.black54,
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text('Edit Class'),
-                                        ],
-                                      ),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'move',
-                                      child: Row(
-                                        children: const [
-                                          Icon(
-                                            Icons.swap_horiz,
-                                            size: 20,
-                                            color: Colors.black54,
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text('Move to Inactive'),
-                                        ],
-                                      ),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: const [
-                                          Icon(
-                                            Icons.delete,
-                                            size: 20,
-                                            color: Colors.red,
-                                          ),
-                                          SizedBox(width: 12),
-                                          Text(
-                                            'Delete Class',
-                                            style: TextStyle(color: Colors.red),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        size: 16,
-                        color: Colors.black38,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${_formatTo12(c.startTime)} - ${_formatTo12(c.endTime)}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Icon(
-                        Icons.location_on,
-                        size: 16,
-                        color: Colors.blue,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          'Room ${c.roomNo}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.black87,
+                            ],
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.people_outline,
-                            size: 16,
-                            color: Colors.black38,
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time, size: 16, color: Colors.black38),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${_formatTo12(c.startTime)} - ${_formatTo12(c.endTime)}',
+                          style: const TextStyle(fontSize: 13, color: Colors.black87),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.location_on, size: 16, color: Colors.blue),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'Room ${c.roomNo}',
+                            style: const TextStyle(fontSize: 13, color: Colors.black87),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${c.students.length} Stud.',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
                         ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFEFF6FF,
-                          ), // light blue background
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFBFDBFE)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Row(
                           children: [
-                            const Icon(
-                              Icons.vpn_key_outlined,
-                              size: 16,
-                              color: Color(0xFF2563EB),
-                            ),
+                            const Icon(Icons.people_outline, size: 16, color: Colors.black38),
                             const SizedBox(width: 6),
                             Text(
-                              '${c.classCode}', // will be replaced below
+                              // ✅ use totalStudents from model
+                              '${c.totalStudents} Stud.',
+                              style: const TextStyle(fontSize: 13, color: Colors.black54),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 4,
-                          ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: badgeColor,
-                            borderRadius: BorderRadius.circular(14),
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
                           ),
-                          child: Text(
-                            '${c.averageAttendance}% Attendance',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.vpn_key_outlined, size: 16, color: Color(0xFF2563EB)),
+                              const SizedBox(width: 6),
+                              Text(c.classCode),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: badgeColor,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Text(
+                              // ✅ real average attendance
+                              '${c.averageAttendance.toStringAsFixed(1)}% Avg',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // full width Start Class gradient button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Container(
-                width: double.infinity,
-                height: 44,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
+                      ],
+                    ),
+                  ],
                 ),
-                child: TextButton.icon(
-                  icon: const Icon(
-                    Icons.remove_red_eye,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    'View Class',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (_) => classDetailsStudentList(
+              ),
+
+              // View Class button — hidden for inactive
+              if (c.isActive)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Container(
+                    width: double.infinity,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.remove_red_eye, size: 18, color: Colors.white),
+                      label: const Text('View Class', style: TextStyle(fontSize: 16, color: Colors.white)),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => classDetailsStudentList(
                               classCode: c.classCode,
                               roomNo: c.roomNo,
                               className1: c.className,
@@ -933,112 +827,118 @@ class _CreateClassState extends State<CreateClass>
                               totalClasses: c.totalClasses,
                               averageAttendance: c.averageAttendance,
                             ),
+                          ),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        foregroundColor: Colors.white,
                       ),
-                    );
-                  },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
                     ),
-                    foregroundColor: Colors.white,
                   ),
                 ),
-              ),
-            ),
-          ],
+
+              // ✅ Reactivate button for inactive cards
+              if (!c.isActive)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.unarchive_outlined, size: 18),
+                    label: const Text('Reactivate Class'),
+                    onPressed: () {
+                      final token = _getToken();
+                      if (token.isEmpty) return;
+                      setState(() {
+                        _awaitingSave = true;
+                        _lastAction = 'toggle';
+                      });
+                      context.read<TeacherClassBloc>().add(
+                        TeacherToggleClassStatus(token: token, classCode: c.classCode),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 44),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      side: const BorderSide(color: Color(0xFF2563EB)),
+                      foregroundColor: const Color(0xFF2563EB),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   // ================= CREATE =================
-  void _showCreateDialog() {
-    _showClassDialog();
-  }
+  void _showCreateDialog() => _showClassDialog();
 
   // ================= EDIT =================
-  void _showEditDialog(ClassModel c) {
-    _showClassDialog(existing: c);
-  }
+  void _showEditDialog(ClassModel c) => _showClassDialog(existing: c);
 
   // ================= COMMON DIALOG =================
   void _showClassDialog({ClassModel? existing}) {
-    final nameController = TextEditingController(
-      text: existing?.className ?? '',
-    );
+    final nameController = TextEditingController(text: existing?.className ?? '');
     final roomController = TextEditingController(text: existing?.roomNo ?? '');
     TimeOfDay? start = existing == null ? null : _parseTime(existing.startTime);
     TimeOfDay? end = existing == null ? null : _parseTime(existing.endTime);
     final selectedDays = <String>{
       ...existing?.classDays.map(
-            (d) =>
-                _dayMap.entries
-                    .firstWhere(
-                      (e) => e.value == d,
-                      orElse: () => const MapEntry('Mon', 'Monday'),
-                    )
-                    .key,
-          ) ??
+            (d) => _dayMap.entries
+            .firstWhere(
+              (e) => e.value == d,
+          orElse: () => const MapEntry('Mon', 'Monday'),
+        )
+            .key,
+      ) ??
           {},
     };
     showDialog(
       context: context,
-      builder:
-          (_) => _ClassDialog(
-            nameController: nameController,
-            roomController: roomController,
-            start: start,
-            end: end,
-            selectedDays: selectedDays,
-            dayMap: _dayMap,
-            onSave: (
-              String name,
-              String room,
-              TimeOfDay? s,
-              TimeOfDay? e,
-              Set<String> days,
-            ) {
-              final token = _getToken();
-              if (token.isEmpty) return;
-              if (existing == null) {
-                setState(() {
-                  _awaitingSave = true;
-                  _lastAction = 'create';
-                });
-                context.read<TeacherClassBloc>().add(
-                  TeacherCreateClass(
-                    token: token,
-                    className: name.trim(),
-                    roomNo: room.trim(),
-                    startTime: _formatTime24(s),
-                    endTime: _formatTime24(e),
-                    classDays: days.map((d) => _dayMap[d]!).toList(),
-                  ),
-                );
-              } else {
-                setState(() {
-                  _awaitingSave = true;
-                  _lastAction = 'update';
-                });
-                context.read<TeacherClassBloc>().add(
-                  TeacherUpdateClass(
-                    token: token,
-                    classCode: existing.classCode,
-                    className: name.trim(),
-                    roomNo: room.trim(),
-                    startTime: _formatTime24(s),
-                    endTime: _formatTime24(e),
-                    classDays: days.map((d) => _dayMap[d]!).toList(),
-                  ),
-                );
-              }
-            },
-          ),
+      builder: (_) => _ClassDialog(
+        nameController: nameController,
+        roomController: roomController,
+        start: start,
+        end: end,
+        selectedDays: selectedDays,
+        dayMap: _dayMap,
+        onSave: (String name, String room, TimeOfDay? s, TimeOfDay? e, Set<String> days) {
+          final token = _getToken();
+          if (token.isEmpty) return;
+          if (existing == null) {
+            setState(() { _awaitingSave = true; _lastAction = 'create'; });
+            context.read<TeacherClassBloc>().add(
+              TeacherCreateClass(
+                token: token,
+                className: name.trim(),
+                roomNo: room.trim(),
+                startTime: _formatTime24(s),
+                endTime: _formatTime24(e),
+                classDays: days.map((d) => _dayMap[d]!).toList(),
+              ),
+            );
+          } else {
+            setState(() { _awaitingSave = true; _lastAction = 'update'; });
+            context.read<TeacherClassBloc>().add(
+              TeacherUpdateClass(
+                token: token,
+                classCode: existing.classCode,
+                className: name.trim(),
+                roomNo: room.trim(),
+                startTime: _formatTime24(s),
+                endTime: _formatTime24(e),
+                classDays: days.map((d) => _dayMap[d]!).toList(),
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 
-  // reusable styled delete confirmation dialog (reworked to match the provided UI)
+  // ================= DELETE DIALOG =================
   Future<bool?> _showDeleteConfirmation(ClassModel c) {
     final className = c.className;
     return showDialog<bool>(
@@ -1046,19 +946,13 @@ class _CreateClassState extends State<CreateClass>
       barrierDismissible: false,
       builder: (ctx) {
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 24,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           clipBehavior: Clip.antiAlias,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Header with gradient and icon + close button
                 Container(
                   height: 170,
                   decoration: const BoxDecoration(
@@ -1075,13 +969,11 @@ class _CreateClassState extends State<CreateClass>
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      // Center content (icon + title + subtitle)
                       Align(
                         alignment: Alignment.center,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // circular icon backdrop
                             Container(
                               width: 72,
                               height: 72,
@@ -1091,35 +983,22 @@ class _CreateClassState extends State<CreateClass>
                                 border: Border.all(color: Colors.white24),
                               ),
                               child: const Center(
-                                child: Icon(
-                                  Icons.auto_awesome,
-                                  color: Colors.white,
-                                  size: 34,
-                                ),
+                                child: Icon(Icons.auto_awesome, color: Colors.white, size: 34),
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Text(
+                            const Text(
                               'Delete Class?',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 18,
-                              ),
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
                             ),
                             const SizedBox(height: 6),
                             const Text(
                               'This action cannot be undone',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
+                              style: TextStyle(color: Colors.white70, fontSize: 13),
                             ),
                           ],
                         ),
                       ),
-
-                      // floating close button (slightly overlapping top-right corner)
                       Positioned(
                         right: 14,
                         top: 14,
@@ -1131,53 +1010,34 @@ class _CreateClassState extends State<CreateClass>
                             decoration: BoxDecoration(
                               color: Color.fromRGBO(255, 255, 255, 0.18),
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color.fromRGBO(0, 0, 0, 0.12),
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
+                              boxShadow: const [
+                                BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.12), blurRadius: 4, offset: Offset(0, 2)),
                               ],
                             ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                            ),
+                            child: const Center(child: Icon(Icons.close, color: Colors.white, size: 18)),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                // Body
                 Container(
                   color: Colors.white,
                   padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Warning box
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFF5F5), // very light red
+                          color: const Color(0xFFFFF5F5),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: const Color(0xFFFECACA)),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Center(
-                              child: Icon(
-                                Icons.error_outline,
-                                color: Color(0xFFEF4444),
-                              ),
-                            ),
-
+                            const Center(child: Icon(Icons.error_outline, color: Color(0xFFEF4444))),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -1185,65 +1045,20 @@ class _CreateClassState extends State<CreateClass>
                                 children: [
                                   const Text(
                                     'Warning',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFFB91C1C),
-                                      fontSize: 14,
-                                    ),
+                                    style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFB91C1C), fontSize: 14),
                                   ),
                                   const SizedBox(height: 8),
                                   RichText(
                                     text: TextSpan(
-                                      style: const TextStyle(
-                                        color: Colors.black87,
-                                        height: 1.35,
-                                      ),
+                                      style: const TextStyle(color: Colors.black87, height: 1.35),
                                       children: [
-                                        TextSpan(
-                                          text: 'Deleting "',
-                                          style: TextStyle(
-                                            color: Color(0xFFEF4444),
-                                          ),
-                                        ),
-                                        TextSpan(
-                                          text: className,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            color: Color(0xFFEF4444),
-                                          ),
-                                        ),
-                                        const TextSpan(
-                                          text:
-                                              '" will permanently remove.\n\n',
-                                          style: TextStyle(
-                                            color: Color(0xFFEF4444),
-                                          ),
-                                        ),
-                                        const TextSpan(
-                                          text:
-                                              '• All class attendance records\n',
-                                          style: TextStyle(
-                                            color: Color(0xFFEF4444),
-                                          ),
-                                        ),
-                                        const TextSpan(
-                                          text: '• Student enrollment data\n',
-                                          style: TextStyle(
-                                            color: Color(0xFFEF4444),
-                                          ),
-                                        ),
-                                        const TextSpan(
-                                          text: '• Class notes and materials\n',
-                                          style: TextStyle(
-                                            color: Color(0xFFEF4444),
-                                          ),
-                                        ),
-                                        const TextSpan(
-                                          text: '• Grade and score history',
-                                          style: TextStyle(
-                                            color: Color(0xFFEF4444),
-                                          ),
-                                        ),
+                                        TextSpan(text: 'Deleting "', style: const TextStyle(color: Color(0xFFEF4444))),
+                                        TextSpan(text: className, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFEF4444))),
+                                        const TextSpan(text: '" will permanently remove.\n\n', style: TextStyle(color: Color(0xFFEF4444))),
+                                        const TextSpan(text: '• All class attendance records\n', style: TextStyle(color: Color(0xFFEF4444))),
+                                        const TextSpan(text: '• Student enrollment data\n', style: TextStyle(color: Color(0xFFEF4444))),
+                                        const TextSpan(text: '• Class notes and materials\n', style: TextStyle(color: Color(0xFFEF4444))),
+                                        const TextSpan(text: '• Grade and score history', style: TextStyle(color: Color(0xFFEF4444))),
                                       ],
                                     ),
                                   ),
@@ -1253,49 +1068,29 @@ class _CreateClassState extends State<CreateClass>
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 18),
-
-                      // Buttons row
                       Row(
                         children: [
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () => Navigator.pop(ctx, false),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 side: BorderSide(color: Colors.grey.shade300),
                               ),
-                              child: const Text(
-                                'Cancel',
-                                style: TextStyle(color: Colors.black87),
-                              ),
+                              child: const Text('Cancel', style: TextStyle(color: Colors.black87)),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () => Navigator.pop(ctx, true),
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.white,
-                              ),
-                              label: const Text(
-                                'Delete Class',
-                                style: TextStyle(color: Colors.white),
-                              ),
+                              icon: const Icon(Icons.delete_outline, color: Colors.white),
+                              label: const Text('Delete Class', style: TextStyle(color: Colors.white)),
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 backgroundColor: Colors.red.shade600,
                                 elevation: 6,
                               ),
@@ -1303,9 +1098,7 @@ class _CreateClassState extends State<CreateClass>
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 12),
-
                       const Center(
                         child: Text(
                           'Consider inactivate instead of deleting to preserve records',
@@ -1325,6 +1118,7 @@ class _CreateClassState extends State<CreateClass>
   }
 }
 
+// ================= CLASS DIALOG =================
 class _ClassDialog extends StatefulWidget {
   final TextEditingController nameController;
   final TextEditingController roomController;
@@ -1332,8 +1126,8 @@ class _ClassDialog extends StatefulWidget {
   final TimeOfDay? end;
   final Set<String> selectedDays;
   final Map<String, String> dayMap;
-  final void Function(String, String, TimeOfDay?, TimeOfDay?, Set<String>)
-  onSave;
+  final void Function(String, String, TimeOfDay?, TimeOfDay?, Set<String>) onSave;
+
   const _ClassDialog({
     required this.nameController,
     required this.roomController,
@@ -1343,6 +1137,7 @@ class _ClassDialog extends StatefulWidget {
     required this.dayMap,
     required this.onSave,
   });
+
   @override
   State<_ClassDialog> createState() => _ClassDialogState();
 }
@@ -1352,7 +1147,6 @@ class _ClassDialogState extends State<_ClassDialog> {
   late TimeOfDay? end = widget.end;
   late Set<String> selectedDays = Set<String>.from(widget.selectedDays);
 
-  // validation errors
   String? _nameError;
   String? _roomError;
   String? _timeError;
@@ -1368,7 +1162,6 @@ class _ClassDialogState extends State<_ClassDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // header
             Container(
               height: 80,
               decoration: const BoxDecoration(
@@ -1382,73 +1175,44 @@ class _ClassDialogState extends State<_ClassDialog> {
                   topRight: Radius.circular(20),
                 ),
               ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              color: Color.fromRGBO(255, 255, 255, 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.auto_awesome,
-                                color: Colors.white,
-                                size: 26,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.nameController.text.isEmpty
-                                      ? 'Create New Class'
-                                      : 'Edit Class',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                const Text(
-                                  'Set up your class details',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(color: Color.fromRGBO(255, 255, 255, 0.12), shape: BoxShape.circle),
+                        child: const Center(child: Icon(Icons.auto_awesome, color: Colors.white, size: 26)),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.nameController.text.isEmpty ? 'Create New Class' : 'Edit Class',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text('Set up your class details', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-
-            // body
             Container(
               color: Colors.white,
               padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Class name
                   TextField(
                     controller: widget.nameController,
                     decoration: InputDecoration(
@@ -1457,23 +1221,13 @@ class _ClassDialogState extends State<_ClassDialog> {
                       errorText: _nameError,
                       filled: true,
                       fillColor: const Color(0xFFF3F4F6),
-                      prefixIcon: const Icon(
-                        Icons.menu_book,
-                        color: Color(0xFF06B6D4),
-                      ),
+                      prefixIcon: const Icon(Icons.menu_book, color: Color(0xFF06B6D4)),
                       contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                     ),
-                    onChanged: (_) {
-                      if (_nameError != null) setState(() => _nameError = null);
-                    },
+                    onChanged: (_) { if (_nameError != null) setState(() => _nameError = null); },
                   ),
                   const SizedBox(height: 12),
-
-                  // Room number (single field as per your request)
                   TextField(
                     controller: widget.roomController,
                     decoration: InputDecoration(
@@ -1482,169 +1236,47 @@ class _ClassDialogState extends State<_ClassDialog> {
                       errorText: _roomError,
                       filled: true,
                       fillColor: const Color(0xFFF3F4F6),
-                      prefixIcon: const Icon(
-                        Icons.location_on,
-                        color: Color(0xFF06B6D4),
-                      ),
+                      prefixIcon: const Icon(Icons.location_on, color: Color(0xFF06B6D4)),
                       contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                     ),
-                    onChanged: (_) {
-                      if (_roomError != null) setState(() => _roomError = null);
-                    },
+                    onChanged: (_) { if (_roomError != null) setState(() => _roomError = null); },
                   ),
                   const SizedBox(height: 12),
-
-                  // Times row (Start / End)
                   Row(
                     children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.access_time,
-                                color: Colors.black54,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  start == null
-                                      ? '--:-- --'
-                                      : '${start!.hourOfPeriod == 0 ? 12 : start!.hourOfPeriod}:${start!.minute.toString().padLeft(2, '0')} ${start!.period.name.toUpperCase()}',
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () async {
-                                  final picked = await showTimePicker(
-                                    context: context,
-                                    initialTime: start ?? TimeOfDay.now(),
-                                  );
-                                  if (picked != null)
-                                    setState(() => start = picked);
-                                },
-                                child: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  color: Colors.black38,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      Expanded(child: _timePicker('Start', start, (t) => setState(() => start = t))),
                       const SizedBox(width: 10),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.access_time,
-                                color: Colors.black54,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  end == null
-                                      ? '--:-- --'
-                                      : '${end!.hourOfPeriod == 0 ? 12 : end!.hourOfPeriod}:${end!.minute.toString().padLeft(2, '0')} ${end!.period.name.toUpperCase()}',
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () async {
-                                  final picked = await showTimePicker(
-                                    context: context,
-                                    initialTime: end ?? TimeOfDay.now(),
-                                  );
-                                  if (picked != null)
-                                    setState(() => end = picked);
-                                },
-                                child: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  color: Colors.black38,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      Expanded(child: _timePicker('End', end, (t) => setState(() => end = t))),
                     ],
                   ),
                   if (_timeError != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        _timeError!,
-                        style: const TextStyle(color: Colors.red, fontSize: 12),
-                      ),
+                      child: Text(_timeError!, style: const TextStyle(color: Colors.red, fontSize: 12)),
                     ),
                   const SizedBox(height: 12),
-
-                  // Class days
                   Wrap(
                     spacing: 8,
                     runSpacing: 6,
-                    children:
-                        widget.dayMap.keys
-                            .map(
-                              (d) => ChoiceChip(
-                                label: Text(d),
-                                selected: selectedDays.contains(d),
-                                onSelected:
-                                    (v) => setState(() {
-                                      v
-                                          ? selectedDays.add(d)
-                                          : selectedDays.remove(d);
-                                      if (_daysError != null &&
-                                          selectedDays.isNotEmpty)
-                                        _daysError = null;
-                                    }),
-                                backgroundColor: const Color(0xFFF3F4F6),
-                                selectedColor: const Color(
-                                  0xFF06B6D4,
-                                ).withOpacity(0.5),
-                                labelStyle: const TextStyle(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            )
-                            .toList(),
+                    children: widget.dayMap.keys.map((d) => ChoiceChip(
+                      label: Text(d),
+                      selected: selectedDays.contains(d),
+                      onSelected: (v) => setState(() {
+                        v ? selectedDays.add(d) : selectedDays.remove(d);
+                        if (_daysError != null && selectedDays.isNotEmpty) _daysError = null;
+                      }),
+                      backgroundColor: const Color(0xFFF3F4F6),
+                      selectedColor: const Color(0xFF06B6D4).withOpacity(0.5),
+                      labelStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+                    )).toList(),
                   ),
                   if (_daysError != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        _daysError!,
-                        style: const TextStyle(color: Colors.red, fontSize: 12),
-                      ),
+                      child: Text(_daysError!, style: const TextStyle(color: Colors.red, fontSize: 12)),
                     ),
-
                   const SizedBox(height: 18),
-
-                  // Buttons
                   Row(
                     children: [
                       Expanded(
@@ -1652,72 +1284,41 @@ class _ClassDialogState extends State<_ClassDialog> {
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(color: Colors.red),
-                          ),
+                          child: const Text('Cancel', style: TextStyle(color: Colors.red)),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            // validate
                             setState(() {
-                              _nameError =
-                                  (widget.nameController.text.trim().isEmpty)
-                                      ? 'Please enter class name'
-                                      : null;
-                              _roomError =
-                                  (widget.roomController.text.trim().isEmpty)
-                                      ? 'Please enter room number'
-                                      : null;
+                              _nameError = widget.nameController.text.trim().isEmpty ? 'Please enter class name' : null;
+                              _roomError = widget.roomController.text.trim().isEmpty ? 'Please enter room number' : null;
                               if (start == null || end == null) {
                                 _timeError = 'Please select start and end time';
                               } else if (_minutes(start!) >= _minutes(end!)) {
-                                _timeError =
-                                    'Start time must be before end time';
+                                _timeError = 'Start time must be before end time';
                               } else {
                                 _timeError = null;
                               }
-                              _daysError =
-                                  (selectedDays.isEmpty)
-                                      ? 'Please select at least one day'
-                                      : null;
+                              _daysError = selectedDays.isEmpty ? 'Please select at least one day' : null;
                             });
-
-                            final hasError =
-                                _nameError != null ||
-                                _roomError != null ||
-                                _timeError != null ||
-                                _daysError != null;
+                            final hasError = _nameError != null || _roomError != null || _timeError != null || _daysError != null;
                             if (!hasError) {
-                              widget.onSave(
-                                widget.nameController.text.trim(),
-                                widget.roomController.text.trim(),
-                                start,
-                                end,
-                                selectedDays,
-                              );
+                              widget.onSave(widget.nameController.text.trim(), widget.roomController.text.trim(), start, end, selectedDays);
                               Navigator.pop(context);
                             }
                           },
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             backgroundColor: const Color(0xFF06B6D9),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
                           child: Text(
-                            widget.nameController.text.isEmpty
-                                ? 'Create'
-                                : 'Update',
-                            style: TextStyle(color: Colors.black),
+                            widget.nameController.text.isEmpty ? 'Create' : 'Update',
+                            style: const TextStyle(color: Colors.black),
                           ),
                         ),
                       ),
@@ -1726,6 +1327,34 @@ class _ClassDialogState extends State<_ClassDialog> {
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _timePicker(String label, TimeOfDay? time, void Function(TimeOfDay) onPicked) {
+    return GestureDetector(
+      onTap: () async {
+        final picked = await showTimePicker(context: context, initialTime: time ?? TimeOfDay.now());
+        if (picked != null) onPicked(picked);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(10)),
+        child: Row(
+          children: [
+            const Icon(Icons.access_time, color: Colors.black54, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                time == null
+                    ? '$label --:-- --'
+                    : '$label ${time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod}:${time.minute.toString().padLeft(2, '0')} ${time.period.name.toUpperCase()}',
+                style: const TextStyle(color: Colors.black87, fontSize: 13),
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_down, color: Colors.black38),
           ],
         ),
       ),

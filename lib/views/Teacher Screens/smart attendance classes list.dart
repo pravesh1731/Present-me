@@ -129,8 +129,9 @@ class _SmartAttendanceClassesState extends State<SmartAttendanceClasses> {
 
                 /// LOADED
                 if (state is TeacherClassLoaded) {
+                  final activeClasses = state.classes.where((c) => c.isActive).toList();
 
-                  if (state.classes.isEmpty) {
+                  if (activeClasses.isEmpty) {
                     return const Center(
                       child: Text(
                         "No classes found",
@@ -152,7 +153,7 @@ class _SmartAttendanceClassesState extends State<SmartAttendanceClasses> {
                           vertical: 10,
                         ),
                         child: Text(
-                          "Active Classes (${state.classes.length})",
+                          "Active Classes (${activeClasses.length})",
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
@@ -163,16 +164,14 @@ class _SmartAttendanceClassesState extends State<SmartAttendanceClasses> {
                       Expanded(
                         child: ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: state.classes.length,
+                          itemCount: activeClasses.length,
                           itemBuilder: (context, index) {
+                            final classItem = activeClasses[index];
 
-                            final classItem = state.classes[index];
-
-                            final attendance = [94, 89, 91, 88][index % 4];
-                            final students = [35, 28, 30, 32][index % 4];
+                            final attendance = classItem.averageAttendance.round();
+                            final students = classItem.totalStudents;
 
                             return InkWell(
-
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -180,7 +179,7 @@ class _SmartAttendanceClassesState extends State<SmartAttendanceClasses> {
                                     builder: (_) => SmartAttendanceTeacherPage(
                                       className: classItem.className ?? "",
                                       classCode: classItem.classCode ?? "",
-                                      totalStudents:  classItem.students.length,
+                                      totalStudents:  students,
                                     ),
                                   ),
                                 );
@@ -230,7 +229,7 @@ class _SmartAttendanceClassesState extends State<SmartAttendanceClasses> {
                                     children: [
                                       Text("Code: ${classItem.classCode ?? ""}"),
                                       const SizedBox(height: 4),
-                                      Text("${classItem.students.length} students"),
+                                      Text("${students} students"),
                                     ],
                                   ),
 

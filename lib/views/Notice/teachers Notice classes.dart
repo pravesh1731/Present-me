@@ -1026,7 +1026,8 @@ class _TeacherNoticeClassState extends State<TeacherNoticeClass>
           );
         }
         if (state is TeacherClassLoaded) {
-          if (state.classes.isEmpty) {
+          final activeClasses = state.classes.where((c) => c.isActive).toList();
+          if (activeClasses.isEmpty) {
             return const Center(
               child: Text('No classes found.',
                   style: TextStyle(color: Color(0xFF6B7280))),
@@ -1042,9 +1043,9 @@ class _TeacherNoticeClassState extends State<TeacherNoticeClass>
             child: ListView.builder(
               padding:
               const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              itemCount: state.classes.length,
+              itemCount: activeClasses.length,
               itemBuilder: (context, index) {
-                final cls = state.classes[index];
+                final cls = activeClasses[index];
                 final count =
                     _noticeCounts[cls.classCode] ?? 0;
                 return _buildClassCard(cls, count);

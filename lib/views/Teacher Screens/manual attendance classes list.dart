@@ -57,7 +57,8 @@ class _ManualAttendanceClassesState extends State<ManualAttendanceClasses> {
                 }
 
                 if (state is TeacherClassLoaded) {
-                  if (state.classes.isEmpty) {
+                  final activeClasses = state.classes.where((c) => c.isActive).toList();
+                  if (activeClasses.isEmpty) {
                     return const Center(
                       child: Text(
                         "No classes found",
@@ -77,7 +78,7 @@ class _ManualAttendanceClassesState extends State<ManualAttendanceClasses> {
                           vertical: 10,
                         ),
                         child: Text(
-                          'Active Classes (${state.classes.length})',
+                          'Active Classes (${activeClasses.length})',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
@@ -87,12 +88,11 @@ class _ManualAttendanceClassesState extends State<ManualAttendanceClasses> {
                       Expanded(
                         child: ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: state.classes.length,
+                          itemCount: activeClasses.length,
                           itemBuilder: (context, index) {
-                            final classItem = state.classes[index];
-                            final attendance = [94, 89, 91, 88][index % 4];
-                            final students = [35, 28, 30, 32][index % 4];
-
+                            final classItem = activeClasses[index];
+                            final attendance = classItem.averageAttendance.round();
+                            final students = classItem.totalStudents;
                             return InkWell(
                               onTap: () {
                                 Navigator.push(
@@ -155,25 +155,18 @@ class _ManualAttendanceClassesState extends State<ManualAttendanceClasses> {
                                   ),
 
                                   trailing: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color:
-                                          attendance >= 90
-                                              ? const Color(0xFF10B981)
-                                              : const Color(0xFFF59E0B),
-                                      borderRadius: BorderRadius.circular(
-                                        999,
-                                      ),
+                                      color: attendance >= 90
+                                          ? const Color(0xFF10B981)
+                                          : attendance >= 75
+                                          ? const Color(0xFFF59E0B)
+                                          : Colors.red,       // ✅ red for < 75%
+                                      borderRadius: BorderRadius.circular(999),
                                     ),
                                     child: Text(
-                                      "$attendance%",
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      "$attendance%",             // ✅ real attendance
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                 ),

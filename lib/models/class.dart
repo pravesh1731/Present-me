@@ -10,9 +10,10 @@ class ClassModel extends Equatable {
   final List<String> students;
   final List<String> joinRequests;
   final DateTime createdAt;
-  final int totalClasses;        // ✅ added
-  final int totalStudents;       // ✅ added
-  final double averageAttendance; // ✅ added
+  final int totalClasses;
+  final int totalStudents;
+  final double averageAttendance;
+  final bool isActive;
 
   const ClassModel({
     required this.classCode,
@@ -27,6 +28,7 @@ class ClassModel extends Equatable {
     this.totalClasses = 0,         // ✅ default 0
     this.totalStudents = 0,        // ✅ default 0
     this.averageAttendance = 0.0,  // ✅ default 0.0
+    this.isActive = true,
   });
 
   static List<String> _toStringList(dynamic value) {
@@ -83,6 +85,7 @@ class ClassModel extends Equatable {
       totalClasses: (json['totalClasses'] as num?)?.toInt() ?? 0,
       totalStudents: (json['totalStudents'] as num?)?.toInt() ?? 0,
       averageAttendance: (json['averageAttendance'] as num?)?.toDouble() ?? 0.0,
+      isActive: json['isActive'] ?? true,
     );
   }
 
@@ -100,6 +103,7 @@ class ClassModel extends Equatable {
       "totalClasses": totalClasses,
       "totalStudents": totalStudents,
       "averageAttendance": averageAttendance,
+      "isActive": isActive,
     };
   }
 
@@ -116,6 +120,7 @@ class ClassModel extends Equatable {
     int? totalClasses,
     int? totalStudents,
     double? averageAttendance,
+    bool? isActive,
   }) {
     return ClassModel(
       classCode: classCode ?? this.classCode,
@@ -130,6 +135,7 @@ class ClassModel extends Equatable {
       totalClasses: totalClasses ?? this.totalClasses,
       totalStudents: totalStudents ?? this.totalStudents,
       averageAttendance: averageAttendance ?? this.averageAttendance,
+      isActive: isActive ?? this.isActive,
     );
   }
 
@@ -147,5 +153,6 @@ class ClassModel extends Equatable {
     totalClasses,
     totalStudents,
     averageAttendance,
+    isActive,
   ];
 }

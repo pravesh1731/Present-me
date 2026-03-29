@@ -136,4 +136,20 @@ class TeacherClassRepository {
       );
     }
   }
+
+  Future<void> toggleClassStatus({
+    required String token,
+    required String classCode,
+  }) async {
+    final res = await http.patch(
+      Uri.parse("$baseUrl/teachers/class/$classCode/toggleStatus"),
+      headers: {
+        "Authorization": "Bearer $token",
+        "Content-Type": "application/json",
+      },
+    );
+    if (res.statusCode != 200) {
+      throw Exception("Failed to toggle class status");
+    }
+  }
 }

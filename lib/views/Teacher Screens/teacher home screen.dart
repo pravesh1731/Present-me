@@ -25,6 +25,8 @@ class _teacherHomeState extends State<teacherHome> {
   int _selectedIndex = 0;
   final box = GetStorage();
   int totalStudents = 0;
+  double averageAttendance = 0.0;
+  int totalClasses = 0;
   bool isLoadingStudents = false;
 
   final String formattedDate = DateFormat(
@@ -51,6 +53,8 @@ class _teacherHomeState extends State<teacherHome> {
       if (response.statusCode == 200 && data["success"] == true) {
         setState(() {
           totalStudents = data["totalStudents"];
+          totalClasses = data["totalClasses"];
+          averageAttendance = (data["averageAttendance"] as num?)?.toDouble() ?? 0.0;
         });
       } } catch (e) {
       print("Error fetching students: $e");
@@ -484,10 +488,8 @@ class _teacherHomeState extends State<teacherHome> {
                           BlocBuilder<TeacherClassBloc, TeacherClassState>(
                             builder: (context, state) {
                               int classCount = 0;
-
-
                               if (state is TeacherClassLoaded) {
-                                classCount = state.classes.length;
+                                classCount = state.classes.where((c) => c.isActive).length;
                               }
 
                               return _buildStatCard(
@@ -499,8 +501,10 @@ class _teacherHomeState extends State<teacherHome> {
                             },
                           ),
                           _buildStatCard(
-                            'Avg\nAttendance',
-                            '88%',
+                            'Avg Attendance',
+                             isLoadingStudents
+                                ? '...'
+                                 : '${averageAttendance}%',
                             Icons.trending_up,
                             Colors.green,
                           ),
@@ -543,13 +547,13 @@ class _teacherHomeState extends State<teacherHome> {
                         () => _onItemTapped(1),
                       ),
                       _buildQuickAction(
-                        'Fill\nMarks',
+                        'Download\nAttendance',
                         Icons.edit_outlined,
                         const Color(0xFF8B5CF6),
                         () {},
                       ),
                       _buildQuickAction(
-                        'Chat',
+                        'Notice\nBoard',
                         Icons.chat_bubble_outline,
                         const Color(0xFFF59E0B),
                         () {
@@ -692,9 +696,9 @@ class _teacherHomeState extends State<teacherHome> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              const Text(
-                                '20',
-                                style: TextStyle(
+                              Text(
+                                '$totalClasses',
+                                style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black87,
@@ -745,9 +749,9 @@ class _teacherHomeState extends State<teacherHome> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              const Text(
-                                '94%',
-                                style: TextStyle(
+                              Text(
+                                '$averageAttendance%',
+                                style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black87,

@@ -14,6 +14,7 @@ class TeacherClassBloc extends Bloc<TeacherClassEvent, TeacherClassState> {
     on<TeacherCreateClass>(_onCreateClass);
     on<TeacherUpdateClass>(_onUpdateClass);
     on<TeacherDeleteClass>(_onDeleteClass);
+    on<TeacherToggleClassStatus>(_onToggleStatus);
   }
 
   // ================= GET =================
@@ -87,6 +88,23 @@ class TeacherClassBloc extends Bloc<TeacherClassEvent, TeacherClassState> {
         classCode: event.classCode,
       );
 
+      final classes = await repository.getClasses(event.token);
+      emit(TeacherClassLoaded(classes));
+    } catch (e) {
+      emit(TeacherClassError(e.toString()));
+    }
+  }
+
+  Future<void> _onToggleStatus(
+      TeacherToggleClassStatus event,
+      Emitter<TeacherClassState> emit,
+      ) async {
+    try {
+      await repository.toggleClassStatus(
+        token: event.token,
+        classCode: event.classCode,
+      );
+      // refresh list after toggle
       final classes = await repository.getClasses(event.token);
       emit(TeacherClassLoaded(classes));
     } catch (e) {

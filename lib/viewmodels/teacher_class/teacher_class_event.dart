@@ -77,3 +77,11 @@ class TeacherDeleteClass extends TeacherClassEvent {
   @override
   List<Object?> get props => [token, classCode];
 }
+
+// ================= TOGGLE CLASS STATUS =================
+class TeacherToggleClassStatus extends TeacherClassEvent {
+  final String token;
+  final String classCode;
+  TeacherToggleClassStatus({required this.token, required this.classCode});
+}
+

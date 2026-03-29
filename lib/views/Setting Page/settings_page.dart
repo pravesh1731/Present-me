@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:present_me_flutter/core/widgets/header.dart';
+import '../Policy/privacy_policy.dart';
 
 class SettingsPage extends StatelessWidget {
   @override
@@ -18,65 +20,8 @@ class SettingsPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Gradient Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.only(top: 40,bottom: 24, left: 24, right: 24),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(36),
-                    bottomRight: Radius.circular(36),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children:  [
+              Header(heading: "Settings", subheading: "Manage your app preferences"),
 
-                          Text(
-                            'Settings',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-
-                          Text(
-                            'Manage your app preferences',
-                            style: TextStyle(color: Colors.white70, fontSize: 15),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Notifications Section
-              _sectionTitle('Notifications'),
-              _settingsCard(
-                icon: Icons.notifications_active_rounded,
-                iconColor: Color(0xFF6366F1),
-                title: 'Push Notifications',
-                subtitle: 'Receive app notifications',
-                trailing: Switch(value: true, onChanged: (_) {}),
-              ),
               // Appearance Section
               _sectionTitle('Appearance'),
               _settingsCard(
@@ -103,38 +48,23 @@ class SettingsPage extends StatelessWidget {
                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Color(0xFF9CA3AF)),
               ),
               _settingsCard(
-                icon: Icons.remove_red_eye_rounded,
-                iconColor: Color(0xFF06B6D4),
-                title: 'Face ID',
-                subtitle: 'Use biometric authentication',
-                trailing: Switch(value: false, onChanged: (_) {}),
-              ),
-              _settingsCard(
                 icon: Icons.privacy_tip_rounded,
                 iconColor: Color(0xFF8B5CF6),
                 title: 'Privacy Policy',
                 subtitle: 'View privacy policy',
-                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Color(0xFF9CA3AF)),
+                trailing: GestureDetector(
+                    onTap:
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PrivacyPolicyPage(),
+                            ),
+                          );
+                    },
+                    child: const Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Color(0xFF9CA3AF))),
               ),
-              // Data & Storage Section
-              _sectionTitle('Data & Storage'),
-              _settingsCard(
-                icon: Icons.backup_rounded,
-                iconColor: Color(0xFFF472B6),
-                title: 'Auto Backup',
-                subtitle: 'Backup data automatically',
-                trailing: Switch(value: true, onChanged: (_) {}),
-              ),
-              _settingsCard(
-                icon: Icons.data_usage_rounded,
-                iconColor: Color(0xFF06B6D4),
-                title: 'Cache Size',
-                subtitle: '24.5 MB',
-                trailing: TextButton(
-                  onPressed: () {},
-                  child: const Text('Clear', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
-                ),
-              ),
+
               // App Info Card
               const SizedBox(height: 24),
               Container(

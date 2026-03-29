@@ -31,7 +31,6 @@ class _teacher_ProfileState extends State<teacher_Profile> {
   final employeeIdController = TextEditingController();
 
   String? joinedDate;
-  int classesCount = 5;
   int studentsCount = 145;
 
   final ImagePicker _picker = ImagePicker();
@@ -954,16 +953,19 @@ class _teacher_ProfileState extends State<teacher_Profile> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: BlocBuilder<
-                              TeacherClassBloc,
-                              TeacherClassState
-                            >(
+                            child: BlocBuilder<TeacherClassBloc, TeacherClassState>(
                               builder: (context, state) {
                                 int classesCount = 0;
+                                int totalStudents = 0;
 
                                 if (state is TeacherClassLoaded) {
                                   classesCount = state.classes.length;
+                                  totalStudents = state.classes.fold<int>(
+                                    0,
+                                        (sum, classItem) => sum + classItem.totalStudents,
+                                  );
                                 }
+
                                 return _buildStatCard(
                                   icon: Icons.class_outlined,
                                   value: classesCount.toString(),
@@ -975,21 +977,33 @@ class _teacher_ProfileState extends State<teacher_Profile> {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: _buildStatCard(
-                              icon: Icons.people_outline,
-                              value: studentsCount.toString(),
-                              label: 'Students',
-                              color: const Color(0xFF3B82F6),
+                            child: BlocBuilder<TeacherClassBloc, TeacherClassState>(
+                              builder: (context, state) {
+                                int totalStudents = 0;
+
+                                if (state is TeacherClassLoaded) {
+                                  totalStudents = state.classes.fold<int>(
+                                    0,
+                                        (sum, classItem) => sum + classItem.totalStudents,
+                                  );
+                                }
+
+                                return _buildStatCard(
+                                  icon: Icons.people_outline,
+                                  value: totalStudents.toString(),
+                                  label: 'Students',
+                                  color: const Color(0xFF3B82F6),
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: _buildStatCard(
                               icon: Icons.history_edu_outlined,
-                              value:
-                                  experienceController.text.isNotEmpty
-                                      ? experienceController.text
-                                      : '0 yrs',
+                              value: experienceController.text.isNotEmpty
+                                  ? experienceController.text
+                                  : '0 yrs',
                               label: 'Experience',
                               color: const Color(0xFFF59E0B),
                             ),

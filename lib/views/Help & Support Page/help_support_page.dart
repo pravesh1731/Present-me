@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:present_me_flutter/core/widgets/header.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class HelpSupportPage extends StatelessWidget {
   @override
@@ -18,93 +21,46 @@ class HelpSupportPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Gradient Header
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.only(top: 44, bottom: 24, left: 24, right: 24),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(36),
-                      bottomRight: Radius.circular(36),
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 10.0),
-                            child: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 5.0),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Icon(Icons.help_outline_rounded, color: Colors.white, size: 30),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Help & Support',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-
-                            const Text(
-                              'We\'re here to help you',
-                              style: TextStyle(color: Colors.white70, fontSize: 15),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Header(heading: "Help & Support", subheading: "We're here to help you"),
                 const SizedBox(height: 24),
                 // Quick Actions Title
                 _sectionTitle('Quick Actions'),
                 // Quick Actions Cards
                 _quickActionCard(
                   color: Color(0xFF2563EB),
-                  icon: Icons.chat_bubble_outline_rounded,
-                  title: 'Chat with Customer Care',
-                  subtitle: 'Get instant help from our support team',
-                  onTap: () {},
+                  icon: Icons.chat_bubble_outline,
+                  title: 'WhatsApp Support',
+                  subtitle: '+91 7007458210',
+                  onTap: () async {
+                    final phoneNumber = '7007458210'; // Without country code or '+'
+                    final whatsappUri = Uri.parse('whatsapp://send?phone=$phoneNumber');
+
+                    try {
+                      await launchUrl(whatsappUri);
+                    } catch (e) {
+                      // Fallback to web WhatsApp
+                      final webUri = Uri.parse('https://wa.me/$phoneNumber');
+                      await launchUrl(webUri);
+                    }
+                  },
                 ),
                 _quickActionCard(
                   color: Color(0xFF8B5CF6),
                   icon: Icons.email_outlined,
                   title: 'Email Support',
-                  subtitle: 'support@present-me.com',
-                  onTap: () {},
+                  subtitle: 'support@presentme.in',
+                  onTap: () async {
+                    await launchUrl(Uri.parse('mailto:support@presentme.in'));
+                  },
                 ),
                 _quickActionCard(
                   color: Color(0xFF10B981),
-                  icon: Icons.call_outlined,
-                  title: 'Call Us',
-                  subtitle: '+1 (555) 123-4567',
-                  onTap: () {},
+                  icon: Icons.phone_outlined,
+                  title: 'Call Support',
+                  subtitle: '+91 7007458210',
+                  onTap: () async {
+                    await launchUrl(Uri.parse('tel:7007458210'));
+                  },
                 ),
                 const SizedBox(height: 18),
                 // Common Problems Title

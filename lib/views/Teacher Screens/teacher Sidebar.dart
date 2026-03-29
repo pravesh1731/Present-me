@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../components/common/Navigation.dart';
 import '../Notice/teachers Notice classes.dart';
 import '../../viewmodels/teacher_auth/teacher_auth_bloc.dart';
 import '../Help & Support Page/help_support_page.dart';
@@ -119,39 +120,16 @@ class _TeacherSidebar extends StatelessWidget {
                                 _placeholder(context, 'Fill Marks coming soon'),
                       ),
                       _MenuItem(
-                        icon: Icons.fact_check_outlined,
-                        label: 'Records',
-                        onTap: () => _placeholder(context, 'Records coming soon'),
-                      ),
-                      _MenuItem(
                         icon: Icons.download_outlined,
                         label: 'Download Attendance',
                         onTap:
-                            () => _pushSlide(context, DownloadAttendancePage()),
-                      ),
-                      _MenuItem(
-                        icon: Icons.group_add_outlined,
-                        label: 'Create Class',
-                        onTap: () => _pushSlide(context, CreateClass()),
-                      ),
-                      _MenuItem(
-                        icon: Icons.list_alt_outlined,
-                        label: 'Class List',
-                        onTap:
-                            () =>
-                                _placeholder(context, 'Class List coming soon'),
-                      ),
-                      _MenuItem(
-                        icon: Icons.schedule_outlined,
-                        label: 'Schedule',
-                        onTap:
-                            () {}
+                            () => pushSlide(context, DownloadAttendancePage()),
                       ),
                       _MenuItem(
                         icon: Icons.notifications_none_outlined,
                         label: 'Notices',
                         onTap:
-                            () => _pushSlide(
+                            () => pushSlide(
                               context,
                               const TeacherNoticeClass(),
                             ),
@@ -171,18 +149,12 @@ class _TeacherSidebar extends StatelessWidget {
                         icon: Icons.settings_outlined,
                         label: 'Settings',
                         onTap:
-                            () => _pushSlide(context, SettingsPage()),
+                            () => pushSlide(context, SettingsPage()),
                       ),
                       _MenuItem(
                         icon: Icons.help_outline,
                         label: 'Help & Support',
-                        onTap: () => _pushSlide(context, HelpSupportPage()),
-                      ),
-                      _MenuItem(
-                        icon: Icons.add_circle_outline,
-                        label: 'Privacy Policy',
-                        onTap:
-                            () => _pushSlide(context, PrivacyPolicyPage()),
+                        onTap: () => pushSlide(context, HelpSupportPage()),
                       ),
                       const SizedBox(height: 30), // space for sticky logout
                     ],
@@ -408,30 +380,6 @@ Future<bool?> _showLogoutConfirmation(BuildContext context) {
   );
 }
 
-
-// Helpers
-void _pushSlide(BuildContext context, Widget page) {
-  Navigator.of(context).pop();
-  Navigator.of(context).push(
-    PageRouteBuilder(
-      transitionDuration: const Duration(milliseconds: 420),
-      pageBuilder: (_, __, ___) => page,
-      transitionsBuilder: (ctx, animation, secondaryAnimation, child) {
-        final offset = Tween<Offset>(
-          begin: const Offset(0.15, 0),
-          end: Offset.zero,
-        ).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-        );
-        final fade = CurvedAnimation(parent: animation, curve: Curves.easeOut);
-        return FadeTransition(
-          opacity: fade,
-          child: SlideTransition(position: offset, child: child),
-        );
-      },
-    ),
-  );
-}
 
 void _placeholder(BuildContext context, String message) {
   Navigator.of(context).pop();

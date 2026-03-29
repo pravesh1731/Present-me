@@ -5,6 +5,8 @@ import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:present_me_flutter/components/common/Button/token.dart';
 import 'package:present_me_flutter/core/constants/constants.dart';
+import 'package:present_me_flutter/views/Notice/teachers%20Notice%20classes.dart';
+import 'package:present_me_flutter/views/Teacher%20Screens/downloadAttendance.dart';
 import '../../models/class.dart';
 import '../../viewmodels/teacher_auth/teacher_auth_bloc.dart';
 import '../../viewmodels/teacher_class/teacher_class_bloc.dart';
@@ -550,14 +552,14 @@ class _teacherHomeState extends State<teacherHome> {
                         'Download\nAttendance',
                         Icons.edit_outlined,
                         const Color(0xFF8B5CF6),
-                        () {},
+                        () {Navigator.push(context, MaterialPageRoute(builder: (_) => DownloadAttendancePage()));},
                       ),
                       _buildQuickAction(
                         'Notice\nBoard',
                         Icons.chat_bubble_outline,
                         const Color(0xFFF59E0B),
                         () {
-                          // TODO: Navigate to chat page
+                          {Navigator.push(context, MaterialPageRoute(builder: (_) => TeacherNoticeClass()));};
                         },
                       ),
                     ],
@@ -655,7 +657,7 @@ class _teacherHomeState extends State<teacherHome> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'This Week',
+                    'This Semester',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,

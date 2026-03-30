@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/studentClass.dart';
+import '../models/student_overall_attendance_model.dart';
 
 class StudentClassRepository {
 
@@ -62,8 +63,6 @@ class StudentClassRepository {
     return data['message'] ?? 'Join request sent';
   }
 
+  }
 
-
-
-}
 

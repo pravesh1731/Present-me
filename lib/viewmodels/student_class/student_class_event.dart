@@ -33,3 +33,4 @@ class StudentJoinClass extends StudentClassEvent {
   List<Object> get props => [token, classCode];
 
 }
+

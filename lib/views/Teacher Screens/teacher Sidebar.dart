@@ -117,7 +117,7 @@ class _TeacherSidebar extends StatelessWidget {
                         label: 'Fill Marks',
                         onTap:
                             () =>
-                                _placeholder(context, 'Fill Marks coming soon'),
+                                placeholder(context, 'Fill Marks coming soon'),
                       ),
                       _MenuItem(
                         icon: Icons.download_outlined,
@@ -137,7 +137,7 @@ class _TeacherSidebar extends StatelessWidget {
                       _MenuItem(
                         icon: Icons.note_alt_outlined,
                         label: 'Notes',
-                        onTap: () => _placeholder(context, 'Notes coming soon'),
+                        onTap: () => placeholder(context, 'Notes coming soon'),
                       ),
 
                       const Padding(
@@ -380,11 +380,6 @@ Future<bool?> _showLogoutConfirmation(BuildContext context) {
   );
 }
 
-
-void _placeholder(BuildContext context, String message) {
-  Navigator.of(context).pop();
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-}
 
 class _MenuItem extends StatelessWidget {
   final IconData icon;

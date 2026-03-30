@@ -1,5 +1,6 @@
 // Helpers
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 void pushSlide(BuildContext context, Widget page) {
   Navigator.of(context).pop();
@@ -22,4 +23,10 @@ void pushSlide(BuildContext context, Widget page) {
       },
     ),
   );
+}
+
+
+void placeholder(BuildContext context, String message) {
+  Navigator.of(context).pop();
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }

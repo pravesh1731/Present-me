@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/views/Notice/student%20Notice%20classes.dart';
+import '../../components/common/Navigation.dart';
 import '../../viewmodels/student_auth/auth_bloc.dart';
 import '../../viewmodels/student_auth/auth_event.dart';
 import '../../viewmodels/student_auth/auth_state.dart';
@@ -142,28 +143,13 @@ class StudentSidebar extends StatelessWidget {
                     context,
                     icon: Icons.emoji_events_outlined,
                     label: 'Scores',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to scores
-                    },
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.help_outline,
-                    label: 'Doubts',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to doubts
-                    },
+                    onTap: () => placeholder(context, 'Score coming soon'),
                   ),
                   _buildMenuItem(
                     context,
                     icon: Icons.note_outlined,
                     label: 'Notes',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to notes
-                    },
+                    onTap: () => placeholder(context, 'Notes coming soon'),
                   ),
                   const Divider(height: 32, thickness: 1, indent: 20, endIndent: 20),
 
@@ -188,18 +174,6 @@ class StudentSidebar extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => HelpSupportPage()),
-                      );
-                    },
-                  ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.info_outline,
-                    label: 'Privacy Policy',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => PrivacyPolicyPage()),
                       );
                     },
                   ),

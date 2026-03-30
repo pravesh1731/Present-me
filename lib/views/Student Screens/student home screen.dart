@@ -9,6 +9,8 @@ import '../../models/studentClass.dart';
 import '../../viewmodels/student_auth/auth_bloc.dart';
 import '../../viewmodels/student_auth/auth_state.dart';
 import '../../viewmodels/student_class/student_class_bloc.dart';
+import '../../viewmodels/student_overall_attendance/student_overall_attendance_bloc.dart';
+import '../../viewmodels/student_overall_attendance/student_overall_attendance_state.dart';
 import 'student joined class.dart';
 import 'student mark attendance.dart';
 import 'student profile.dart';
@@ -310,11 +312,21 @@ class _studentHomeState extends State<studentHome> {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildStatCard(
-                          icon: Icons.check_circle_outline,
-                          label: 'Attendance',
-                          value: '92%',
-                          color: const Color(0xFF10B981),
+                        child: BlocBuilder<StudentOverallAttendanceBloc, StudentOverallAttendanceState>(
+                          builder: (context, state) {
+                            double attendancePercent = 0;
+
+                            if (state is StudentOverallAttendanceLoaded) {
+                              attendancePercent = state.data.overallAttendancePercentage;
+                            }
+
+                            return _buildStatCard(
+                              icon: Icons.check_circle_outline,
+                              label: 'Attendance',
+                              value: '${attendancePercent.toStringAsFixed(1)}%',
+                              color: const Color(0xFF10B981),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -376,29 +388,24 @@ class _studentHomeState extends State<studentHome> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildQuickAction(
-                        'Mark\nAttendance',
+                        'Mark Attendance',
                         Icons.check_circle_outline,
                         const Color(0xFF10B981),
                             () => _onItemTapped(2),
                       ),
                       _buildQuickAction(
-                        'Join\nClass',
+                        'Join Class',
                         Icons.video_call_outlined,
                         const Color(0xFF3B82F6),
-                            () {},
+                            () => _onItemTapped(1),
                       ),
                       _buildQuickAction(
-                        'Notes',
+                        'Notes & PYQ',
                         Icons.note_outlined,
                         const Color(0xFF8B5CF6),
                             () {},
                       ),
-                      _buildQuickAction(
-                        'Doubts',
-                        Icons.quiz_outlined,
-                        const Color(0xFFF59E0B),
-                            () {},
-                      ),
+
                     ],
                   ),
                 ],
@@ -515,14 +522,6 @@ class _studentHomeState extends State<studentHome> {
                     '5h ago',
                     Icons.assignment_outlined,
                     const Color(0xFF3B82F6),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildActivityCard(
-                    'Class Rescheduled',
-                    'Chemistry Lab moved to 2:00 PM',
-                    '1d ago',
-                    Icons.calendar_today_outlined,
-                    const Color(0xFFF59E0B),
                   ),
                 ],
               ),

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:present_me_flutter/viewmodels/student_overall_attendance/student_overall_attendance_bloc.dart';
+import 'package:present_me_flutter/viewmodels/student_overall_attendance/student_overall_attendance_state.dart';
 import '../../repositories/studentAuth_repository.dart';
 import '../../viewmodels/student_auth/auth_bloc.dart';
 import '../../viewmodels/student_auth/auth_event.dart';
@@ -944,13 +946,18 @@ class _student_ProfileState extends State<student_Profile> {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: _buildStatCard(
-                              icon: Icons.check_circle_outline,
-                              value:
-                                  '${attendancePercentage.toStringAsFixed(0)}%',
-                              label: 'Attendance',
-                              color: const Color(0xFF3B82F6),
-                            ),
+                            child: BlocBuilder<StudentOverallAttendanceBloc, StudentOverallAttendanceState>(builder: (context,state) {
+                              if(state is StudentOverallAttendanceLoaded){
+                                return _buildStatCard(
+                                  icon: Icons.check_circle_outline,
+                                  value:
+                                  '${state.data.overallAttendancePercentage.toStringAsFixed(1)}%',
+                                  label: 'Attendance',
+                                  color: const Color(0xFF3B82F6),
+                                );
+                              }
+                              return SizedBox();
+                            })
                           ),
                           const SizedBox(width: 16),
                           Expanded(

@@ -8,6 +8,7 @@ import 'package:present_me_flutter/repositories/studentAuth_repository.dart';
 import 'package:present_me_flutter/repositories/studentClass_repository.dart';
 import 'package:present_me_flutter/repositories/studentPendingClass_repository.dart';
 import 'package:present_me_flutter/repositories/student_attendance.dart';
+import 'package:present_me_flutter/repositories/student_overall_attendance_repository.dart';
 import 'package:present_me_flutter/repositories/teacherAuth_repository.dart';
 import 'package:present_me_flutter/repositories/teacherClass_repository.dart';
 import 'package:present_me_flutter/splash%20screen.dart';
@@ -17,6 +18,7 @@ import 'package:present_me_flutter/viewmodels/student_attendance/student_attenda
 import 'package:present_me_flutter/viewmodels/student_auth/auth_bloc.dart';
 import 'package:present_me_flutter/viewmodels/student_auth/auth_event.dart';
 import 'package:present_me_flutter/viewmodels/student_class/student_class_bloc.dart';
+import 'package:present_me_flutter/viewmodels/student_overall_attendance/student_overall_attendance_bloc.dart';
 import 'package:present_me_flutter/viewmodels/student_pending_class/student_pending_class_bloc.dart';
 import 'package:present_me_flutter/viewmodels/teacher_auth/teacher_auth_bloc.dart';
 import 'package:present_me_flutter/viewmodels/teacher_class/teacher_class_bloc.dart';
@@ -35,6 +37,7 @@ void main() async {
   final studentClassRepository = StudentClassRepository();
   final approveStudentListRepository = ApproveStudentRepository();
   final studentAttendanceRepository = StudentAttendanceRepository();
+  final studentOverallAttendanceRepository = StudentOverallAttendanceRepository();
 
   runApp(
 
@@ -47,7 +50,8 @@ void main() async {
           RepositoryProvider.value(value: studentPendingClassRepository),
           RepositoryProvider.value(value: studentClassRepository),
           RepositoryProvider.value(value: approveStudentListRepository),
-          RepositoryProvider.value(value: studentAttendanceRepository)
+          RepositoryProvider.value(value: studentAttendanceRepository),
+          RepositoryProvider.value(value: studentOverallAttendanceRepository),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -82,6 +86,11 @@ void main() async {
             BlocProvider(
               create: (_) => StudentAttendanceBloc(
                 repository: studentAttendanceRepository,
+              ),
+            ),
+            BlocProvider(
+              create: (_) => StudentOverallAttendanceBloc(
+                repository: studentOverallAttendanceRepository,
               ),
             ),
           ],

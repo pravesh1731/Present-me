@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../models/studentClass.dart';
+import '../../models/student_overall_attendance_model.dart';
 import '../../repositories/studentClass_repository.dart';
 part 'student_class_event.dart';
 part 'student_class_state.dart';

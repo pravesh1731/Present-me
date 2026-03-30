@@ -599,7 +599,8 @@ class _teacherHomeState extends State<teacherHome> {
                     return const Center(child: CircularProgressIndicator(),);
                   }
                   if(state is TeacherClassLoaded){
-                    final todayClasses = filterTodayClasses(state.classes);
+                    final classCount = state.classes.where((c) => c.isActive).toList();
+                    final todayClasses = filterTodayClasses(classCount);
                     if(todayClasses.isEmpty){
                       return const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),

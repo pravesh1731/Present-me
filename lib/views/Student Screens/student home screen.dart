@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:present_me_flutter/views/Student%20Screens/student%20Sidebar.dart';
+import 'package:present_me_flutter/views/common%20Page/Notes&PYQ.dart';
 import '../../components/common/Button/token.dart';
 import '../../models/student.dart';
 import '../../models/studentClass.dart';
@@ -403,9 +404,10 @@ class _studentHomeState extends State<studentHome> {
                         'Notes & PYQ',
                         Icons.note_outlined,
                         const Color(0xFF8B5CF6),
-                            () {},
-                      ),
-
+                            () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => NotesPyqsScreen()),
+                        ),                      ),
                     ],
                   ),
                 ],

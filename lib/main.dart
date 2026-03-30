@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/repositories/approveStudent_list.dart';
+import 'package:present_me_flutter/repositories/notes_repository.dart';
 import 'package:present_me_flutter/repositories/studentAuth_repository.dart';
 import 'package:present_me_flutter/repositories/studentClass_repository.dart';
 import 'package:present_me_flutter/repositories/studentPendingClass_repository.dart';
@@ -14,6 +15,7 @@ import 'package:present_me_flutter/repositories/teacherClass_repository.dart';
 import 'package:present_me_flutter/splash%20screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_bloc.dart';
+import 'package:present_me_flutter/viewmodels/notes/notes_bloc.dart';
 import 'package:present_me_flutter/viewmodels/student_attendance/student_attendance_bloc.dart';
 import 'package:present_me_flutter/viewmodels/student_auth/auth_bloc.dart';
 import 'package:present_me_flutter/viewmodels/student_auth/auth_event.dart';
@@ -38,6 +40,7 @@ void main() async {
   final approveStudentListRepository = ApproveStudentRepository();
   final studentAttendanceRepository = StudentAttendanceRepository();
   final studentOverallAttendanceRepository = StudentOverallAttendanceRepository();
+  final notesRepository = NotesRepository();
 
   runApp(
 
@@ -52,6 +55,7 @@ void main() async {
           RepositoryProvider.value(value: approveStudentListRepository),
           RepositoryProvider.value(value: studentAttendanceRepository),
           RepositoryProvider.value(value: studentOverallAttendanceRepository),
+          RepositoryProvider.value(value: notesRepository),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -93,6 +97,11 @@ void main() async {
                 repository: studentOverallAttendanceRepository,
               ),
             ),
+            BlocProvider(
+                create: (_) => NotesBloc(
+                  repository: notesRepository,
+                ),
+              ),
           ],
           child: const MyApp(),
         ),

@@ -1,6 +1,6 @@
 // viewmodels/notes/notes_state.dart
 import '../../models/note_upload_model.dart';
-import '../../views/common Page/Notes&PYQ.dart';
+import '../../views/common Page/Notes&PYQs/Notes&PYQ.dart';
 
 abstract class NotesState {}
 
@@ -33,3 +33,16 @@ class NotesFetchError extends NotesState {
   NotesFetchError(this.message);
 }
 
+
+
+class MyUploadsLoading extends NotesState {}
+
+class MyUploadsFetchSuccess extends NotesState {
+  final List<NoteModel> notes;
+  MyUploadsFetchSuccess(this.notes);
+}
+
+class MyUploadsFetchError extends NotesState {
+  final String message;
+  MyUploadsFetchError(this.message);
+}

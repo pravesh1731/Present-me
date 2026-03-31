@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../core/constants/constants.dart';
 import '../models/note_upload_model.dart';
+import '../views/common Page/Notes&PYQs/Notes&PYQ.dart';
 
 class NotesRepository {
 
@@ -91,7 +92,30 @@ class NotesRepository {
       throw Exception(data['message'] ?? 'Failed to fetch notes');
     }
   }
+
+  Future<List<NoteModel>> fetchMyUploads({required String token}) async {
+    final uri = Uri.parse('$baseUrl/students/notes/my-uploads');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      final List list = data['data'] ?? [];
+      return list.map((e) => NoteModel.fromJson(e)).toList();
+    } else {
+      throw Exception(data['message'] ?? 'Failed to fetch your uploads');
+    }
+  }
 }
+
+
 
 
 

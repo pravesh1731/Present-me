@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:present_me_flutter/views/common%20Page/Notes&PYQs/Notes&PYQ.dart';
+import 'package:present_me_flutter/views/common%20Page/Notes&PYQs/downloaded_notes_screen.dart';
+import 'package:present_me_flutter/views/common%20Page/Notes&PYQs/my_uploads_screen.dart';
 import '../../components/common/Navigation.dart';
 import '../Notice/teachers Notice classes.dart';
 import '../../viewmodels/teacher_auth/teacher_auth_bloc.dart';
@@ -137,7 +140,29 @@ class _TeacherSidebar extends StatelessWidget {
                       _MenuItem(
                         icon: Icons.note_alt_outlined,
                         label: 'Notes',
-                        onTap: () => placeholder(context, 'Notes coming soon'),
+                        onTap:
+                            () => pushSlide(
+                          context,
+                          const NotesPyqsScreen(),
+                        ),
+                      ),
+                      _MenuItem(
+                        icon: Icons.note_alt_outlined,
+                        label: 'Donwloads',
+                        onTap:
+                            () => pushSlide(
+                          context,
+                          const DownloadedNotesScreen(),
+                        ),
+                      ),
+                      _MenuItem(
+                        icon: Icons.note_alt_outlined,
+                        label: 'Uploads',
+                        onTap:
+                            () => pushSlide(
+                          context,
+                          const MyUploadsScreen(),
+                        ),
                       ),
 
                       const Padding(

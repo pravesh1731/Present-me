@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../repositories/notes_repository.dart';
-import '../../views/common Page/Notes&PYQ.dart';
+import '../../views/common Page/Notes&PYQs/Notes&PYQ.dart';
 import 'notes_event.dart';
 import 'notes_state.dart';
 
@@ -15,6 +15,7 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
 
     // ✅ Fetch (NEW)
     on<FetchNotes>(_onFetchNotes);
+    on<FetchMyUploads>(_onFetchMyUploads);
   }
 
   // ═══════════════════════════════════════════════════════
@@ -82,6 +83,20 @@ class NotesBloc extends Bloc<NotesEvent, NotesState> {
       emit(NotesFetchError(
         e.toString().replaceFirst('Exception: ', ''),
       ));
+    }
+  }
+
+
+  Future<void> _onFetchMyUploads(
+      FetchMyUploads event,
+      Emitter<NotesState> emit,
+      ) async {
+    emit(MyUploadsLoading());
+    try {
+      final notes = await repository.fetchMyUploads(token: event.token);
+      emit(MyUploadsFetchSuccess(notes));
+    } catch (e) {
+      emit(MyUploadsFetchError(e.toString().replaceFirst('Exception: ', '')));
     }
   }
 }

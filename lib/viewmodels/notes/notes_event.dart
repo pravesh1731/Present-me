@@ -44,3 +44,8 @@ class FetchNotes extends NotesEvent {
     required this.type,
   });
 }
+
+class FetchMyUploads extends NotesEvent {
+  final String token;
+  FetchMyUploads({required this.token});
+}

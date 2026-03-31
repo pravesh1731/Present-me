@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:present_me_flutter/views/Notice/student%20Notice%20classes.dart';
+import 'package:present_me_flutter/views/common%20Page/Notes&PYQs/downloaded_notes_screen.dart';
+import 'package:present_me_flutter/views/common%20Page/Notes&PYQs/my_uploads_screen.dart';
 import '../../components/common/Navigation.dart';
 import '../../viewmodels/student_auth/auth_bloc.dart';
 import '../../viewmodels/student_auth/auth_event.dart';
@@ -150,6 +152,22 @@ class StudentSidebar extends StatelessWidget {
                     icon: Icons.note_outlined,
                     label: 'Notes',
                     onTap: () => placeholder(context, 'Notes coming soon'),
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.note_outlined,
+                    label: 'Downloads',
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => DownloadedNotesScreen()));
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.note_outlined,
+                    label: 'Uploads',
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => MyUploadsScreen()));
+                    },
                   ),
                   const Divider(height: 32, thickness: 1, indent: 20, endIndent: 20),
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:present_me_flutter/core/widgets/header.dart';
+import 'package:present_me_flutter/views/Student%20Screens/ChangePasswordScreen.dart';
 import '../Policy/privacy_policy.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -45,7 +46,17 @@ class SettingsPage extends StatelessWidget {
                 iconColor: Color(0xFF10B981),
                 title: 'Change Password',
                 subtitle: 'Update your password',
-                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Color(0xFF9CA3AF)),
+                trailing: GestureDetector(
+                    onTap:
+                        () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChangePasswordScreen(),
+                        ),
+                      );
+                    },
+                    child: const Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Color(0xFF9CA3AF))),
               ),
               _settingsCard(
                 icon: Icons.privacy_tip_rounded,

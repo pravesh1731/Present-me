@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:present_me_flutter/core/widgets/header.dart';
-
+import '../../../core/widgets/header.dart';
 import '../../../viewmodels/notes/notes_bloc.dart';
 import '../../../viewmodels/notes/notes_event.dart';
 import '../../../viewmodels/notes/notes_state.dart';

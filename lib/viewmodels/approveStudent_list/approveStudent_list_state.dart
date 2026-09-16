@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:present_me_flutter/models/join_student_list.dart';
+
+import '../../models/join_student_list.dart';
 
 sealed class ApproveStudentListState extends Equatable {
   const ApproveStudentListState();

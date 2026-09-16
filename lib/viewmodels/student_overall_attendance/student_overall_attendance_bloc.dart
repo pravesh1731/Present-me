@@ -1,7 +1,8 @@
+import 'package:app/viewmodels/student_overall_attendance/student_overall_attendance_event.dart';
+import 'package:app/viewmodels/student_overall_attendance/student_overall_attendance_state.dart';
 import 'package:bloc/bloc.dart';
-import 'package:present_me_flutter/repositories/student_overall_attendance_repository.dart';
-import 'package:present_me_flutter/viewmodels/student_overall_attendance/student_overall_attendance_event.dart';
-import 'package:present_me_flutter/viewmodels/student_overall_attendance/student_overall_attendance_state.dart';
+
+import '../../repositories/student_overall_attendance_repository.dart';
 
 
 class StudentOverallAttendanceBloc

@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:present_me_flutter/views/common%20Page/Notes&PYQs/Notes&PYQ.dart';
-import 'package:present_me_flutter/views/common%20Page/Notes&PYQs/downloaded_notes_screen.dart';
-import 'package:present_me_flutter/views/common%20Page/Notes&PYQs/my_uploads_screen.dart';
 import '../../components/common/Navigation.dart';
 import '../Notice/teachers Notice classes.dart';
 import '../../viewmodels/teacher_auth/teacher_auth_bloc.dart';
@@ -10,6 +7,9 @@ import '../Help & Support Page/help_support_page.dart';
 import '../IntroScreen/introScreen.dart';
 import '../Policy/privacy_policy.dart';
 import '../Setting Page/settings_page.dart';
+import '../common Page/Notes&PYQs/Notes&PYQ.dart';
+import '../common Page/Notes&PYQs/downloaded_notes_screen.dart';
+import '../common Page/Notes&PYQs/my_uploads_screen.dart';
 import 'create class.dart';
 import 'downloadAttendance.dart';
 

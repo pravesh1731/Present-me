@@ -1,15 +1,15 @@
 import 'dart:convert';
+import 'package:app/views/Notice/student%20Notiice%20main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
-import 'package:present_me_flutter/components/common/Button/token.dart';
-import 'package:present_me_flutter/core/widgets/header.dart';
-import 'package:present_me_flutter/views/Notice/student%20Notiice%20main.dart';
-import 'package:present_me_flutter/viewmodels/student_class/student_class_bloc.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../models/studentClass.dart';
+import '../../components/common/Button/token.dart';
+import '../../core/widgets/header.dart';
+import '../../viewmodels/student_class/student_class_bloc.dart';
 
 class StudentNoticeClass extends StatefulWidget {
   const StudentNoticeClass({super.key});

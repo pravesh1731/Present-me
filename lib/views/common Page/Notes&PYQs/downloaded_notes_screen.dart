@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/core/widgets/header.dart';
+import '../../../core/widgets/header.dart';
 import 'download_manager.dart';
 import 'pdf_viewer_screen.dart';
 

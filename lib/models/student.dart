@@ -9,9 +9,8 @@ class Student {
   final String branch;
   final String year;
   final String section;
-
   final String profilePicUrl;
-
+  final int wallet;
   final String createdAt;
 
   Student({
@@ -26,6 +25,7 @@ class Student {
     required this.year,
     required this.section,
     required this.profilePicUrl,
+    required this.wallet,
     required this.createdAt,
   });
 
@@ -42,6 +42,7 @@ class Student {
       year: json["year"] ?? "",
       section: json["section"] ?? "",
       profilePicUrl: json["profilePicUrl"] ?? "",
+      wallet: json["wallet"] ?? 0,
       createdAt: json["createdAt"] ?? "",
     );
   }
@@ -59,6 +60,7 @@ class Student {
       "year": year,
       "section": section,
       "profilePicUrl": profilePicUrl,
+      "wallet": wallet,
       "createdAt": createdAt,
     };
   }
@@ -71,6 +73,7 @@ class Student {
     String? branch,
     String? year,
     String? section,
+    int? wallet,
     String? profilePicUrl,
   }) {
     return Student(
@@ -85,6 +88,7 @@ class Student {
       year: year ?? this.year,
       section: section ?? this.section,
       profilePicUrl: profilePicUrl ?? this.profilePicUrl,
+      wallet: wallet ?? this.wallet,
       createdAt: createdAt,
     );
   }

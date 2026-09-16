@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:present_me_flutter/viewmodels/student_overall_attendance/student_overall_attendance_bloc.dart';
-import 'package:present_me_flutter/viewmodels/student_overall_attendance/student_overall_attendance_state.dart';
 import '../../repositories/studentAuth_repository.dart';
 import '../../viewmodels/student_auth/auth_bloc.dart';
 import '../../viewmodels/student_auth/auth_event.dart';
 import '../../viewmodels/student_auth/auth_state.dart';
 import '../../viewmodels/student_class/student_class_bloc.dart';
+import '../../viewmodels/student_overall_attendance/student_overall_attendance_bloc.dart';
+import '../../viewmodels/student_overall_attendance/student_overall_attendance_state.dart';
 
 
 class student_Profile extends StatefulWidget {

@@ -1,17 +1,18 @@
+import 'package:app/models/wallet_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:present_me_flutter/views/Notice/student%20Notice%20classes.dart';
-import 'package:present_me_flutter/views/common%20Page/Notes&PYQs/downloaded_notes_screen.dart';
-import 'package:present_me_flutter/views/common%20Page/Notes&PYQs/my_uploads_screen.dart';
 import '../../components/common/Navigation.dart';
 import '../../viewmodels/student_auth/auth_bloc.dart';
 import '../../viewmodels/student_auth/auth_event.dart';
 import '../../viewmodels/student_auth/auth_state.dart';
 import '../Help & Support Page/help_support_page.dart';
 import '../IntroScreen/introScreen.dart';
-import '../Policy/privacy_policy.dart';
+import '../Notice/student Notice classes.dart';
 import '../Setting Page/settings_page.dart';
+import '../common Page/Notes&PYQs/Notes&PYQ.dart';
+import '../common Page/Notes&PYQs/downloaded_notes_screen.dart';
+import '../common Page/Notes&PYQs/my_uploads_screen.dart';
 class StudentSidebar extends StatelessWidget {
   final String? name;
   final String? photoUrl;
@@ -141,17 +142,22 @@ class StudentSidebar extends StatelessWidget {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => StudentNoticeClass()));
                     },
                   ),
+
                   _buildMenuItem(
                     context,
-                    icon: Icons.emoji_events_outlined,
-                    label: 'Scores',
-                    onTap: () => placeholder(context, 'Score coming soon'),
+                    icon: Icons.wallet_giftcard,
+                    label: 'Wallet',
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => WalletPage()));
+                    },
                   ),
                   _buildMenuItem(
                     context,
                     icon: Icons.note_outlined,
                     label: 'Notes',
-                    onTap: () => placeholder(context, 'Notes coming soon'),
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => NotesPyqsScreen()));
+                    },
                   ),
                   _buildMenuItem(
                     context,

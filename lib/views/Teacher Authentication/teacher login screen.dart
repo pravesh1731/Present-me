@@ -1,12 +1,9 @@
 import 'dart:convert';
-
+import 'package:app/views/Teacher%20Authentication/teacher_pending_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:present_me_flutter/views/Teacher%20Authentication/teacher_pending_verification.dart';
-
-
 import '../../viewmodels/teacher_auth/teacher_auth_bloc.dart';
 import '../Teacher Forget Password Screen/teacherForgetPassword.dart';
 import '../Teacher Screens/teacher home screen.dart';
@@ -259,7 +256,7 @@ class _teacherLoginState extends State<teacherLogin> {
                                   controller: _emailController,
                                   keyboardType: TextInputType.emailAddress,
                                   decoration: InputDecoration(
-                                    hintText: "teacher@example.com",
+                                    hintText: "teacher@presentme.com",
                                     hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
                                     prefixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade400),
                                     filled: true,

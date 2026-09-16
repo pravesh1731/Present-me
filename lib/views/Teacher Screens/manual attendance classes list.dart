@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:present_me_flutter/views/Teacher%20Screens/manual%20attendance%20main.dart';
-import 'package:present_me_flutter/viewmodels/teacher_class/teacher_class_bloc.dart';
-
 import '../../core/widgets/header.dart';
+import '../../viewmodels/teacher_class/teacher_class_bloc.dart';
+import 'manual attendance main.dart';
 
 class ManualAttendanceClasses extends StatefulWidget {
   const ManualAttendanceClasses({super.key});

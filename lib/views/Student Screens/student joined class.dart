@@ -1,9 +1,8 @@
+import 'package:app/views/Student%20Screens/student%20attendance%20Details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:present_me_flutter/views/Student%20Screens/student%20attendance%20Details.dart';
 import 'package:shimmer/shimmer.dart';
-
 import '../../models/studentClass.dart';
 import '../../repositories/studentClass_repository.dart';
 import '../../viewmodels/student_class/student_class_bloc.dart';

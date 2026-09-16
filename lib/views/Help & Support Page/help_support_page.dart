@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/core/widgets/header.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:url_launcher/url_launcher_string.dart';
+import '../../core/widgets/header.dart';
 
 class HelpSupportPage extends StatelessWidget {
   @override
@@ -184,7 +183,6 @@ class HelpSupportPage extends StatelessWidget {
       children: [
         ListTile(
           title: Text(question, style: const TextStyle(fontSize: 15, color: Color(0xFF374151))),
-          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Color(0xFF9CA3AF)),
           onTap: () {},
         ),
         const Divider(height: 1, thickness: 0.7, indent: 16, endIndent: 16, color: Color(0xFFF3F4F6)),
@@ -302,7 +300,6 @@ class HelpSupportPage extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Color(0xFF9CA3AF)),
           ],
         ),
       ),

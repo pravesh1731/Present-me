@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:local_auth/local_auth.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:present_me_flutter/components/common/Button/token.dart';
-import 'package:present_me_flutter/core/widgets/header.dart';
 import '../../../../core/constants/constants.dart';
+import '../../components/common/Button/token.dart';
+import '../../core/widgets/header.dart';
 
 class SmartAttendanceStudentPage extends StatefulWidget {
   final String className;
@@ -26,7 +26,7 @@ class SmartAttendanceStudentPage extends StatefulWidget {
 
 class _SmartAttendanceStudentPageState
     extends State<SmartAttendanceStudentPage> {
-  static const platform = MethodChannel('com.example.present_me/wifi');
+  static const platform = MethodChannel('com.presentme.present_me/wifi');
   final LocalAuthentication _localAuth = LocalAuthentication();
 
   String? teacherSSID;

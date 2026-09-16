@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dots_indicator/dots_indicator.dart';
-
 import '../../viewmodels/onBoarding/onboarding_cubit.dart';
 import '../IntroScreen/introScreen.dart';
 import 'widget/widget.dart';
@@ -21,7 +19,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
 
   final List<Map<String, dynamic>> _pages = const [
     {
-      'icon': FontAwesomeIcons.graduationCap,
+      'icon': Icons.school_outlined,
       'title': 'Welcome to Present-Me',
       'description':
       'Your smart attendance companion for seamless classroom management',

@@ -1,11 +1,11 @@
+import 'package:app/views/Student%20Screens/student%20mark%20smart%20attendance%20main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:present_me_flutter/components/common/Button/token.dart';
-import 'package:present_me_flutter/core/widgets/header.dart';
-import 'package:present_me_flutter/viewmodels/student_class/student_class_bloc.dart';
-import 'package:present_me_flutter/views/Student%20Screens/student%20mark%20smart%20attendance%20main.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../components/common/Button/token.dart';
+import '../../core/widgets/header.dart';
 import '../../models/studentClass.dart';
+import '../../viewmodels/student_class/student_class_bloc.dart';
 
 
 class mark_Smart_Attendance extends StatefulWidget {

@@ -1,8 +1,7 @@
+import 'package:app/views/Student%20Authentication/student%20sign%20up.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:present_me_flutter/views/Student%20Authentication/student%20sign%20up.dart';
-
 import '../../viewmodels/student_auth/auth_bloc.dart';
 import '../../viewmodels/student_auth/auth_event.dart';
 import '../../viewmodels/student_auth/auth_state.dart';

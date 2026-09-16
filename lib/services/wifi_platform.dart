@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 
 class WifiPlatform {
-  static const _ch = MethodChannel('com.example.present_me/wifi');
+  static const _ch = MethodChannel('com.presentme.present_me/wifi');
 
   static Future<bool> isHotspotEnabled() async {
     try {

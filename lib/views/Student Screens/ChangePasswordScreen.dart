@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:present_me_flutter/core/widgets/header.dart';
+
+import '../../core/constants/constants.dart';
+import '../../core/widgets/header.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -31,7 +33,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
   late AnimationController _successAnim;
   late Animation<double>   _scaleAnim;
 
-  static const _baseUrl = 'https://presentme.in/api';
 
   String _getToken() => _storage.read('token')?.toString() ?? '';
 
@@ -68,7 +69,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen>
 
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/students/change-password'),
+        Uri.parse('$baseUrl/change-password'),
         headers: {
           'Authorization': 'Bearer ${_getToken()}',
           'Content-Type': 'application/json',

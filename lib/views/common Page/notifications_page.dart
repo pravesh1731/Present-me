@@ -1,6 +1,40 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+class NotificationItem {
+  final String id;
+  final String title;
+  final String body;
+  final String type; // alert | class | message | achievement | info
+  final DateTime timestamp;
+  final bool isRead;
+
+  const NotificationItem({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.type,
+    required this.timestamp,
+    required this.isRead,
+  });
+
+  NotificationItem copyWith({
+    String? id,
+    String? title,
+    String? body,
+    String? type,
+    DateTime? timestamp,
+    bool? isRead,
+  }) {
+    return NotificationItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      type: type ?? this.type,
+      timestamp: timestamp ?? this.timestamp,
+      isRead: isRead ?? this.isRead,
+    );
+  }
+}
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -12,73 +46,91 @@ class NotificationsPage extends StatefulWidget {
 class _NotificationsPageState extends State<NotificationsPage> {
   String _filter = 'All'; // All | Unread
 
-  User? get _user => FirebaseAuth.instance.currentUser;
+  bool _isLoading = true;
+  final List<NotificationItem> _items = [];
 
-  Future<String?> _getUserRole() async {
-    if (_user == null) return null;
-
-    // Check if user is a teacher
-    final teacherDoc = await FirebaseFirestore.instance
-        .collection('teachers')
-        .doc(_user!.uid)
-        .get();
-    
-    if (teacherDoc.exists) return 'teachers';
-
-    // Check if user is a student
-    final studentDoc = await FirebaseFirestore.instance
-        .collection('students')
-        .doc(_user!.uid)
-        .get();
-    
-    if (studentDoc.exists) return 'students';
-
-    return null;
+  @override
+  void initState() {
+    super.initState();
+    _seedMockData();
+    // Keep the existing skeleton UI behavior (simulate network fetch).
+    Future<void>.delayed(const Duration(milliseconds: 650), () {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    });
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> _notificationsStream() async* {
-    if (_user == null) {
-      yield* Stream<QuerySnapshot<Map<String, dynamic>>>.empty();
-      return;
-    }
+  void _seedMockData() {
+    final now = DateTime.now();
+    _items
+      ..clear()
+      ..addAll([
+        NotificationItem(
+          id: 'n1',
+          title: 'Class reminder',
+          body: 'Your next class starts in 15 minutes.',
+          type: 'class',
+          timestamp: now.subtract(const Duration(minutes: 12)),
+          isRead: false,
+        ),
+        NotificationItem(
+          id: 'n2',
+          title: 'Achievement unlocked',
+          body: 'You maintained 90% attendance this month!',
+          type: 'achievement',
+          timestamp: now.subtract(const Duration(hours: 3)),
+          isRead: true,
+        ),
+        NotificationItem(
+          id: 'n3',
+          title: 'Message from teacher',
+          body: 'Please submit your assignment by evening.',
+          type: 'message',
+          timestamp: now.subtract(const Duration(days: 1, hours: 1)),
+          isRead: false,
+        ),
+        NotificationItem(
+          id: 'n4',
+          title: 'System alert',
+          body: 'Your session will expire soon. Please login again.',
+          type: 'alert',
+          timestamp: now.subtract(const Duration(days: 4, hours: 2)),
+          isRead: true,
+        ),
+      ]);
+  }
 
-    final role = await _getUserRole();
-    if (role == null) {
-      yield* Stream<QuerySnapshot<Map<String, dynamic>>>.empty();
-      return;
-    }
-
-    final base = FirebaseFirestore.instance
-        .collection(role)
-        .doc(_user!.uid)
-        .collection('notifications')
-        .orderBy('timestamp', descending: true);
-
+  List<NotificationItem> get _filteredItems {
+    final base = List<NotificationItem>.from(_items)
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     if (_filter == 'Unread') {
-      yield* base.where('isRead', isEqualTo: false).snapshots();
-    } else {
-      yield* base.snapshots();
+      return base.where((e) => !e.isRead).toList();
     }
+    return base;
+  }
+
+  void _toggleRead(String id) {
+    final idx = _items.indexWhere((e) => e.id == id);
+    if (idx < 0) return;
+    setState(() {
+      _items[idx] = _items[idx].copyWith(isRead: !_items[idx].isRead);
+    });
+  }
+
+  void _delete(String id) {
+    setState(() {
+      _items.removeWhere((e) => e.id == id);
+    });
   }
 
   Future<void> _markAllAsRead() async {
-    if (_user == null) return;
-    
-    final role = await _getUserRole();
-    if (role == null) return;
-    
-    final qs = await FirebaseFirestore.instance
-        .collection(role)
-        .doc(_user!.uid)
-        .collection('notifications')
-        .where('isRead', isEqualTo: false)
-        .get();
-    
-    final batch = FirebaseFirestore.instance.batch();
-    for (final d in qs.docs) {
-      batch.update(d.reference, {'isRead': true});
-    }
-    await batch.commit();
+    setState(() {
+      for (var i = 0; i < _items.length; i++) {
+        if (!_items[i].isRead) {
+          _items[i] = _items[i].copyWith(isRead: true);
+        }
+      }
+    });
   }
 
   String _timeAgo(DateTime dt) {
@@ -203,13 +255,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
             // Notifications stream
             SliverToBoxAdapter(
-              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: _notificationsStream(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+              child: Builder(
+                builder: (context) {
+                  if (_isLoading) {
                     return const _SkeletonList();
                   }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+
+                  final items = _filteredItems;
+                  if (items.isEmpty) {
                     return Padding(
                       padding: const EdgeInsets.all(24.0),
                       child: _EmptyState(
@@ -218,13 +271,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     );
                   }
 
-                  final docs = snapshot.data!.docs;
                   // Group by day label
-                  final Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>> groups = {};
-                  for (final d in docs) {
-                    final ts = (d.data()['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
-                    final label = _dayLabel(ts);
-                    groups.putIfAbsent(label, () => []).add(d);
+                  final Map<String, List<NotificationItem>> groups = {};
+                  for (final item in items) {
+                    final label = _dayLabel(item.timestamp);
+                    groups.putIfAbsent(label, () => []).add(item);
                   }
 
                   final sections = groups.entries.toList();
@@ -237,7 +288,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     itemCount: sections.length,
                     itemBuilder: (context, index) {
                       final label = sections[index].key;
-                      final items = sections[index].value;
+                      final sectionItems = sections[index].value;
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -252,16 +303,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               ),
                             ),
                           ),
-                          ...items.map((doc) => _NotificationTile(
-                                data: doc.data(),
-                                onDelete: () => doc.reference.delete(),
-                                onToggleRead: () => doc.reference.update({
-                                  'isRead': !(doc.data()['isRead'] as bool? ?? false),
-                                }),
-                                timeAgo: _timeAgo(((doc.data()['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now())),
-                                color: _typeColor(doc.data()['type']?.toString() ?? 'info'),
-                                icon: _typeIcon(doc.data()['type']?.toString() ?? 'info'),
-                              )),
+                          ...sectionItems.map(
+                            (item) => _NotificationTile(
+                              data: {
+                                'id': item.id,
+                                'title': item.title,
+                                'body': item.body,
+                                'type': item.type,
+                                'timestamp': item.timestamp,
+                                'isRead': item.isRead,
+                              },
+                              onDelete: () => _delete(item.id),
+                              onToggleRead: () => _toggleRead(item.id),
+                              timeAgo: _timeAgo(item.timestamp),
+                              color: _typeColor(item.type),
+                              icon: _typeIcon(item.type),
+                            ),
+                          ),
                           const SizedBox(height: 8),
                         ],
                       );

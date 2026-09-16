@@ -1,8 +1,8 @@
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
-import 'package:present_me_flutter/core/constants/constants.dart';
-import 'package:present_me_flutter/models/join_student_list.dart';
+import '../core/constants/constants.dart';
+import '../models/join_student_list.dart';
+
 
 class ApproveStudentRepository {
 

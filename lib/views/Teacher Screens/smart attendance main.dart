@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:present_me_flutter/components/common/Button/token.dart';
-import 'package:present_me_flutter/core/widgets/header.dart';
+import '../../components/common/Button/token.dart';
 import '../../core/constants/constants.dart';
+import '../../core/widgets/header.dart';
 
 class SmartAttendanceTeacherPage extends StatefulWidget {
   final String className;
@@ -26,7 +26,7 @@ class SmartAttendanceTeacherPage extends StatefulWidget {
 
 class _SmartAttendanceTeacherPageState
     extends State<SmartAttendanceTeacherPage> {
-  static const platform = MethodChannel('com.example.present_me/wifi');
+  static const platform = MethodChannel('com.presentme.app/wifi');
 
   static const Color _connectedGreen = Color(0xFF00A76F);
   static const Color _disconnectedOrange = Color(0xFFFF6A00);

@@ -1,9 +1,8 @@
 import 'dart:convert';
+import 'package:app/views/Student%20Screens/student%20Sidebar.dart';
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:present_me_flutter/views/Student%20Screens/student%20Sidebar.dart';
-import 'package:present_me_flutter/views/common%20Page/Notes&PYQs/Notes&PYQ.dart';
 import '../../components/common/Button/token.dart';
 import '../../models/student.dart';
 import '../../models/studentClass.dart';
@@ -12,6 +11,7 @@ import '../../viewmodels/student_auth/auth_state.dart';
 import '../../viewmodels/student_class/student_class_bloc.dart';
 import '../../viewmodels/student_overall_attendance/student_overall_attendance_bloc.dart';
 import '../../viewmodels/student_overall_attendance/student_overall_attendance_state.dart';
+import '../common Page/Notes&PYQs/Notes&PYQ.dart';
 import 'student joined class.dart';
 import 'student mark attendance.dart';
 import 'student profile.dart';
@@ -54,6 +54,16 @@ class _studentHomeState extends State<studentHome> {
       'Sunday'
     ];
     return days[now.weekday - 1];
+  }
+
+
+  bool isClassCompleted(String startTime, String endTime) {
+    final now = TimeOfDay.now();
+    final parts = endTime.split(':');
+    final end = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    final nowMins = now.hour * 60 + now.minute;
+    final endMins = end.hour * 60 + end.minute;
+    return nowMins > endMins;
   }
 
   List<StudentClassModel> filterTodayClasses(List<StudentClassModel> classes) {
@@ -467,18 +477,21 @@ class _studentHomeState extends State<studentHome> {
 
                   // 🔷 Class List using YOUR CARD
                   ...todayClasses.map((cls) {
-                    final isActive =
-                    isClassActive(cls.startTime, cls.endTime);
+                    final isActive    = isClassActive(cls.startTime, cls.endTime);
+                    final isCompleted = isClassCompleted(cls.startTime, cls.endTime); // ✅ add this
 
                     return Padding(
-                      padding: const EdgeInsets.only(top:4 , left: 20, right: 20),
+                      padding: const EdgeInsets.only(top: 4, left: 20, right: 20),
                       child: _buildClassCard(
-                        cls.className, // title
-                        '${formatTime(cls.startTime)} - ${formatTime(cls.endTime)}', // time
-                        cls.teacherName, // teacher/room
+                        cls.className,
+                        '${formatTime(cls.startTime)} - ${formatTime(cls.endTime)}',
+                        cls.teacherName,
                         isActive,
+                        isCompleted,  // ✅ pass this
                         isActive
                             ? const Color(0xFF10B981)
+                            : isCompleted
+                            ? Colors.grey        // ✅ grey for completed
                             : const Color(0xFF3B82F6),
                       ),
                     );
@@ -615,6 +628,7 @@ class _studentHomeState extends State<studentHome> {
       String time,
       String teacher,
       bool isActive,
+      bool isCompleted,  // ✅ add this
       Color color,
       ) {
     return Container(
@@ -651,31 +665,17 @@ class _studentHomeState extends State<studentHome> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1F2937),
-                  ),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
+                Text(time, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
                 const SizedBox(height: 2),
-                Text(
-                  teacher,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
+                Text(teacher, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
               ],
             ),
           ),
+
+          // ✅ 3 states: Active, Completed, Upcoming
           if (isActive)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -683,14 +683,19 @@ class _studentHomeState extends State<studentHome> {
                 color: const Color(0xFF10B981),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                'Active',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: const Text('Active',
+                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+            )
+          else if (isCompleted)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
               ),
+              child: Text('Completed',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11, fontWeight: FontWeight.w600)),
             )
           else
             IconButton(

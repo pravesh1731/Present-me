@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/components/common/Button/button.dart';
+import '../../components/common/Button/button.dart';
 import '../Student Authentication/student login screen.dart';
 import '../Teacher Authentication/teacher login screen.dart';
 

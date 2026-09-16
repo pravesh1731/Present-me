@@ -1,7 +1,8 @@
 import 'package:bloc/bloc.dart';
-import 'package:present_me_flutter/repositories/approveStudent_list.dart';
-import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_event.dart';
-import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_state.dart';
+
+import 'approveStudent_list_event.dart';
+import 'approveStudent_list_state.dart';
+
 
 
 class ApproveStudentListBloc extends Bloc<ApproveStudentListEvent, ApproveStudentListState> {

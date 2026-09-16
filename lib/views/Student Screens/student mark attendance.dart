@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:present_me_flutter/views/Student%20Screens/mark%20smart%20attendance%20student.dart';
-import '../../viewmodels/student_class/student_class_bloc.dart';
 import '../../models/student_overall_attendance_model.dart';
 import '../../viewmodels/student_overall_attendance/student_overall_attendance_bloc.dart';
 import '../../viewmodels/student_overall_attendance/student_overall_attendance_event.dart';
 import '../../viewmodels/student_overall_attendance/student_overall_attendance_state.dart';
+import 'mark smart attendance student.dart';
 
 class mark_Attendance_Student extends StatefulWidget {
   @override

@@ -4,13 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
-
-import 'package:present_me_flutter/components/common/Button/token.dart';
-import 'package:present_me_flutter/core/constants/constants.dart';
-import 'package:present_me_flutter/core/widgets/header.dart';
-import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_bloc.dart';
-import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_event.dart';
-import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_state.dart';
+import '../../components/common/Button/token.dart';
+import '../../core/constants/constants.dart';
+import '../../core/widgets/header.dart';
+import '../../viewmodels/approveStudent_list/approveStudent_list_bloc.dart';
+import '../../viewmodels/approveStudent_list/approveStudent_list_event.dart';
+import '../../viewmodels/approveStudent_list/approveStudent_list_state.dart';
 
 class ManualAttendanceMain extends StatefulWidget {
   final String className;

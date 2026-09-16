@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
 
 import 'studentForgetPasswordEmailSend.dart';
@@ -23,7 +23,6 @@ class _StudentForgetPasswordState extends State<StudentForgetPassword> {
       );
     } else {
       try {
-        await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
         // Navigate to success screen
         Navigator.pushReplacement(
           context,

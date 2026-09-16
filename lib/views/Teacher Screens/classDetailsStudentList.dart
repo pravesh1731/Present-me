@@ -1,15 +1,15 @@
+import 'package:app/views/Teacher%20Screens/student%20request%20list.dart';
+import 'package:app/views/Teacher%20Screens/track%20attendance%20of%20specificStudent%20for%20Teacher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:present_me_flutter/models/join_student_list.dart';
-import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_bloc.dart';
-import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_event.dart';
-import 'package:present_me_flutter/viewmodels/approveStudent_list/approveStudent_list_state.dart';
-import 'package:present_me_flutter/views/Teacher%20Screens/student%20request%20list.dart';
-import 'package:present_me_flutter/views/Teacher%20Screens/track%20attendance%20of%20specificStudent%20for%20Teacher.dart';
 import 'dart:math';
 import 'package:get_storage/get_storage.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../models/join_student_list.dart';
+import '../../viewmodels/approveStudent_list/approveStudent_list_bloc.dart';
+import '../../viewmodels/approveStudent_list/approveStudent_list_event.dart';
+import '../../viewmodels/approveStudent_list/approveStudent_list_state.dart';
 import '../../viewmodels/student_attendance/student_attendance_bloc.dart';
 import '../../viewmodels/student_attendance/student_attendance_event.dart';
 

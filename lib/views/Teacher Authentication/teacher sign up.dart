@@ -1,7 +1,6 @@
+import 'package:app/views/Teacher%20Authentication/teacher%20login%20screen.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/views/Teacher%20Authentication/teacher%20login%20screen.dart';
-
 import '../../repositories/studentAuth_repository.dart';
 import '../../repositories/teacherAuth_repository.dart';
 

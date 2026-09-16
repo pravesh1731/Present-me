@@ -1,5 +1,5 @@
+import 'package:app/views/Teacher%20Screens/video%20attendance%20classes%20list.dart';
 import 'package:flutter/material.dart';
-import 'package:present_me_flutter/views/Teacher%20Screens/video%20attendance%20classes%20list.dart';
 import 'smart attendance classes list.dart';
 import 'manual attendance classes list.dart';
 

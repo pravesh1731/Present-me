@@ -1,14 +1,14 @@
+import 'package:app/models/student_attendance_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:pie_chart/pie_chart.dart';
-import 'package:present_me_flutter/components/common/Button/token.dart';
-import 'package:present_me_flutter/core/widgets/header.dart';
-import 'package:present_me_flutter/models/student_attendance_model.dart';
-import 'package:present_me_flutter/viewmodels/student_attendance/student_attendance_state.dart';
-import 'package:present_me_flutter/viewmodels/student_auth/auth_bloc.dart';
+import '../../components/common/Button/token.dart';
+import '../../core/widgets/header.dart';
 import '../../viewmodels/student_attendance/student_attendance_bloc.dart';
 import '../../viewmodels/student_attendance/student_attendance_event.dart';
+import '../../viewmodels/student_attendance/student_attendance_state.dart';
+import '../../viewmodels/student_auth/auth_bloc.dart';
 import '../../viewmodels/student_auth/auth_state.dart';
 
 class StudentAttendanceDetails extends StatefulWidget {
@@ -124,7 +124,7 @@ class _StudentAttendanceDetailsState extends State<StudentAttendanceDetails> {
                                         ),
                                         const Spacer(),
                                         Text(
-                                          "${attendance.percentage.toDouble()}%",
+                                          "${attendance.percentage.toDouble().toStringAsFixed(2)}%",
                                           style: const TextStyle(
                                             fontSize: 22,
                                             fontWeight: FontWeight.bold,

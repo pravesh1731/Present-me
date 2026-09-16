@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:present_me_flutter/viewmodels/teacher_class/teacher_class_bloc.dart';
+import '../../viewmodels/teacher_class/teacher_class_bloc.dart';
 import 'smart attendance main.dart';
 
 class SmartAttendanceClasses extends StatefulWidget {

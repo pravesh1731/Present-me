@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:present_me_flutter/repositories/student_attendance.dart';
+import '../../repositories/student_attendance.dart';
 import 'student_attendance_event.dart';
 import 'student_attendance_state.dart';
 

@@ -23,6 +23,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
   final TextEditingController _rollNumberController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _semesterController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -42,6 +43,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
     _passwordController.dispose();
     _rollNumberController.dispose();
     _confirmPasswordController.dispose();
+    _semesterController.dispose();
     super.dispose();
   }
 
@@ -78,7 +80,8 @@ class _StudentSignUpState extends State<StudentSignUp> {
     final rollNo = _rollNumberController.text.trim();
     final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
+    final semester = int.tryParse(_semesterController.text.trim(),
+    );    final confirmPassword = _confirmPasswordController.text.trim();
 
     // 1) Basic empty check
     if (firstName.isEmpty ||
@@ -87,6 +90,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
         rollNo.isEmpty ||
         phone.isEmpty ||
         password.isEmpty ||
+        semester == null ||
         confirmPassword.isEmpty) {
       _showSnackBar("Please fill in all the fields.");
       return;
@@ -135,6 +139,11 @@ class _StudentSignUpState extends State<StudentSignUp> {
       return;
     }
 
+    if (semester == null || semester < 1 || semester > 8) {
+      _showSnackBar("Please select a valid semester");
+      return;
+    }
+
     // 8) Roll number
     if (rollNo.isEmpty) {
       _showSnackBar("Roll number is required");
@@ -151,6 +160,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
         institutionId: institutionId,
         password: password,
         rollNo: rollNo,
+        semester: semester,
       );
       _showSnackBar('Signup Successful! Please login.');
       Navigator.pushReplacement(
@@ -657,6 +667,96 @@ class _StudentSignUpState extends State<StudentSignUp> {
                                 ),
                               ),
                             ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Semester',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          DropdownButtonFormField<String>(
+                            value: _semesterController.text.isEmpty
+                                ? null
+                                : _semesterController.text,
+
+                            decoration: InputDecoration(
+                              hintText: "Select Semester",
+                              hintStyle: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontSize: 15,
+                              ),
+
+                              prefixIcon: Icon(
+                                Icons.school_outlined,
+                                color: Colors.grey.shade400,
+                              ),
+
+                              filled: true,
+                              fillColor: Colors.white,
+
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 16,
+                              ),
+
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade200,
+                                  width: 1,
+                                ),
+                              ),
+
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade200,
+                                  width: 1,
+                                ),
+                              ),
+
+                              focusedBorder: const OutlineInputBorder(
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
+                                borderSide: BorderSide(
+                                  color: Color(0xFF6366F1),
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+
+                            items: List.generate(
+                              8,
+                                  (index) {
+                                final semester = "${index + 1}";
+
+                                return DropdownMenuItem<String>(
+                                  value: semester,
+                                  child: Text(
+                                    "$semester",
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _semesterController.text = value;
+                                });
+                              }
+                            },
                           ),
                           const SizedBox(height: 16),
                           const Text(

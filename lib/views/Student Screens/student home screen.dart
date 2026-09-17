@@ -19,9 +19,17 @@ import '../common Page/notifications_page.dart';
 import '../Student Authentication/student login screen.dart';
 
 class studentHome extends StatefulWidget {
+  final Map<String, dynamic>? student;
+
+  const studentHome({
+    super.key,
+    this.student,
+  });
+
   @override
   State<studentHome> createState() => _studentHomeState();
 }
+
 
 class _studentHomeState extends State<studentHome> {
   int _selectedIndex = 0;
@@ -130,53 +138,83 @@ class _studentHomeState extends State<studentHome> {
 
   @override
   Widget build(BuildContext context) {
-    // Try to obtain student from AuthBloc state, fallback to storage
     Student? student;
-    final authState = context.watch<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
-      final dynamic studentMap = authState.student;
-      // Ensure we only call Map.from on actual Map objects. Support server oddities
-      // where user may be a JSON string or other shape.
-      if (studentMap is Map) {
-        try {
-          student = Student.fromJson(Map<String, dynamic>.from(studentMap));
-        } catch (_) {}
-      } else if (studentMap is String) {
-        try {
-          final decoded = jsonDecode(studentMap);
-          if (decoded is Map) student = Student.fromJson(Map<String, dynamic>.from(decoded));
-        } catch (_) {}
-      } else if (studentMap != null) {
-        // If it's some other type (e.g., already a Student-like object), try a best-effort map conversion
-        try {
-          final maybeMap = Map<String, dynamic>.from(studentMap as Map);
-          student = Student.fromJson(maybeMap);
-        } catch (_) {}
+
+    // ---------------------------------------------------------
+    // 1. FIRST: Use student passed from Login/AuthBloc
+    // ---------------------------------------------------------
+    if (widget.student != null) {
+      try {
+        student = Student.fromJson(
+          Map<String, dynamic>.from(widget.student!),
+        );
+
+        debugPrint("STUDENT FROM WIDGET: ${widget.student}");
+      } catch (e) {
+        debugPrint("WIDGET STUDENT PARSE ERROR: $e");
       }
     }
+
+    // ---------------------------------------------------------
+    // 2. SECOND: Try AuthBloc
+    // ---------------------------------------------------------
     if (student == null) {
-      final storedStudent = box.read('student');
-      if (storedStudent != null) {
+      final authState = context.read<AuthBloc>().state;
+
+      if (authState is AuthAuthenticated) {
         try {
-          if (storedStudent is Map) {
-            student = Student.fromJson(Map<String, dynamic>.from(storedStudent));
-          } else if (storedStudent is String) {
-            final decoded = jsonDecode(storedStudent);
-            if (decoded is Map) student = Student.fromJson(Map<String, dynamic>.from(decoded));
-          } else {
-            // Attempt best-effort conversion for other map-like types
-            final maybeMap = Map<String, dynamic>.from(storedStudent as Map);
-            student = Student.fromJson(maybeMap);
-          }
-        } catch (_) {
-          // ignore: if parsing fails, leave student null and show login screen
+          student = Student.fromJson(
+            Map<String, dynamic>.from(authState.student),
+          );
+
+          debugPrint("STUDENT FROM AUTH BLOC: ${authState.student}");
+        } catch (e) {
+          debugPrint("AUTH STUDENT PARSE ERROR: $e");
         }
       }
     }
 
-    // If still null → not logged in (no token)
+    // ---------------------------------------------------------
+    // 3. THIRD: Try GetStorage
+    // ---------------------------------------------------------
+    if (student == null) {
+      final storedStudent = box.read('student');
+
+      debugPrint("STORED STUDENT: $storedStudent");
+
+      if (storedStudent != null) {
+        try {
+          if (storedStudent is Map) {
+            student = Student.fromJson(
+              Map<String, dynamic>.from(storedStudent),
+            );
+          } else if (storedStudent is String) {
+            final decoded = jsonDecode(storedStudent);
+
+            if (decoded is Map) {
+              student = Student.fromJson(
+                Map<String, dynamic>.from(decoded),
+              );
+            }
+          }
+        } catch (e) {
+          debugPrint("STORAGE STUDENT PARSE ERROR: $e");
+        }
+      }
+    }
+
+    // ---------------------------------------------------------
+    // 4. Token
+    // ---------------------------------------------------------
     final String? token = box.read<String>('token');
-    if (token == null || student == null) {
+
+    debugPrint("HOME TOKEN: $token");
+    debugPrint("HOME STUDENT: $student");
+
+    // ---------------------------------------------------------
+    // 5. If token OR student is missing
+    // ---------------------------------------------------------
+    if (token == null || token.isEmpty || student == null) {
       return Scaffold(
         body: Center(
           child: Column(
@@ -189,14 +227,15 @@ class _studentHomeState extends State<studentHome> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  // Clear storage token and go to login
-                  final box = GetStorage();
                   box.remove('token');
                   box.remove('student');
                   box.remove('role');
+
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => studentlogin()),
+                    MaterialPageRoute(
+                      builder: (_) => studentlogin(),
+                    ),
                   );
                 },
                 child: const Text("Go to Login"),
@@ -207,6 +246,9 @@ class _studentHomeState extends State<studentHome> {
       );
     }
 
+    // ---------------------------------------------------------
+    // 6. Normal Home
+    // ---------------------------------------------------------
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_storage/get_storage.dart';
 import '../../repositories/studentAuth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -33,39 +34,112 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onLoginRequested(LoginRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onLoginRequested(
+      LoginRequested event,
+      Emitter<AuthState> emit,
+      ) async {
     emit(AuthLoading());
-    try {
-      final res = await repository.login(event.email, event.password);
-      final token = res['token'] as String?;
 
-      // Normalize user payload into Map<String, dynamic>
+    try {
+      final res = await repository.login(
+        event.email,
+        event.password,
+      );
+
+      debugPrint("LOGIN RESPONSE: $res");
+
+      // =================================================
+      // 1. GET TOKEN
+      // =================================================
+
+      final token = res['token']?.toString();
+
+      if (token == null || token.isEmpty) {
+        throw Exception("Token not received from server");
+      }
+
+      // =================================================
+      // 2. GET STUDENT DATA
+      // =================================================
+
       Map<String, dynamic> userMap = {};
+
       final dynamic userRaw = res['student'];
+
       if (userRaw is Map) {
         userMap = Map<String, dynamic>.from(userRaw);
       } else if (userRaw is String) {
         try {
           final decoded = jsonDecode(userRaw);
-          if (decoded is Map) userMap = Map<String, dynamic>.from(decoded);
-        } catch (_) {
-          // ignore
+
+          if (decoded is Map) {
+            userMap = Map<String, dynamic>.from(decoded);
+          }
+        } catch (e) {
+          debugPrint("Student JSON decode error: $e");
         }
       }
 
-      // If we still don't have enough user data but we have a token, fetch profile
-      if ((userMap.isEmpty || userMap.length < 3) && token != null) {
+      // =================================================
+      // 3. IF STUDENT NOT IN LOGIN RESPONSE
+      //    FETCH PROFILE
+      // =================================================
+
+      if (userMap.isEmpty) {
         try {
           final profile = await repository.getProfile();
+
           userMap = Map<String, dynamic>.from(profile);
-        } catch (_) {
-          // ignore
+
+          debugPrint("PROFILE RESPONSE: $userMap");
+        } catch (e) {
+          debugPrint("Profile fetch after login failed: $e");
         }
       }
 
-      emit(AuthAuthenticated(student: userMap, token: token));
-    } catch (e) {
-      emit(AuthFailure(message: e.toString()));
+      // =================================================
+      // 4. CHECK STUDENT DATA
+      // =================================================
+
+      if (userMap.isEmpty) {
+        throw Exception(
+          "Student information was not received from server",
+        );
+      }
+
+      // =================================================
+      // 5. SAVE TOKEN + STUDENT
+      // =================================================
+
+      final box = GetStorage();
+
+      await box.write('token', token);
+      await box.write('student', userMap);
+      await box.write('role', 'student');
+
+      debugPrint("TOKEN SAVED: ${box.read('token')}");
+      debugPrint("STUDENT SAVED: ${box.read('student')}");
+
+      // =================================================
+      // 6. AUTHENTICATED
+      // =================================================
+
+      emit(
+        AuthAuthenticated(
+          student: userMap,
+          token: token,
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        "LOGIN ERROR: $e\n$stackTrace",
+      );
+
+      emit(
+        AuthFailure(
+          message: e.toString(),
+        ),
+      );
     }
   }
 

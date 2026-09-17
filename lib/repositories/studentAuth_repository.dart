@@ -48,8 +48,12 @@ class AuthRepository {
 
     final decodedMap = decoded ?? (res.body.isNotEmpty ? {'message': res.body} : <String, dynamic>{});
     // attempt to pick token & user
-    if (decodedMap['token'] != null) {
-      _storage.write('token', decodedMap['token']);
+    final tokenValue = decodedMap['token'] ??
+        (decodedMap['data'] is Map ? (decodedMap['data'] as Map)['token'] : null) ??
+        decodedMap['accessToken'];
+
+    if (tokenValue != null && tokenValue.toString().isNotEmpty) {
+      _storage.write('token', tokenValue.toString());
       // mark current role as student
       try {
         _storage.write('role', 'student');
@@ -58,7 +62,13 @@ class AuthRepository {
       } catch (_) {}
     }
 
-    final student = decodedMap['data'] ?? decodedMap['student'] ?? decodedMap['user'] ?? decodedMap;
+    dynamic student = decodedMap['data'] ?? decodedMap['student'] ?? decodedMap['user'] ?? decodedMap;
+    if (student is Map) {
+      final nestedStudent = student['student'] ?? student['user'] ?? student['data'];
+      if (nestedStudent is Map) {
+        student = nestedStudent;
+      }
+    }
     // persist minimal user map for quick access in UI
     try {
       _storage.write('student', student);
@@ -66,7 +76,7 @@ class AuthRepository {
 
     return {
       'student': student,
-      'token': decodedMap['token'],
+      'token': tokenValue?.toString(),
     };
   }
 
@@ -78,6 +88,7 @@ class AuthRepository {
     required String institutionId,
     required String password,
     required String rollNo,
+    required int semester,
   }) async {
     final uri = Uri.parse('$baseUrl/students/signup');
     final res = await _client.post(uri,
@@ -90,6 +101,7 @@ class AuthRepository {
           'institutionId': institutionId,
           'password': password,
           'rollNo': rollNo,
+          'semester': semester,
         }));
 
     if (res.statusCode < 200 || res.statusCode >= 300) {

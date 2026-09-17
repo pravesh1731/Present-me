@@ -60,6 +60,27 @@ class _studentloginState extends State<studentlogin> {
     context.read<AuthBloc>().add(LoginRequested(email: email, password: password));
   }
 
+  Future<void> _loginWithContext(BuildContext ctx) async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar("Please fill in all the fields.");
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      _showSnackBar("Please enter a valid email address.");
+      return;
+    }
+
+    try {
+      ctx.read<AuthBloc>().add(LoginRequested(email: email, password: password));
+    } catch (_) {
+      _showSnackBar('Internal error: unable to access authentication provider.');
+    }
+  }
+
   Widget _buildBody() {
     return Container(
       decoration: const BoxDecoration(
@@ -338,7 +359,7 @@ class _studentloginState extends State<studentlogin> {
                                 );
                               }
                               return ElevatedButton(
-                                onPressed: _login,
+                                onPressed: () => _loginWithContext(context),
                                 style: ElevatedButton.styleFrom(
                                   padding: EdgeInsets.zero,
                                   shape: RoundedRectangleBorder(
@@ -451,17 +472,10 @@ class _studentloginState extends State<studentlogin> {
 
           Navigator.pushReplacement(
             context,
-            PageRouteBuilder(
-              transitionDuration: const Duration(milliseconds: 600),
-              pageBuilder: (_, __, ___) => studentHome(),
-              transitionsBuilder: (_, animation, __, child) {
-                const begin = Offset(1.0, 0.0);
-                const end = Offset.zero;
-                const curve = Curves.easeInOutBack;
-                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                var offsetAnimation = animation.drive(tween);
-                return SlideTransition(position: offsetAnimation, child: child);
-              },
+            MaterialPageRoute(
+              builder: (_) => studentHome(
+                student: state.student,
+              ),
             ),
           );
         } else if (state is AuthFailure) {

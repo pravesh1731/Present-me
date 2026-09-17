@@ -10,7 +10,6 @@ class Student {
   final String year;
   final String section;
   final String profilePicUrl;
-  final int wallet;
   final String createdAt;
 
   Student({
@@ -25,25 +24,23 @@ class Student {
     required this.year,
     required this.section,
     required this.profilePicUrl,
-    required this.wallet,
     required this.createdAt,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
     return Student(
-      studentId: json["studentId"] ?? "",
-      emailId: json["emailId"] ?? "",
-      firstName: json["firstName"] ?? "",
-      lastName: json["lastName"] ?? "",
-      phone: json["phone"] ?? "",
-      rollNo: json["rollNo"] ?? "",
-      semester: json["semester"] ?? "",
-      branch: json["branch"] ?? "",
-      year: json["year"] ?? "",
-      section: json["section"] ?? "",
-      profilePicUrl: json["profilePicUrl"] ?? "",
-      wallet: json["wallet"] ?? 0,
-      createdAt: json["createdAt"] ?? "",
+      studentId: (json["studentId"] ?? "").toString(),
+      emailId: (json["emailId"] ?? "").toString(),
+      firstName: (json["firstName"] ?? "").toString(),
+      lastName: (json["lastName"] ?? "").toString(),
+      phone: (json["phone"] ?? "").toString(),
+      rollNo: (json["rollNo"] ?? "").toString(),
+      semester: (json["semester"] ?? "").toString(),
+      branch: (json["branch"] ?? "").toString(),
+      year: (json["year"] ?? "").toString(),
+      section: (json["section"] ?? "").toString(),
+      profilePicUrl: (json["profilePicUrl"] ?? "").toString(),
+      createdAt: (json["createdAt"] ?? "").toString(),
     );
   }
 
@@ -60,7 +57,6 @@ class Student {
       "year": year,
       "section": section,
       "profilePicUrl": profilePicUrl,
-      "wallet": wallet,
       "createdAt": createdAt,
     };
   }
@@ -73,7 +69,6 @@ class Student {
     String? branch,
     String? year,
     String? section,
-    int? wallet,
     String? profilePicUrl,
   }) {
     return Student(
@@ -88,7 +83,6 @@ class Student {
       year: year ?? this.year,
       section: section ?? this.section,
       profilePicUrl: profilePicUrl ?? this.profilePicUrl,
-      wallet: wallet ?? this.wallet,
       createdAt: createdAt,
     );
   }

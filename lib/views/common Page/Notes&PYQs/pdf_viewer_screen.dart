@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:flutter_windowmanager_plus/flutter_windowmanager_plus.dart';
 
 class PdfViewerScreen extends StatefulWidget {
   final String localPath;
@@ -20,6 +21,38 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   int _currentPage  = 0;
   bool _isReady     = false;
   PDFViewController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 🔒 Prevent screenshots / screen recording
+    _enableScreenshotProtection();
+  }
+
+  Future<void> _enableScreenshotProtection() async {
+    try {
+      await FlutterWindowManagerPlus.setSecure(true);
+    } catch (e) {
+      debugPrint('Failed to enable screenshot protection: $e');
+    }
+  }
+
+  Future<void> _disableScreenshotProtection() async {
+    try {
+      await FlutterWindowManagerPlus.setSecure(false);
+    } catch (e) {
+      debugPrint('Failed to disable screenshot protection: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    // 🔓 Restore normal screenshot behavior when leaving PDF
+    _disableScreenshotProtection();
+
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

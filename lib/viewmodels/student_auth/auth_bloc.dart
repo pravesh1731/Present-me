@@ -16,6 +16,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LogoutRequested>(_onLogoutRequested);
     on<FetchProfileRequested>(_onFetchProfileRequested);
     on<UpdateProfileRequested>(_onUpdateProfileRequested);
+    on<ResendVerificationEmailRequested>(_onResendVerificationEmailRequested);
+    on<VerifyEmailRequested>(_onVerifyEmailRequested);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -49,8 +51,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       debugPrint("LOGIN RESPONSE: $res");
 
       // =================================================
-      // 1. GET TOKEN
-      // =================================================
+// EMAIL NOT VERIFIED
+// =================================================
+
+      if (res['emailNotVerified'] == true) {
+        emit(
+          EmailNotVerified(
+            email: res['email']?.toString() ?? event.email,
+            message: res['message']?.toString() ??
+                'Email verification required',
+          ),
+        );
+
+        return;
+      }
+
+// =================================================
+// GET TOKEN
+// =================================================
 
       final token = res['token']?.toString();
 
@@ -186,4 +204,59 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  Future<void> _onResendVerificationEmailRequested(
+      ResendVerificationEmailRequested event,
+      Emitter<AuthState> emit,
+      ) async {
+    try {
+      await repository.resendVerificationEmail(event.email);
+
+      emit(
+        VerificationEmailResent(
+          message: "Verification email sent successfully.",
+        ),
+      );
+    } catch (e) {
+      debugPrint(
+        "Resend verification error: $e",
+      );
+
+      emit(
+        AuthFailure(
+          message: e.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onVerifyEmailRequested(
+      VerifyEmailRequested event,
+      Emitter<AuthState> emit,
+      ) async {
+    try {
+      debugPrint("VERIFY EMAIL REQUESTED");
+      debugPrint("TOKEN LENGTH: ${event.token.length}");
+
+      final result = await repository.verifyEmail(event.token);
+
+      debugPrint("VERIFY EMAIL RESULT: $result");
+
+      emit(
+        EmailVerificationSuccess(
+          message: result['message']?.toString() ??
+              'Email verified successfully.',
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        "VERIFY EMAIL ERROR: $e\n$stackTrace",
+      );
+
+      emit(
+        EmailVerificationFailure(
+          message: e.toString(),
+        ),
+      );
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import 'package:app/models/wallet_page.dart';
+import 'package:app/views/features/wallet/screen/wallet_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_storage/get_storage.dart';
@@ -154,7 +154,7 @@ class StudentSidebar extends StatelessWidget {
                   _buildMenuItem(
                     context,
                     icon: Icons.note_outlined,
-                    label: 'Notes',
+                    label: 'Notes & PYQ',
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => NotesPyqsScreen()));
                     },

@@ -59,7 +59,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                         ),
 
                         Text(
-                          'Last updated: Nov 21, 2025',
+                          'Last updated: Aug 20, 2026',
                           style: TextStyle(color: Colors.white70, fontSize: 14),
                         ),
                       ],
@@ -200,7 +200,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'Email: privacy@presentme.in\nPhone: +91 7007458210\nAddress: Gorakhpur, Uttar Pradesh, India',
+                    'Email: presentme.in@yahoo.com\nPhone: +91 7007458210\nAddress: Gorakhpur, Uttar Pradesh, India',
                     style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ],

@@ -21,15 +21,11 @@ import '../Student Authentication/student login screen.dart';
 class studentHome extends StatefulWidget {
   final Map<String, dynamic>? student;
 
-  const studentHome({
-    super.key,
-    this.student,
-  });
+  const studentHome({super.key, this.student});
 
   @override
   State<studentHome> createState() => _studentHomeState();
 }
-
 
 class _studentHomeState extends State<studentHome> {
   int _selectedIndex = 0;
@@ -43,10 +39,11 @@ class _studentHomeState extends State<studentHome> {
       try {
         final token = getToken();
         if (token.isNotEmpty) {
-          context.read<StudentClassBloc>().add(StudentFetchEnrolledClasses(token));
+          context.read<StudentClassBloc>().add(
+            StudentFetchEnrolledClasses(token),
+          );
         }
-      } catch (e) {
-      }
+      } catch (e) {}
     });
   }
 
@@ -59,16 +56,18 @@ class _studentHomeState extends State<studentHome> {
       'Thursday',
       'Friday',
       'Saturday',
-      'Sunday'
+      'Sunday',
     ];
     return days[now.weekday - 1];
   }
 
-
   bool isClassCompleted(String startTime, String endTime) {
     final now = TimeOfDay.now();
     final parts = endTime.split(':');
-    final end = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    final end = TimeOfDay(
+      hour: int.parse(parts[0]),
+      minute: int.parse(parts[1]),
+    );
     final nowMins = now.hour * 60 + now.minute;
     final endMins = end.hour * 60 + end.minute;
     return nowMins > endMins;
@@ -78,9 +77,7 @@ class _studentHomeState extends State<studentHome> {
     final today = getTodayName();
 
     return classes.where((c) {
-      return c.classDays.any(
-            (day) => day.toLowerCase() == today.toLowerCase(),
-      );
+      return c.classDays.any((day) => day.toLowerCase() == today.toLowerCase());
     }).toList();
   }
 
@@ -99,10 +96,12 @@ class _studentHomeState extends State<studentHome> {
       final startTime = parse(start);
       final endTime = parse(end);
 
-      bool afterStart = now.hour > startTime.hour ||
+      bool afterStart =
+          now.hour > startTime.hour ||
           (now.hour == startTime.hour && now.minute >= startTime.minute);
 
-      bool beforeEnd = now.hour < endTime.hour ||
+      bool beforeEnd =
+          now.hour < endTime.hour ||
           (now.hour == endTime.hour && now.minute <= endTime.minute);
 
       return afterStart && beforeEnd;
@@ -145,9 +144,7 @@ class _studentHomeState extends State<studentHome> {
     // ---------------------------------------------------------
     if (widget.student != null) {
       try {
-        student = Student.fromJson(
-          Map<String, dynamic>.from(widget.student!),
-        );
+        student = Student.fromJson(Map<String, dynamic>.from(widget.student!));
 
         debugPrint("STUDENT FROM WIDGET: ${widget.student}");
       } catch (e) {
@@ -192,9 +189,7 @@ class _studentHomeState extends State<studentHome> {
             final decoded = jsonDecode(storedStudent);
 
             if (decoded is Map) {
-              student = Student.fromJson(
-                Map<String, dynamic>.from(decoded),
-              );
+              student = Student.fromJson(Map<String, dynamic>.from(decoded));
             }
           }
         } catch (e) {
@@ -220,10 +215,7 @@ class _studentHomeState extends State<studentHome> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                "User not logged in",
-                style: TextStyle(fontSize: 16),
-              ),
+              const Text("User not logged in", style: TextStyle(fontSize: 16)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
@@ -233,9 +225,7 @@ class _studentHomeState extends State<studentHome> {
 
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => studentlogin(),
-                    ),
+                    MaterialPageRoute(builder: (_) => studentlogin()),
                   );
                 },
                 child: const Text("Go to Login"),
@@ -271,8 +261,6 @@ class _studentHomeState extends State<studentHome> {
     final String rollNo = student.rollNo.isEmpty ? '00' : student.rollNo;
     // You don't have grade in DynamoDB yet; using a placeholder
 
-
-
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -287,7 +275,11 @@ class _studentHomeState extends State<studentHome> {
             // Header with gradient
             Container(
               padding: const EdgeInsets.only(
-                  top: 50, left: 20, right: 20, bottom: 24),
+                top: 50,
+                left: 20,
+                right: 20,
+                bottom: 24,
+              ),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
@@ -316,27 +308,33 @@ class _studentHomeState extends State<studentHome> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.wb_sunny_outlined,
-                                color: Colors.white, size: 18),
+                            const Icon(
+                              Icons.wb_sunny_outlined,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               _getGreeting(),
                               style: const TextStyle(
-                                  color: Colors.white, fontSize: 14),
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       // Bell Icon Column
                       IconButton(
-                        icon: const Icon(Icons.notifications_outlined,
-                            color: Colors.white),
+                        icon: const Icon(
+                          Icons.notifications_outlined,
+                          color: Colors.white,
+                        ),
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                              const NotificationsPage(),
+                              builder: (context) => const NotificationsPage(),
                             ),
                           );
                         },
@@ -365,12 +363,16 @@ class _studentHomeState extends State<studentHome> {
                   Row(
                     children: [
                       Expanded(
-                        child: BlocBuilder<StudentOverallAttendanceBloc, StudentOverallAttendanceState>(
+                        child: BlocBuilder<
+                          StudentOverallAttendanceBloc,
+                          StudentOverallAttendanceState
+                        >(
                           builder: (context, state) {
                             double attendancePercent = 0;
 
                             if (state is StudentOverallAttendanceLoaded) {
-                              attendancePercent = state.data.overallAttendancePercentage;
+                              attendancePercent =
+                                  state.data.overallAttendancePercentage;
                             }
 
                             return _buildStatCard(
@@ -385,19 +387,20 @@ class _studentHomeState extends State<studentHome> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: BlocBuilder<StudentClassBloc, StudentClassState>(
-                            builder: (context, state) {
-                              int classCount = 0;
+                          builder: (context, state) {
+                            int classCount = 0;
 
-                              if (state is StudentClassLoaded) {
-                                classCount = state.classes.where((c) => c.isActive).length;
-                              }
-                        return _buildStatCard(
-                          icon: Icons.class_outlined,
-                          label: 'Classes',
-                          value: classCount.toString(),
-                          color: const Color(0xFF3B82F6),
-                        );
-                            },
+                            if (state is StudentClassLoaded) {
+                              classCount =
+                                  state.classes.where((c) => c.isActive).length;
+                            }
+                            return _buildStatCard(
+                              icon: Icons.class_outlined,
+                              label: 'Classes',
+                              value: classCount.toString(),
+                              color: const Color(0xFF3B82F6),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -405,7 +408,7 @@ class _studentHomeState extends State<studentHome> {
                         child: _buildStatCard(
                           icon: Icons.star_outline,
                           label: 'Avg Score',
-                          value: '85',
+                          value: '0',
                           color: const Color(0xFF8B5CF6),
                         ),
                       ),
@@ -432,8 +435,7 @@ class _studentHomeState extends State<studentHome> {
                           color: Color(0xFF1F2937),
                         ),
                       ),
-                      Icon(Icons.bolt,
-                          color: Colors.orange.shade400, size: 24),
+                      Icon(Icons.bolt, color: Colors.orange.shade400, size: 24),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -444,22 +446,25 @@ class _studentHomeState extends State<studentHome> {
                         'Mark Attendance',
                         Icons.check_circle_outline,
                         const Color(0xFF10B981),
-                            () => _onItemTapped(2),
+                        () => _onItemTapped(2),
                       ),
                       _buildQuickAction(
                         'Join Class',
                         Icons.video_call_outlined,
                         const Color(0xFF3B82F6),
-                            () => _onItemTapped(1),
+                        () => _onItemTapped(1),
                       ),
                       _buildQuickAction(
                         'Notes & PYQ',
                         Icons.note_outlined,
                         const Color(0xFF8B5CF6),
-                            () => Navigator.push(
+                        () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => NotesPyqsScreen()),
-                        ),                      ),
+                          MaterialPageRoute(
+                            builder: (context) => NotesPyqsScreen(),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -467,88 +472,102 @@ class _studentHomeState extends State<studentHome> {
             ),
 
             // Today's Classes
-        BlocBuilder<StudentClassBloc, StudentClassState>(
-          builder: (context, state) {
-            if (state is StudentClassLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
+            BlocBuilder<StudentClassBloc, StudentClassState>(
+              builder: (context, state) {
+                if (state is StudentClassLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-            if (state is StudentClassLoaded) {
-              final classes = state.classes.where((c) => c.isActive).toList();
-              final todayClasses = filterTodayClasses(classes);
+                if (state is StudentClassLoaded) {
+                  final classes =
+                      state.classes.where((c) => c.isActive).toList();
+                  final todayClasses = filterTodayClasses(classes);
 
-              if (todayClasses.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Center(child: Text("No classes today")),
-                );
-              }
-
-              // ✅ Sort classes by time
-              todayClasses.sort((a, b) => a.startTime.compareTo(b.startTime));
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 🔷 Header
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Today's Classes",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1F2937),
-                          ),
-                        ),
-                        Text(
-                          '${todayClasses.length} classes',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 🔷 Class List using YOUR CARD
-                  ...todayClasses.map((cls) {
-                    final isActive    = isClassActive(cls.startTime, cls.endTime);
-                    final isCompleted = isClassCompleted(cls.startTime, cls.endTime); // ✅ add this
-
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 4, left: 20, right: 20),
-                      child: _buildClassCard(
-                        cls.className,
-                        '${formatTime(cls.startTime)} - ${formatTime(cls.endTime)}',
-                        cls.teacherName,
-                        isActive,
-                        isCompleted,  // ✅ pass this
-                        isActive
-                            ? const Color(0xFF10B981)
-                            : isCompleted
-                            ? Colors.grey        // ✅ grey for completed
-                            : const Color(0xFF3B82F6),
-                      ),
+                  if (todayClasses.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Center(child: Text("No classes today")),
                     );
-                  }).toList(),
-                ],
-              );
-            }
+                  }
 
-            if (state is StudentClassError) {
-              return Text(state.message);
-            }
+                  // ✅ Sort classes by time
+                  todayClasses.sort(
+                    (a, b) => a.startTime.compareTo(b.startTime),
+                  );
 
-            return const SizedBox();
-          },
-        ),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 🔷 Header
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Today's Classes",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1F2937),
+                              ),
+                            ),
+                            Text(
+                              '${todayClasses.length} classes',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // 🔷 Class List using YOUR CARD
+                      ...todayClasses.map((cls) {
+                        final isActive = isClassActive(
+                          cls.startTime,
+                          cls.endTime,
+                        );
+                        final isCompleted = isClassCompleted(
+                          cls.startTime,
+                          cls.endTime,
+                        ); // ✅ add this
+
+                        return Padding(
+                          padding: const EdgeInsets.only(
+                            top: 4,
+                            left: 20,
+                            right: 20,
+                          ),
+                          child: _buildClassCard(
+                            cls.className,
+                            '${formatTime(cls.startTime)} - ${formatTime(cls.endTime)}',
+                            cls.teacherName,
+                            isActive,
+                            isCompleted, // ✅ pass this
+                            isActive
+                                ? const Color(0xFF10B981)
+                                : isCompleted
+                                ? Colors
+                                    .grey // ✅ grey for completed
+                                : const Color(0xFF3B82F6),
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  );
+                }
+
+                if (state is StudentClassError) {
+                  return Text(state.message);
+                }
+
+                return const SizedBox();
+              },
+            ),
 
             const SizedBox(height: 24),
             Padding(
@@ -556,30 +575,26 @@ class _studentHomeState extends State<studentHome> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Recent Activity',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildActivityCard(
-                    'Test Results Published',
-                    'Mathematics Unit Test - Score: 89/100',
-                    '2h ago',
-                    Icons.trending_up,
-                    const Color(0xFF10B981),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildActivityCard(
-                    'New Assignment',
-                    'Physics Chapter 5 - Due: Oct 20',
-                    '5h ago',
-                    Icons.assignment_outlined,
-                    const Color(0xFF3B82F6),
-                  ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        "assets/image/homeBanner.jpg",
+                        width: double.infinity,
+                        fit: BoxFit.fitWidth,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.image_not_supported);
+                        },
+                      ),
+                    ),
+                  )
+
                 ],
               ),
             ),
@@ -608,10 +623,7 @@ class _studentHomeState extends State<studentHome> {
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF6B7280),
-              fontSize: 11,
-            ),
+            style: const TextStyle(color: Color(0xFF6B7280), fontSize: 11),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
@@ -629,7 +641,11 @@ class _studentHomeState extends State<studentHome> {
   }
 
   Widget _buildQuickAction(
-      String label, IconData icon, Color color, VoidCallback onTap) {
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -666,13 +682,13 @@ class _studentHomeState extends State<studentHome> {
   }
 
   Widget _buildClassCard(
-      String title,
-      String time,
-      String teacher,
-      bool isActive,
-      bool isCompleted,  // ✅ add this
-      Color color,
-      ) {
+    String title,
+    String time,
+    String teacher,
+    bool isActive,
+    bool isCompleted, // ✅ add this
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -707,12 +723,22 @@ class _studentHomeState extends State<studentHome> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1F2937),
+                  ),
                 ),
                 const SizedBox(height: 4),
-                Text(time, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                Text(
+                  time,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                ),
                 const SizedBox(height: 2),
-                Text(teacher, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                Text(
+                  teacher,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
               ],
             ),
           ),
@@ -725,8 +751,14 @@ class _studentHomeState extends State<studentHome> {
                 color: const Color(0xFF10B981),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text('Active',
-                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+              child: const Text(
+                'Active',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             )
           else if (isCompleted)
             Container(
@@ -736,8 +768,14 @@ class _studentHomeState extends State<studentHome> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              child: Text('Completed',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11, fontWeight: FontWeight.w600)),
+              child: Text(
+                'Completed',
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             )
           else
             IconButton(
@@ -775,7 +813,11 @@ class _studentHomeState extends State<studentHome> {
               _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
               _buildNavItem(1, Icons.class_outlined, Icons.class_, 'Classes'),
               _buildNavItem(
-                  2, Icons.check_circle_outline, Icons.check_circle, 'Attendance'),
+                2,
+                Icons.check_circle_outline,
+                Icons.check_circle,
+                'Attendance',
+              ),
               _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
             ],
           ),
@@ -785,7 +827,11 @@ class _studentHomeState extends State<studentHome> {
   }
 
   Widget _buildNavItem(
-      int index, IconData icon, IconData activeIcon, String label) {
+    int index,
+    IconData icon,
+    IconData activeIcon,
+    String label,
+  ) {
     final isSelected = _selectedIndex == index;
     return GestureDetector(
       onTap: () => _onItemTapped(index),
@@ -796,24 +842,28 @@ class _studentHomeState extends State<studentHome> {
           vertical: isSelected ? 10 : 8,
         ),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-            colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          )
-              : null,
+          gradient:
+              isSelected
+                  ? const LinearGradient(
+                    colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  )
+                  : null,
           color: isSelected ? null : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: isSelected
-              ? [
-            BoxShadow(
-              color: const Color(0xFF06B6D4).withAlpha((0.3 * 255).round()),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ]
-              : null,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: const Color(
+                        0xFF06B6D4,
+                      ).withAlpha((0.3 * 255).round()),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                  : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -841,12 +891,12 @@ class _studentHomeState extends State<studentHome> {
   }
 
   Widget _buildActivityCard(
-      String title,
-      String description,
-      String time,
-      IconData icon,
-      Color color,
-      ) {
+    String title,
+    String description,
+    String time,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -886,18 +936,12 @@ class _studentHomeState extends State<studentHome> {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   time,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
             ),

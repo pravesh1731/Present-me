@@ -47,9 +47,9 @@ class HelpSupportPage extends StatelessWidget {
                   color: Color(0xFF8B5CF6),
                   icon: Icons.email_outlined,
                   title: 'Email Support',
-                  subtitle: 'support@presentme.in',
+                  subtitle: 'presentme.in@yahoo.com',
                   onTap: () async {
-                    await launchUrl(Uri.parse('mailto:support@presentme.in'));
+                    await launchUrl(Uri.parse('mailto:presentme.in@yahoo.com'));
                   },
                 ),
                 _quickActionCard(

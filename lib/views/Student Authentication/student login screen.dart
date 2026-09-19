@@ -41,24 +41,76 @@ class _studentloginState extends State<studentlogin> {
     final emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
     return emailPattern.hasMatch(email.trim());
   }
+  String _maskEmail(String email) {
+    final parts = email.split('@');
 
-  Future<void> _login() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      _showSnackBar("Please fill in all the fields.");
-      return;
+    if (parts.length != 2) {
+      return email;
     }
 
-    if (!_isValidEmail(email)) {
-      _showSnackBar("Please enter a valid email address.");
-      return;
+    final username = parts[0];
+    final domain = parts[1];
+
+    if (username.length <= 2) {
+      return '${username[0]}***@$domain';
     }
 
-    // Dispatch login event to AuthBloc
-    context.read<AuthBloc>().add(LoginRequested(email: email, password: password));
+    return '${username.substring(0, 2)}***@$domain';
   }
+
+  void _showEmailVerificationDialog(String email) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            "Email verification required",
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Text(
+            "Your account hasn't been verified yet.\n\n"
+                "We've sent a verification link to ${_maskEmail(email)}.",
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+
+                context.read<AuthBloc>().add(
+                  ResendVerificationEmailRequested(
+                    email: email,
+                  ),
+                );
+              },
+              child: const Text(
+                "Resend Verification Email",
+                style: TextStyle(
+                  color: Color(0xFF6366F1),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+
+            TextButton(onPressed: () {
+        Navigator.pop(dialogContext);
+        }, child: const Text("Close"),)
+
+          ],
+        );
+      },
+    );
+  }
+
 
   Future<void> _loginWithContext(BuildContext ctx) async {
     final email = _emailController.text.trim();
@@ -441,7 +493,7 @@ class _studentloginState extends State<studentlogin> {
                   ),
                   const SizedBox(height: 28),
                   const Text(
-                    '© 2025 Present-Me. All rights reserved.',
+                    '© 2026 Present-Me. All rights reserved.',
                     style: TextStyle(color: Colors.grey, fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
@@ -478,7 +530,21 @@ class _studentloginState extends State<studentlogin> {
               ),
             ),
           );
-        } else if (state is AuthFailure) {
+        }
+        else if (state is EmailNotVerified) {
+          _showEmailVerificationDialog(state.email);
+        }
+        else if (state is VerificationEmailResent) {
+          Fluttertoast.showToast(
+            msg: state.message,
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+            fontSize: 14,
+          );
+        }
+        else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },

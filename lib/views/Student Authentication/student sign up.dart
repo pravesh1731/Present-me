@@ -1,4 +1,5 @@
 import 'package:app/views/Student%20Authentication/student%20login%20screen.dart';
+import 'package:app/views/Student%20Authentication/student_verify_email.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import '../../repositories/studentAuth_repository.dart';
@@ -15,6 +16,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
   List<Map<String, dynamic>> colleges = [];
   Map<String, dynamic>? selectedCollege;
   bool _loadingColleges = false;
+  bool _isSigningUp = false;
 
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -152,6 +154,10 @@ class _StudentSignUpState extends State<StudentSignUp> {
 
     // 9) Call API via repository
     try {
+      setState(() {
+        _isSigningUp = true;
+      });
+
       await repository.signupStudent(
         firstName: firstName,
         lastName: lastName,
@@ -162,10 +168,15 @@ class _StudentSignUpState extends State<StudentSignUp> {
         rollNo: rollNo,
         semester: semester,
       );
-      _showSnackBar('Signup Successful! Please login.');
+      if (!mounted) return;
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => studentlogin()),
+        MaterialPageRoute(
+          builder: (_) => StudentVerifyEmail(
+            email: emailId,
+          ),
+        ),
       );
     } catch (e) {
       _showSnackBar('Signup failed: $e');
@@ -946,8 +957,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
                             width: double.infinity,
                             height: 50,
                             child: ElevatedButton(
-                              onPressed: _registerStudent,
-                              style: ElevatedButton.styleFrom(
+                              onPressed: _isSigningUp ? null : _registerStudent,                              style: ElevatedButton.styleFrom(
                                 padding: EdgeInsets.zero,
                                 shape: RoundedRectangleBorder(
                                   borderRadius:
@@ -972,7 +982,18 @@ class _StudentSignUpState extends State<StudentSignUp> {
                                 child: Container(
                                   alignment: Alignment.center,
                                   height: 50,
-                                  child: const Text(
+                                  child: _isSigningUp
+                                      ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                      : const Text(
                                     'Create Account',
                                     style: TextStyle(
                                       color: Colors.white,
@@ -1038,7 +1059,7 @@ class _StudentSignUpState extends State<StudentSignUp> {
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      '© 2025 Present-Me. All rights reserved.',
+                      '© 2026 Present-Me. All rights reserved.',
                       style: TextStyle(
                         color: Colors.grey,
                         fontSize: 12,

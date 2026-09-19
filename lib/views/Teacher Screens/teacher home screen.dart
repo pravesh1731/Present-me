@@ -786,7 +786,8 @@ class _teacherHomeState extends State<teacherHome> {
     );
   }
 
-  Widget _buildNavItem(
+  Widget
+  _buildNavItem(
     int index,
     IconData icon,
     IconData activeIcon,

@@ -1,3 +1,4 @@
+import 'package:app/views/Policy/privacy_policy.dart';
 import 'package:flutter/material.dart';
 import '../../components/common/Button/button.dart';
 import '../Student Authentication/student login screen.dart';
@@ -110,7 +111,12 @@ class introscreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => PrivacyPolicyPage()),
+                              );
+                            },
                             child: const Text(
                               'Privacy Policy',
                               style: TextStyle(color: Colors.grey, fontSize: 12),
@@ -131,7 +137,7 @@ class introscreen extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4.0),
                       child: const Text(
-                        '© 2025 Present-Me  •  Developed by Jaanhvi',
+                        '© 2026 Present-Me ',
                         style: TextStyle(
                           color: Colors.grey,
                           fontSize: 11,

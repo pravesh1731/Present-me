@@ -1112,7 +1112,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      '© 2025 Present-Me. All rights reserved.',
+                      '© 2026 Present-Me. All rights reserved.',
                       style: TextStyle(color: Colors.grey, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),

@@ -205,44 +205,44 @@ class _takeAttendnaceState extends State<takeAttendnace> with SingleTickerProvid
                       const SizedBox(height: 32),
                       
                       // Today's Summary Section
-                      const Text(
-                        "Today's Summary",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Summary Stats Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildSummaryCard(
-                              title: 'Classes',
-                              value: '4',
-                              color: const Color(0xFF3B82F6), // blue
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildSummaryCard(
-                              title: 'Present',
-                              value: '53',
-                              color: const Color(0xFF10B981), // green
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildSummaryCard(
-                              title: 'Absent',
-                              value: '7',
-                              color: const Color(0xFFEF4444), // red
-                            ),
-                          ),
-                        ],
-                      ),
+                      // const Text(
+                      //   "Today's Summary",
+                      //   style: TextStyle(
+                      //     fontSize: 18,
+                      //     fontWeight: FontWeight.bold,
+                      //     color: Color(0xFF1F2937),
+                      //   ),
+                      // ),
+                      // const SizedBox(height: 16),
+                      //
+                      // // Summary Stats Row
+                      // Row(
+                      //   children: [
+                      //     Expanded(
+                      //       child: _buildSummaryCard(
+                      //         title: 'Classes',
+                      //         value: '4',
+                      //         color: const Color(0xFF3B82F6), // blue
+                      //       ),
+                      //     ),
+                      //     const SizedBox(width: 12),
+                      //     Expanded(
+                      //       child: _buildSummaryCard(
+                      //         title: 'Present',
+                      //         value: '53',
+                      //         color: const Color(0xFF10B981), // green
+                      //       ),
+                      //     ),
+                      //     const SizedBox(width: 12),
+                      //     Expanded(
+                      //       child: _buildSummaryCard(
+                      //         title: 'Absent',
+                      //         value: '7',
+                      //         color: const Color(0xFFEF4444), // red
+                      //       ),
+                      //     ),
+                      //   ],
+                      // ),
                     ],
                   ),
                 ),

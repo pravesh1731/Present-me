@@ -180,15 +180,7 @@ class _DownloadedNotesScreenState extends State<DownloadedNotesScreen> {
                       const SizedBox(height: 5),
                       Row(
                         children: [
-                          const Icon(Icons.calendar_today_outlined, size: 11, color: Colors.black38),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              'Downloaded ${_formatDate(note.downloadedAt)}',
-                              style: const TextStyle(fontSize: 11, color: Colors.black38),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
+                          _badge(note.year.toString(), const Color(0xFFF1F5F9), Colors.black45),
                           // ── Offline badge ──
                           const SizedBox(width: 6),
                           Container(
@@ -208,6 +200,7 @@ class _DownloadedNotesScreenState extends State<DownloadedNotesScreen> {
                           ),
                         ],
                       ),
+
                     ],
                   ),
                 ),
@@ -215,26 +208,7 @@ class _DownloadedNotesScreenState extends State<DownloadedNotesScreen> {
                 // ── Actions ──
                 Column(
                   children: [
-                    // Open button
-                    if (fileExists)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF3B4FE0), Color(0xFF6B4FE8)]),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.open_in_new_rounded, color: Colors.white, size: 13),
-                            SizedBox(width: 4),
-                            Text('Open', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                          ],
-                        ),
-                      ),
-                    if (!fileExists)
-                      const Text('File missing', style: TextStyle(fontSize: 11, color: Colors.red)),
-                    const SizedBox(height: 8),
+
                     // Delete button
                     GestureDetector(
                       onTap: () => _delete(note),
@@ -255,6 +229,9 @@ class _DownloadedNotesScreenState extends State<DownloadedNotesScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 5),
+                    Text(" ${note.teacher}", style: const TextStyle(fontSize: 11, color: Colors.black, overflow: TextOverflow.ellipsis)),
+                    const SizedBox(height: 4),
                   ],
                 ),
               ],

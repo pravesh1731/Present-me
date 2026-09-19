@@ -65,38 +65,38 @@ class _NotificationsPageState extends State<NotificationsPage> {
     _items
       ..clear()
       ..addAll([
-        NotificationItem(
-          id: 'n1',
-          title: 'Class reminder',
-          body: 'Your next class starts in 15 minutes.',
-          type: 'class',
-          timestamp: now.subtract(const Duration(minutes: 12)),
-          isRead: false,
-        ),
-        NotificationItem(
-          id: 'n2',
-          title: 'Achievement unlocked',
-          body: 'You maintained 90% attendance this month!',
-          type: 'achievement',
-          timestamp: now.subtract(const Duration(hours: 3)),
-          isRead: true,
-        ),
-        NotificationItem(
-          id: 'n3',
-          title: 'Message from teacher',
-          body: 'Please submit your assignment by evening.',
-          type: 'message',
-          timestamp: now.subtract(const Duration(days: 1, hours: 1)),
-          isRead: false,
-        ),
-        NotificationItem(
-          id: 'n4',
-          title: 'System alert',
-          body: 'Your session will expire soon. Please login again.',
-          type: 'alert',
-          timestamp: now.subtract(const Duration(days: 4, hours: 2)),
-          isRead: true,
-        ),
+        // NotificationItem(
+        //   id: 'n1',
+        //   title: 'Class reminder',
+        //   body: 'Your next class starts in 15 minutes.',
+        //   type: 'class',
+        //   timestamp: now.subtract(const Duration(minutes: 12)),
+        //   isRead: false,
+        // ),
+        // NotificationItem(
+        //   id: 'n2',
+        //   title: 'Achievement unlocked',
+        //   body: 'You maintained 90% attendance this month!',
+        //   type: 'achievement',
+        //   timestamp: now.subtract(const Duration(hours: 3)),
+        //   isRead: true,
+        // ),
+        // NotificationItem(
+        //   id: 'n3',
+        //   title: 'Message from teacher',
+        //   body: 'Please submit your assignment by evening.',
+        //   type: 'message',
+        //   timestamp: now.subtract(const Duration(days: 1, hours: 1)),
+        //   isRead: false,
+        // ),
+        // NotificationItem(
+        //   id: 'n4',
+        //   title: 'System alert',
+        //   body: 'Your session will expire soon. Please login again.',
+        //   type: 'alert',
+        //   timestamp: now.subtract(const Duration(days: 4, hours: 2)),
+        //   isRead: true,
+        // ),
       ]);
   }
 
@@ -189,7 +189,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           slivers: [
             SliverToBoxAdapter(
               child: Container(
-                padding: const EdgeInsets.only(top: 52, left: 20, right: 20, bottom: 20),
+                padding: const EdgeInsets.only(top: 52, left: 20, right: 20,),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Color(0xFF06B6D4), Color(0xFF2563EB)],
@@ -220,34 +220,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 8),
-                    Text(
-                      'Stay updated with Present-Me',
-                      style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        _FilterChip(
-                          label: 'All',
-                          selected: _filter == 'All',
-                          onTap: () => setState(() => _filter = 'All'),
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterChip(
-                          label: 'Unread',
-                          selected: _filter == 'Unread',
-                          onTap: () => setState(() => _filter = 'Unread'),
-                        ),
-                        const Spacer(),
-                        TextButton.icon(
-                          style: TextButton.styleFrom(foregroundColor: Colors.white),
-                          onPressed: _markAllAsRead,
-                          icon: const Icon(Icons.done_all, size: 18),
-                          label: const Text('Mark all read'),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),

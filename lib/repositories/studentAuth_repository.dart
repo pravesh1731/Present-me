@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
-import '../../core/constants/constants.dart' as constants;
+import 'package:http/http.dart' as _client;
+
+import '../core/constants/constants.dart' as constants;
 
 
 /// Minimal AuthRepository to communicate with your existing API.
@@ -20,63 +22,138 @@ class AuthRepository {
 
   String? get token => _storage.read<String>('token');
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(
+      String email,
+      String password,
+      ) async {
     final uri = Uri.parse('$baseUrl/students/login');
-    final res = await _client.post(uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'emailId': email, 'password': password}));
+
+    final res = await _client.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'emailId': email,
+        'password': password,
+      }),
+    );
 
     Map<String, dynamic>? decoded;
+
     try {
-      decoded = jsonDecode(res.body) as Map<String, dynamic>;
+      final json = jsonDecode(res.body);
+
+      if (json is Map) {
+        decoded = Map<String, dynamic>.from(json);
+      }
     } catch (_) {
       decoded = null;
     }
 
+    debugPrint(
+      'LOGIN API: status=${res.statusCode}, body=${res.body}',
+    );
+
+    // =====================================================
+    // EMAIL NOT VERIFIED
+    // =====================================================
+
+    if (res.statusCode == 403 &&
+        decoded?['code'] == 'EMAIL_NOT_VERIFIED') {
+      return {
+        'emailNotVerified': true,
+        'email': decoded?['email']?.toString() ?? email,
+        'message':
+        decoded?['message']?.toString() ??
+            'Email verification required',
+      };
+    }
+
+    // =====================================================
+    // OTHER ERRORS
+    // =====================================================
+
     final is2xx = res.statusCode >= 200 && res.statusCode < 300;
-    final messageLooksLikeSuccess = decoded != null && decoded['message'] is String && decoded['message'].toString().toLowerCase().contains('success');
 
-    // Treat as error only when not 2xx and message doesn't look like success
-    if (!is2xx && !messageLooksLikeSuccess) {
-      try {
-        final body = decoded ?? jsonDecode(res.body);
-        throw Exception(body['message'] ?? 'Login failed');
-      } catch (_) {
-        throw Exception('Login failed Try again');
-      }
+    if (!is2xx) {
+      final message =
+          decoded?['message']?.toString() ??
+              'Login failed. Please try again.';
+
+      throw Exception(message);
     }
 
-    final decodedMap = decoded ?? (res.body.isNotEmpty ? {'message': res.body} : <String, dynamic>{});
-    // attempt to pick token & user
-    final tokenValue = decodedMap['token'] ??
-        (decodedMap['data'] is Map ? (decodedMap['data'] as Map)['token'] : null) ??
-        decodedMap['accessToken'];
+    // =====================================================
+    // SUCCESS
+    // =====================================================
 
-    if (tokenValue != null && tokenValue.toString().isNotEmpty) {
-      _storage.write('token', tokenValue.toString());
-      // mark current role as student
-      try {
-        _storage.write('role', 'student');
-        // clear any stale teacher profile if present
-        _storage.remove('teacher');
-      } catch (_) {}
+    final decodedMap = decoded ?? <String, dynamic>{};
+
+    final tokenValue =
+        decodedMap['token'] ??
+            (decodedMap['data'] is Map
+                ? (decodedMap['data'] as Map)['token']
+                : null) ??
+            decodedMap['accessToken'];
+
+    if (tokenValue == null || tokenValue.toString().isEmpty) {
+      throw Exception('Token not received from server');
     }
 
-    dynamic student = decodedMap['data'] ?? decodedMap['student'] ?? decodedMap['user'] ?? decodedMap;
+    // =====================================================
+    // GET STUDENT DATA
+    // =====================================================
+
+    dynamic student =
+        decodedMap['student'] ??
+            decodedMap['data'] ??
+            decodedMap['user'] ??
+            decodedMap;
+
     if (student is Map) {
-      final nestedStudent = student['student'] ?? student['user'] ?? student['data'];
+      final nestedStudent =
+          student['student'] ??
+              student['user'] ??
+              student['data'];
+
       if (nestedStudent is Map) {
         student = nestedStudent;
       }
     }
-    // persist minimal user map for quick access in UI
-    try {
-      _storage.write('student', student);
-    } catch (_) {}
+
+    Map<String, dynamic> studentMap = {};
+
+    if (student is Map) {
+      studentMap = Map<String, dynamic>.from(student);
+    }
+
+    // =====================================================
+    // SAVE TOKEN + STUDENT
+    // =====================================================
+
+    _storage.write(
+      'token',
+      tokenValue.toString(),
+    );
+
+    _storage.write(
+      'role',
+      'student',
+    );
+
+    _storage.remove('teacher');
+
+    if (studentMap.isNotEmpty) {
+      _storage.write(
+        'student',
+        studentMap,
+      );
+    }
 
     return {
-      'student': student,
-      'token': tokenValue?.toString(),
+      'student': studentMap,
+      'token': tokenValue.toString(),
     };
   }
 
@@ -294,4 +371,83 @@ class AuthRepository {
       _storage.remove('student');
     } catch (_) {}
   }
+
+  Future<void> resendVerificationEmail(String email) async {
+    final uri = Uri.parse('$baseUrl/students/resend-verification');
+
+    final res = await _client.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'emailId': email,
+      }),
+    );
+
+    debugPrint(
+      'RESEND VERIFICATION: status=${res.statusCode}, body=${res.body}',
+    );
+
+    Map<String, dynamic>? decoded;
+
+    try {
+      final json = jsonDecode(res.body);
+
+      if (json is Map) {
+        decoded = Map<String, dynamic>.from(json);
+      }
+    } catch (_) {}
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return;
+    }
+
+    throw Exception(
+      decoded?['message']?.toString() ??
+          'Failed to resend verification email',
+    );
+  }
+
+
+  Future<Map<String, dynamic>> verifyEmail(String token) async {
+    final uri = Uri.parse(
+      '$baseUrl/students/verify-email?token=${Uri.encodeComponent(token)}',
+    );
+
+    final res = await _client.get(uri);
+
+    debugPrint(
+      'VERIFY EMAIL API: status=${res.statusCode}, body=${res.body}',
+    );
+
+    dynamic decoded;
+
+    try {
+      decoded = jsonDecode(res.body);
+    } catch (_) {
+      decoded = null;
+    }
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+
+      return {
+        'success': true,
+        'message': 'Email verified successfully',
+      };
+    }
+
+    if (decoded is Map && decoded['message'] != null) {
+      throw Exception(decoded['message'].toString());
+    }
+
+    throw Exception(
+      'Email verification failed (status ${res.statusCode})',
+    );
+  }
+
 }
+

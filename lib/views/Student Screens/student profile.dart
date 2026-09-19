@@ -566,7 +566,7 @@ class _student_ProfileState extends State<student_Profile> {
                               ),
                               const SizedBox(height: 16),
                               _buildModalTextField(
-                                'Year',
+                                'Course Year',
                                 yearController,
                                 Icons.calendar_today_outlined,
                               ),
@@ -1061,7 +1061,7 @@ class _student_ProfileState extends State<student_Profile> {
                           ),
                           const SizedBox(height: 16),
                           _buildAcademicInfoRow(
-                            'Year',
+                            'Course Year',
                             yearController.text.isNotEmpty
                                 ? yearController.text
                                 : 'Not provided',

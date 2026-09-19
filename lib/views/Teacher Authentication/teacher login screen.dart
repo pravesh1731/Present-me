@@ -380,7 +380,7 @@ class _teacherLoginState extends State<teacherLogin> {
                     ),
 
                     const SizedBox(height: 28),
-                    const Text('© 2025 Present-Me. All rights reserved.', style: TextStyle(color: Colors.grey, fontSize: 12), textAlign: TextAlign.center),
+                    const Text('© 2026 Present-Me. All rights reserved.', style: TextStyle(color: Colors.grey, fontSize: 12), textAlign: TextAlign.center),
                   ],
                 ),
               ),

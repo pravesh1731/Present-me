@@ -139,7 +139,7 @@ class _TeacherSidebar extends StatelessWidget {
                       ),
                       _MenuItem(
                         icon: Icons.note_alt_outlined,
-                        label: 'Notes',
+                        label: 'Notes & PYQ',
                         onTap:
                             () => pushSlide(
                           context,

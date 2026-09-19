@@ -18,8 +18,10 @@ class DownloadedNote {
   final String teacher;
   final String localPath;
   final String downloadedAt;
+  final String? year;
+  final String? uploadedByName;
 
-  DownloadedNote({
+  DownloadedNote( {
     required this.noteId,
     required this.title,
     required this.type,
@@ -28,6 +30,8 @@ class DownloadedNote {
     required this.teacher,
     required this.localPath,
     required this.downloadedAt,
+    required this.year,
+    required this.uploadedByName,
   });
 
   Map<String, dynamic> toJson() => {
@@ -39,6 +43,8 @@ class DownloadedNote {
     'teacher':      teacher,
     'localPath':    localPath,
     'downloadedAt': downloadedAt,
+    'year':         year,
+    'uploadedByName': uploadedByName,
   };
 
   factory DownloadedNote.fromJson(Map<String, dynamic> json) => DownloadedNote(
@@ -50,13 +56,14 @@ class DownloadedNote {
     teacher:      json['teacher'],
     localPath:    json['localPath'],
     downloadedAt: json['downloadedAt'],
+    year:         json['year'],
+    uploadedByName: json['uploadedByName'],
   );
 }
 
 // ═══════════════════════════════════════════════════════════
 //  DOWNLOAD MANAGER
-// ═══════════════════════════════════════════════════════════
-
+// ══════════════════════════════════╗
 class DownloadManager {
   static const _storageKey = 'downloaded_notes';
   static final GetStorage _storage = GetStorage();
@@ -115,6 +122,8 @@ class DownloadManager {
     required String teacher,
     required String fileUrl,
     required String token,
+    required String year,
+    required String uploadedByName,
     void Function(int received, int total)? onProgress,
   }) async {
     // Already downloaded → return cached
@@ -147,6 +156,8 @@ class DownloadManager {
       semester:     semester,
       department:   department,
       teacher:      teacher,
+      year:         year,
+      uploadedByName: uploadedByName,
       localPath:    filePath,
       downloadedAt: DateTime.now().toIso8601String(),
     );

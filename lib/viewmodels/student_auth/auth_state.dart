@@ -28,3 +28,49 @@ class AuthFailure extends AuthState {
   List<Object?> get props => [message];
 }
 
+
+class EmailNotVerified extends AuthState {
+  final String email;
+  final String message;
+
+  EmailNotVerified({
+    required this.email,
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [email, message];
+}
+
+class VerificationEmailResent extends AuthState {
+  final String message;
+
+  VerificationEmailResent({
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class EmailVerificationSuccess extends AuthState {
+  final String message;
+
+  EmailVerificationSuccess({
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class EmailVerificationFailure extends AuthState {
+  final String message;
+
+  EmailVerificationFailure({
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [message];
+}

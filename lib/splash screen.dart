@@ -135,17 +135,17 @@ class _splashScreenState extends State<splashScreen> {
                 ),
               ),
             ),
-            const Positioned(
-              bottom: 20,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Text(
-                  'Developed by Pravesh Chaudhary',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
+            // const Positioned(
+            //   bottom: 20,
+            //   left: 0,
+            //   right: 0,
+            //   child: Center(
+            //     child: Text(
+            //       'Developed by Pravesh Chaudhary',
+            //       style: TextStyle(color: Colors.white),
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
